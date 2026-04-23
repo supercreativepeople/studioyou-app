@@ -1,0 +1,2802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Your Studio</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  /* ── PROCESS INDICATOR — center screen ── */
+  #processOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(6,9,26,0.55);
+    animation: procFadeIn 0.2s ease;
+  }
+  @keyframes procFadeIn { from { opacity:0; } to { opacity:1; } }
+  #processOverlay.active { display: flex; }
+  #processBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 40px;
+    background: var(--navy);
+    border: 1px solid rgba(0,200,255,0.18);
+    box-shadow: 0 0 40px rgba(0,200,255,0.08);
+    min-width: 220px;
+    animation: procSlideUp 0.25s ease;
+  }
+  @keyframes procSlideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  #processSpinner {
+    width: 44px; height: 44px;
+    object-fit: contain;
+  }
+  #processStatus {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan); opacity: 0.8;
+    text-align: center;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  /* Kill caret on display elements */
+  .studio-name, .lot-title, .lot-sub, .lot-stat-v, .lot-stat-l,
+  .b-name, .b-desc, .nav-item, .fy-panel-name, .fy-p-t,
+  .mod-h, .mod-sub {
+    user-select: none;
+    caret-color: transparent;
+    cursor: default;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black:   #06091a;
+    --navy:    #0b0d1a;
+    --navy-2:  #0f1228;
+    --navy-3:  #141830;
+    --white:   #f0f2ff;
+    --dim:     rgba(240,242,255,0.65);
+    --mute:    rgba(240,242,255,0.32);
+    --ghost:   rgba(240,242,255,0.05);
+    --cyan:    #00c8ff;
+    --purple:  #7b35d4;
+    --grad:    linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%);
+    --gradT:   linear-gradient(135deg, #00c8ff 0%, #a06be8 100%);
+    --border:  rgba(0,200,255,0.08);
+    --border-h:rgba(0,200,255,0.22);
+    --sidebar: 280px;
+  }
+  html, body, #root { height: 100%; overflow: hidden; }
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    background-size: 256px; pointer-events: none; z-index: 9999;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-rows: 56px auto 1fr;
+    grid-template-columns: var(--sidebar) 1fr;
+    height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--navy);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0; position: relative; z-index: 100;
+  }
+  .topbar-logo {
+    width: var(--sidebar); flex-shrink: 0;
+    display: flex; align-items: center;
+    padding: 0 20px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+  }
+  .topbar-logo { cursor: pointer; position: relative; }
+  .topbar-logo img { height: 37px; width: auto; transition: filter 0.15s ease, transform 0.15s ease; }
+  .topbar-logo:hover img { filter: brightness(1.25); transform: scale(1.08); }
+  .topbar-logo:active img { transform: scale(0.94); }
+
+  /* Studio menu */
+  .studio-menu {
+    position: absolute; top: calc(100% + 4px); left: 0;
+    width: 220px;
+    background: var(--navy);
+    border: 1px solid rgba(0,200,255,0.18);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 500;
+    animation: menuIn 0.15s ease;
+  }
+  @keyframes menuIn {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .studio-menu::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(135deg,#00c8ff,#7b35d4);
+  }
+  .studio-menu-section {
+    font-size:8px; letter-spacing:0.28em; text-transform:uppercase;
+    color:rgba(240,242,255,0.25); padding:12px 16px 6px;
+  }
+  .studio-menu-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 16px; cursor:pointer;
+    font-size:12px; letter-spacing:0.06em; color:rgba(240,242,255,0.7);
+    transition:background 0.15s, color 0.15s;
+    border:none; background:none; width:100%; text-align:left;
+  }
+  .studio-menu-item:hover { background:rgba(0,200,255,0.06); color:var(--white); }
+  .studio-menu-item.danger { color:rgba(255,100,100,0.6); }
+  .studio-menu-item.danger:hover { background:rgba(255,100,100,0.06); color:rgba(255,100,100,0.9); }
+  .studio-menu-divider { height:1px; background:rgba(240,242,255,0.06); margin:4px 0; }
+  .topbar-center {
+    flex: 1; padding: 0 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .studio-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 0.08em;
+    background: var(--gradT);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .studio-badge {
+    font-size: 8px; letter-spacing: 0.16em;
+    text-transform: uppercase; padding: 2px 10px;
+    border: 1px solid rgba(0,200,255,0.3);
+    color: var(--cyan); background: rgba(0,200,255,0.05);
+  }
+  .studio-badge.badge-established {
+    border-color: rgba(232,201,122,0.4);
+    color: #e8c97a; background: rgba(232,201,122,0.06);
+  }
+  .topbar-right {
+    display: flex; align-items: center;
+    gap: 12px; padding-right: 20px;
+  }
+  .fy-pill {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--mute);
+    cursor: pointer; padding: 6px 14px;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+  }
+  .fy-pill:hover { border-color: var(--border-h); color: var(--cyan); }
+  .fy-status-box {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: #4cff91;
+    padding: 6px 14px; border: 1px solid rgba(76,255,145,0.2);
+    animation: fyGreenPulse 2.5s ease-in-out infinite;
+  }
+  .fy-status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #4cff91; flex-shrink: 0;
+    animation: fyGreenPulse 2.5s ease-in-out infinite;
+  }
+  .fy-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cyan);
+    animation: fyp 2.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes fyp {
+    0%,100% { opacity:0.4; transform:scale(1); }
+    50%      { opacity:1;   transform:scale(1.4); }
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; color: var(--black);
+    cursor: pointer; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 0 2px rgba(0,200,255,0.2), 0 0 14px rgba(0,200,255,0.25);
+    animation: avatarGlow 3s ease-in-out infinite;
+  }
+  .avatar::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -75%;
+    width: 45%; height: 200%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    transform: skewX(-18deg);
+    animation: avatarGlint 6.75s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .avatar:hover { filter: brightness(1.25); transform: scale(1.08); transition: filter 0.15s ease, transform 0.15s ease; }
+  .avatar:active { transform: scale(0.94); }
+  @keyframes avatarGlow {
+    0%,100% { box-shadow: 0 0 0 2px rgba(0,200,255,0.2), 0 0 14px rgba(0,200,255,0.2); }
+    50%      { box-shadow: 0 0 0 2px rgba(0,200,255,0.45), 0 0 22px rgba(0,200,255,0.5), 0 0 42px rgba(0,200,255,0.15); }
+  }
+  @keyframes avatarGlint {
+    0%, 65%  { left: -75%; }
+    80%      { left: 125%; }
+    100%     { left: 125%; }
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--navy);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  /* FY PANEL */
+  .fy-panel { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .fy-panel-hd {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .fy-icon {
+    width: 26px; height: 26px; flex-shrink: 0;
+  }
+  .fy-panel-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; letter-spacing: 0.06em; color: #4cff91;
+    animation: fyGreenPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes fyGreenPulse {
+    0%,100% { opacity:0.7; }
+    50%      { opacity:1; }
+  }
+  .fy-panel-sub {
+    font-size: 8px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #e8c97a;
+  }
+
+  .fy-loading {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--mute);
+    padding: 8px 0;
+  }
+  .fy-spinner {
+    width: 28px; height: 28px; flex-shrink: 0;
+    background: url('assets/shutter1.gif') center/contain no-repeat;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fy-priorities { display: flex; flex-direction: column; gap: 8px; }
+  .fy-p {
+    display: flex; gap: 10px; padding: 10px 12px;
+    background: var(--ghost); border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s ease;
+    position: relative; overflow: hidden;
+  }
+  .fy-p::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; width: 2px; height: 100%;
+    background: var(--grad); transform: scaleY(0);
+    transform-origin: top; transition: transform 0.3s ease;
+  }
+  .fy-p:hover { border-color: var(--border-h); background: rgba(0,200,255,0.04); }
+  .fy-p:hover::before { transform: scaleY(1); }
+  .fy-p-tap { cursor: pointer; }
+  .fy-p-tap:active { opacity: 0.7; }
+  .fy-p-n {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; line-height: 1;
+    color: rgba(0,200,255,0.18); flex-shrink: 0; width: 18px;
+  }
+  .fy-p-t { font-size: 11px; line-height: 1.55; color: var(--dim); }
+
+  .fy-talk {
+    margin-top: 12px; width: 100%;
+    background: transparent; border: 1px solid var(--border);
+    color: #4cff91;
+    font-family: 'Outfit', sans-serif;
+    font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; padding: 9px;
+    cursor: pointer; transition: all 0.2s ease;
+    display: flex; align-items: center;
+    justify-content: center; gap: 7px;
+  }
+  .fy-talk:hover { border-color: #4cff91; color: #4cff91; }
+
+  /* JOURNEY */
+  .journey { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .j-label {
+    font-size: 8px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--cyan);
+    opacity: 0.6; margin-bottom: 8px;
+  }
+  .j-track {
+    height: 2px; background: rgba(0,200,255,0.08);
+    margin-bottom: 6px;
+  }
+  .j-fill {
+    height: 100%; background: var(--grad);
+    animation: journeyBuild var(--j-duration, 8s) ease-in-out infinite;
+  }
+  @keyframes journeyBuild {
+    0%   { width: 0%; opacity: 0.4; }
+    40%  { width: var(--j-pct, 50%); opacity: 1; }
+    55%  { width: var(--j-pct, 50%); opacity: 1; }
+    95%  { width: 0%; opacity: 0.4; }
+    100% { width: 0%; opacity: 0.4; }
+  }
+  .j-meta {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--mute);
+  }
+  .j-next {
+    margin-top: 12px;
+    padding: 13px 14px;
+    background: rgba(240,242,255,0.02);
+    border-left: 2px solid rgba(240,242,255,0.1);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .j-next.j-next-loading { cursor: default; }
+  .j-next:not(.j-next-loading):hover { background: rgba(240,242,255,0.04); border-left-color: rgba(240,242,255,0.2); }
+  .j-next-signal {
+    font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(240,242,255,0.28); margin-bottom: 8px;
+  }
+  .j-next-obs {
+    font-size: 11px; color: rgba(240,242,255,0.45); line-height: 1.6;
+    margin-bottom: 10px; font-style: italic;
+  }
+  .j-next-cta {
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(240,242,255,0.3); display: flex; align-items: center; gap: 5px;
+  }
+  .j-next-cta::after { content: '→'; }
+
+  /* Established milestone — gold, the only gold box in the sidebar */
+  .j-next.j-next-gold {
+    background: rgba(232,201,122,0.04);
+    border-left-color: rgba(232,201,122,0.45);
+  }
+  .j-next.j-next-gold:hover { background: rgba(232,201,122,0.08); border-left-color: rgba(232,201,122,0.7); }
+  .j-next.j-next-gold .j-next-signal { color: rgba(232,201,122,0.5); }
+  .j-next.j-next-gold .j-next-obs    { color: rgba(232,201,122,0.78); }
+  .j-next.j-next-gold .j-next-cta    { color: rgba(232,201,122,0.55); }
+  .fy-info-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1px solid rgba(240,242,255,0.25);
+    font-size: 8px; color: rgba(240,242,255,0.45);
+    cursor: pointer; flex-shrink: 0; line-height: 1;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .fy-info-btn:hover { border-color: rgba(240,242,255,0.6); color: rgba(240,242,255,0.8); }
+  .fy-info-box {
+    position: relative;
+    margin-top: 6px; padding: 8px 24px 8px 10px;
+    font-size: 10px; line-height: 1.6;
+    color: rgba(240,242,255,0.6);
+    background: rgba(240,242,255,0.04);
+    border-left: 2px solid rgba(0,200,255,0.3);
+  }
+  .fy-info-close {
+    position: absolute; top: 6px; right: 8px;
+    font-size: 12px; color: rgba(240,242,255,0.3);
+    cursor: pointer; line-height: 1;
+  }
+  .fy-info-close:hover { color: rgba(240,242,255,0.7); }
+
+  /* NAV / RECOMMENDED NEXT */
+  .sidebar-nav { padding: 10px 0; }
+  .nav-group { padding: 12px 20px 4px;
+    font-size: 8px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .rec-loading {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px; font-size: 11px; color: var(--mute);
+  }
+  .rec-card {
+    margin: 8px 12px 12px;
+    padding: 16px;
+    background: rgba(0,200,255,0.03);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .rec-card:hover {
+    background: rgba(0,200,255,0.07);
+    border-color: var(--border-h);
+  }
+  .rec-icon { font-size: 22px; margin-bottom: 10px; line-height: 1; }
+  .rec-name { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 7px; }
+  .rec-desc { font-size: 11px; color: var(--dim); line-height: 1.55; margin-bottom: 12px; }
+  .rec-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+  .rec-tool {
+    font-size: 9px; letter-spacing: 0.05em;
+    padding: 3px 8px;
+    background: var(--ghost);
+    border: 1px solid var(--border);
+    color: var(--mute);
+  }
+  .rec-cta {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--cyan); display: flex; align-items: center; gap: 5px;
+  }
+  .rec-cta::after { content: '→'; }
+
+  /* MAIN */
+  .main {
+    overflow-y: auto; background: var(--black);
+    position: relative;
+  }
+  .ambient {
+    position: fixed; border-radius: 50%;
+    pointer-events: none; z-index: 0;
+  }
+  .amb-1 { top: -15vh; right: -10vw; width: 50vw; height: 50vh;
+    background: radial-gradient(ellipse, rgba(0,200,255,0.04) 0%, transparent 70%); }
+  .amb-2 { bottom: 5vh; left: 5vw; width: 40vw; height: 40vh;
+    background: radial-gradient(ellipse, rgba(123,53,212,0.05) 0%, transparent 70%); }
+
+  /* LOT HEADER */
+  .lot-hd {
+    padding: 28px 32px 22px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 2;
+  }
+  .lot-ey {
+    font-size: 9px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--cyan);
+    opacity: 0.6; margin-bottom: 6px;
+  }
+  .lot-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 0.04em;
+    color: var(--white);
+  }
+  .lot-sub { font-size: 11px; color: var(--mute); margin-top: 3px; }
+  .lot-stats {
+    display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .lot-stat { display: flex; flex-direction: column; gap: 1px; }
+  .lot-stat-v {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    background: var(--gradT);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1;
+  }
+  .lot-stat-l {
+    font-size: 8px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--mute);
+  }
+
+  /* FY FIRST ACTION — Independent tier directive */
+  .fy-first-action {
+    margin: 24px 32px 0;
+    background: var(--navy-2);
+    border: 1px solid rgba(0,200,255,0.18);
+    position: relative; overflow: hidden;
+    animation: arrivalIn 0.8s ease;
+    z-index: 2;
+  }
+  .fy-first-action::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--grad);
+  }
+  .fy-first-action-inner {
+    padding: 22px 26px;
+  }
+  .fy-fa-eyebrow {
+    font-size: 8px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--cyan);
+    opacity: 0.7; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .fy-fa-message {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 15px; line-height: 1.7;
+    color: var(--dim); margin-bottom: 20px;
+  }
+  .fy-fa-cta-row {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .fy-fa-btn {
+    background: var(--grad); border: none;
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; letter-spacing: 0.14em;
+    padding: 11px 26px; cursor: pointer;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+  }
+  .fy-fa-btn:hover { opacity: 0.85; }
+  .fy-fa-skip {
+    font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--mute);
+    cursor: pointer; background: none; border: none;
+    font-family: 'Outfit', sans-serif; padding: 0;
+    transition: color 0.2s ease;
+  }
+  .fy-fa-skip:hover { color: var(--white); }
+  .fy-fa-loading {
+    display: flex; align-items: center; gap: 10px;
+    padding: 22px 26px;
+    font-size: 11px; color: var(--mute);
+  }
+
+  /* FY ARRIVAL BANNER — shown once on first visit */
+  .fy-arrival {
+    margin: 24px 32px 0;
+    padding: 20px 24px;
+    background: var(--navy-2);
+    border: 1px solid rgba(0,200,255,0.15);
+    position: relative; overflow: hidden;
+    animation: arrivalIn 0.8s ease;
+    z-index: 2;
+  }
+  @keyframes arrivalIn {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .fy-arrival::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: var(--grad);
+  }
+  .fy-arrival-label {
+    font-size: 8px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--cyan);
+    opacity: 0.7; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .fy-arrival-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 15px; line-height: 1.65;
+    color: var(--dim);
+  }
+  .fy-type-cursor {
+    display: inline-block;
+    width: 18px; height: 18px;
+    vertical-align: middle;
+    margin-left: 4px;
+    background: url('assets/shutter1.gif') center/contain no-repeat;
+  }
+  .fy-arrival-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none;
+    color: var(--mute); cursor: pointer;
+    font-size: 16px; line-height: 1;
+    transition: color 0.2s ease;
+    font-family: 'Outfit', sans-serif;
+    padding: 0;
+  }
+  .fy-arrival-close:hover { color: var(--white); }
+
+  /* BUILDINGS GRID */
+  .lot-grid {
+    padding: 20px 32px 40px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    position: relative; z-index: 2;
+  }
+  .building {
+    padding: 22px 20px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+    cursor: pointer;
+    transition: all 0.22s ease;
+  }
+  .building.locked { cursor: default; opacity: 0.5; }
+  .building:not(.locked):hover {
+    background: var(--navy-2);
+    border-color: var(--border-h);
+    transform: translateY(-1px);
+  }
+  .building::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: var(--grad); transform: scaleX(0);
+    transform-origin: left; transition: transform 0.4s ease;
+  }
+  .building:not(.locked):hover::before { transform: scaleX(1); }
+  .building.active-b { border-color: rgba(0,200,255,0.3); background: var(--navy-2); }
+  .building.active-b::before { transform: scaleX(1); }
+  .building.b-flash { animation: bFlash 0.32s ease forwards; }
+  @keyframes bFlash {
+    0%   { background: var(--navy); }
+    30%  { background: rgba(0,200,255,0.14); border-color: rgba(0,200,255,0.5); }
+    70%  { background: rgba(0,200,255,0.08); border-color: rgba(0,200,255,0.3); }
+    100% { background: var(--navy-2); }
+  }
+
+  .b-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .b-icon { font-size: 22px; }
+  .b-badge {
+    font-size: 8px; letter-spacing: 0.16em;
+    text-transform: uppercase; padding: 2px 8px; border: 1px solid;
+  }
+  .b-badge.open { border-color: rgba(0,200,255,0.3); color: var(--cyan); background: rgba(0,200,255,0.05); }
+  .b-badge.locked { border-color: rgba(240,242,255,0.08); color: var(--mute); }
+  .b-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px; letter-spacing: 0.05em;
+    color: var(--white); margin-bottom: 4px;
+  }
+  .b-desc { font-size: 11px; color: var(--mute); margin-bottom: 12px; line-height: 1.5; }
+  .b-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+  .b-tool {
+    font-size: 8px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 2px 7px;
+    border: 1px solid rgba(0,200,255,0.1);
+    color: rgba(0,200,255,0.55); background: rgba(0,200,255,0.03);
+  }
+  .b-cta {
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--cyan);
+    display: flex; align-items: center; gap: 5px;
+    transition: gap 0.2s ease;
+  }
+  .building:hover .b-cta { gap: 9px; }
+  .b-locked-msg {
+    font-size: 9px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--mute);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* MODULE OVERLAY — Brand Builder */
+  .module-view {
+    position: absolute; inset: 0;
+    background: var(--black); overflow-y: auto;
+    z-index: 50; animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity:0; transform:translateX(16px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+  .mod-topbar {
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    background: var(--navy); position: sticky; top: 0; z-index: 10;
+  }
+  .mod-close {
+    margin-left: auto;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
+    color: var(--mute);
+    cursor: pointer; background: none; border: none;
+    font-family: 'Outfit', sans-serif; padding: 0;
+    transition: color 0.2s ease;
+  }
+  .mod-close:hover { color: var(--white); }
+  .mod-sep { color: var(--border-h); }
+  .mod-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 19px; letter-spacing: 0.06em;
+    background: var(--gradT);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .mod-body { padding: 28px 32px; max-width: 760px; }
+  .mod-h { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--white); margin-bottom: 4px; }
+  .mod-sub { font-size: 12px; color: var(--mute); margin-bottom: 24px; line-height: 1.6; }
+
+  /* BRAND BUILDER */
+  .bb-steps { display: flex; flex-direction: column; gap: 2px; margin-bottom: 28px; }
+  .bb-step {
+    padding: 20px; background: var(--navy); border: 1px solid var(--border);
+    transition: border-color 0.2s ease;
+  }
+  .bb-step.active { border-color: rgba(0,200,255,0.22); }
+  .bb-step.done { border-color: rgba(0,200,255,0.1); opacity: 0.75; }
+  .bb-step-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .bb-step-n {
+    font-family: 'Bebas Neue', sans-serif; font-size: 24px; line-height: 1;
+    color: rgba(0,200,255,0.14); flex-shrink: 0; width: 28px;
+  }
+  .bb-step.active .bb-step-n { color: rgba(0,200,255,0.4); }
+  .bb-step.done .bb-step-n { color: rgba(0,200,255,0.55); }
+  .bb-step-title { font-size: 13px; font-weight: 500; color: var(--dim); }
+  .bb-step.active .bb-step-title { color: var(--white); }
+  .bb-check { color: var(--cyan); margin-left: auto; }
+
+  .bb-in {
+    width: 100%; background: var(--navy-3);
+    border: 1px solid rgba(0,200,255,0.1);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 300;
+    padding: 11px 15px; outline: none;
+    transition: border-color 0.2s ease;
+    caret-color: var(--cyan); resize: none;
+  }
+  .bb-in:focus { border-color: rgba(0,200,255,0.28); }
+  .bb-in::placeholder { color: var(--mute); }
+
+  .bb-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .bb-chip {
+    padding: 7px 13px; border: 1px solid rgba(240,242,255,0.08);
+    color: var(--mute); font-size: 12px; cursor: pointer;
+    transition: all 0.2s ease; background: transparent;
+    font-family: 'Outfit', sans-serif;
+  }
+  .bb-chip:hover { border-color: rgba(0,200,255,0.3); color: var(--white); }
+  .bb-chip.sel { border-color: var(--cyan); color: var(--cyan); background: rgba(0,200,255,0.06); }
+
+  .bb-actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
+  .bb-btn {
+    background: var(--grad); border: none; color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; letter-spacing: 0.14em;
+    padding: 10px 24px; cursor: pointer; transition: opacity 0.2s ease;
+  }
+  .bb-btn:hover { opacity: 0.85; }
+  .bb-btn:disabled { opacity: 0.3; cursor: default; }
+  .bb-skip {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--mute); cursor: pointer; background: none; border: none;
+    font-family: 'Outfit', sans-serif; padding: 0; transition: color 0.2s ease;
+  }
+  .bb-skip:hover { color: var(--white); }
+
+  /* BRAND KIT */
+  .brand-kit {
+    padding: 24px; background: var(--navy);
+    border: 1px solid rgba(0,200,255,0.18);
+    position: relative; overflow: hidden;
+    animation: kitIn 0.5s ease;
+  }
+  @keyframes kitIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .brand-kit::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .bk-label { font-size:8px; letter-spacing:0.28em; text-transform:uppercase; color:var(--cyan); opacity:0.7; margin-bottom:14px; }
+  .bk-name { font-family:'Bebas Neue',sans-serif; font-size:32px; margin-bottom:3px;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .bk-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:18px; }
+  .bk-f { display:flex; flex-direction:column; gap:3px; }
+  .bk-fl { font-size:8px; letter-spacing:0.22em; text-transform:uppercase; color:var(--mute); }
+  .bk-fv { font-size:12px; color:var(--white); line-height:1.5; }
+  .bk-swatches { display:flex; gap:7px; margin-top:3px; }
+  .bk-sw { width:22px; height:22px; border-radius:50%; border:1px solid rgba(240,242,255,0.1); }
+  .bk-actions { margin-top:20px; display:flex; gap:8px; }
+  .bk-btn {
+    flex:1; background:transparent; border:1px solid var(--border-h);
+    color:var(--cyan); font-family:'Bebas Neue',sans-serif;
+    font-size:12px; letter-spacing:0.14em;
+    padding:11px; cursor:pointer; transition:all 0.2s ease; text-align:center;
+  }
+  .bk-btn:hover { background:rgba(0,200,255,0.06); }
+
+  .fy-note {
+    margin-top:20px; padding:18px 20px;
+    background:var(--navy); border:1px solid var(--border);
+  }
+  .fy-note-label { font-size:8px; letter-spacing:0.25em; text-transform:uppercase; color:var(--cyan); opacity:0.7; margin-bottom:9px; }
+  .fy-note-text { font-family:'Playfair Display',serif; font-style:italic; font-size:13px; line-height:1.65; color:var(--dim); }
+
+  /* DISTRIBUTE MODULE */
+  .dist-topbar-badge {
+    margin-left: auto; font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--cyan); border: 1px solid rgba(0,200,255,0.25);
+    padding: 3px 10px;
+  }
+  .dist-section-label {
+    font-size: 8px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--cyan); opacity: 0.7; margin-bottom: 10px;
+  }
+  .dist-platforms {
+    display: flex; flex-direction: column; gap: 1px; margin-bottom: 28px;
+  }
+  .dist-platform-row {
+    display: grid; grid-template-columns: 1fr 80px 1fr;
+    gap: 16px; align-items: start;
+    padding: 14px 16px; background: var(--navy); border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .dist-platform-row:hover { border-color: rgba(0,200,255,0.18); }
+  .dist-platform-name { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 2px; }
+  .dist-platform-model { font-size: 10px; color: var(--mute); }
+  .dist-platform-take {
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+    color: rgba(232,201,122,0.9); text-align: center; padding-top: 2px;
+  }
+  .dist-platform-note { font-size: 11px; color: var(--mute); line-height: 1.55; }
+  .dist-fy-panel {
+    padding: 20px; background: rgba(0,200,255,0.04);
+    border: 1px solid rgba(0,200,255,0.18); margin-bottom: 28px;
+  }
+  .dist-fy-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+  }
+  .dist-fy-body {
+    font-family: 'Playfair Display', serif; font-style: italic;
+    font-size: 13px; line-height: 1.7; color: var(--dim); margin-bottom: 16px;
+  }
+  .dist-fy-btn {
+    background: none; border: 1px solid rgba(0,200,255,0.3);
+    color: var(--cyan); font-family: 'Outfit', sans-serif;
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 10px 18px; cursor: pointer; transition: background 0.2s, border-color 0.2s;
+    width: 100%; text-align: left;
+  }
+  .dist-fy-btn:hover { background: rgba(0,200,255,0.08); border-color: rgba(0,200,255,0.5); }
+  .dist-portability {
+    padding: 22px 20px; background: var(--navy); border: 1px solid var(--border);
+    border-left: 3px solid rgba(232,201,122,0.4); margin-bottom: 28px;
+  }
+  .dist-port-label {
+    font-size: 11px; font-weight: 600; color: rgba(232,201,122,0.9);
+    margin-bottom: 10px; line-height: 1.4;
+  }
+  .dist-port-body {
+    font-size: 12px; color: var(--mute); line-height: 1.7; margin-bottom: 20px;
+  }
+  .dist-phase-arc {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .dist-phase-item { flex: 1; min-width: 130px; }
+  .dist-phase-n {
+    font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(232,201,122,0.7); margin-bottom: 4px;
+  }
+  .dist-phase-desc { font-size: 11px; color: var(--mute); line-height: 1.55; }
+  .dist-phase-arrow {
+    color: rgba(240,242,255,0.2); font-size: 16px; padding-top: 4px; flex-shrink: 0;
+  }
+  .dist-port-footnote {
+    font-size: 10px; color: rgba(240,242,255,0.3); line-height: 1.6;
+    font-style: italic; border-top: 1px solid var(--border); padding-top: 14px;
+  }
+
+  /* BRIEF */
+  .brief-points { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .brief-pt { display:flex; gap:10px; align-items:flex-start; }
+  .brief-pt-n { flex-shrink:0; width:16px; height:16px; border-radius:50%; background:rgba(0,200,255,0.1); border:1px solid rgba(0,200,255,0.2); font-size:9px; color:var(--cyan); display:flex; align-items:center; justify-content:center; margin-top:2px; }
+  .brief-pt-t { font-size:12px; color:var(--white); line-height:1.6; }
+
+  /* FY CHAT */
+  .fy-overlay {
+    position:fixed; inset:0;
+    background:rgba(6,9,26,0.8); z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px; animation:fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .fy-chat {
+    width:min(600px,92vw); height:min(72vh,680px);
+    background:var(--navy); border:1px solid rgba(0,200,255,0.18);
+    box-shadow:0 0 60px rgba(0,200,255,0.08);
+    display:flex; flex-direction:column;
+    animation:slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .fy-chat-hd {
+    padding:14px 18px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:9px;
+  }
+  .fy-chat-title {
+    font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.06em;
+    flex:1; background:var(--gradT);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .fy-chat-x {
+    background:none; border:none; color:var(--mute);
+    cursor:pointer; font-size:18px; line-height:1;
+    font-family:'Outfit',sans-serif; padding:0; transition:color 0.2s ease;
+  }
+  .fy-chat-x:hover { color:var(--white); }
+  .fy-msgs {
+    flex:1; overflow-y:auto; padding:18px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .fy-msg {
+    padding:11px 13px; font-size:12px; line-height:1.65;
+    font-family:'Playfair Display',serif; font-style:italic;
+    color:var(--dim); background:rgba(0,200,255,0.04);
+    border-left:2px solid rgba(0,200,255,0.3);
+  }
+  .fy-msg.u {
+    font-family:'Outfit',sans-serif; font-style:normal;
+    font-size:12px; color:var(--white);
+    background:var(--ghost); border-left:2px solid rgba(240,242,255,0.1);
+    align-self:flex-end; max-width:88%;
+  }
+  .fy-chat-in-row {
+    padding:12px 14px; border-top:1px solid var(--border);
+    display:flex; gap:8px;
+  }
+  .fy-chat-in {
+    flex:1; background:var(--navy-3);
+    border:1px solid rgba(0,200,255,0.1);
+    color:var(--white); font-family:'Outfit',sans-serif;
+    font-size:12px; font-weight:300;
+    padding:9px 13px; outline:none;
+    transition:border-color 0.2s ease; caret-color:var(--cyan);
+  }
+  .fy-chat-in:focus { border-color:rgba(0,200,255,0.28); }
+  .fy-chat-in::placeholder { color:var(--mute); }
+  .fy-chat-send {
+    background:var(--grad); border:none; color:var(--black);
+    font-family:'Bebas Neue',sans-serif;
+    font-size:12px; letter-spacing:0.12em;
+    padding:9px 15px; cursor:pointer; transition:opacity 0.2s ease;
+  }
+  .fy-chat-send:hover { opacity:0.85; }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.14); border-radius:2px; }
+
+  /* Sidebar scrollbar — hidden until hover */
+  .sidebar { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: transparent; }
+  .sidebar:hover { scrollbar-color: rgba(0,200,255,0.14) transparent; }
+  .sidebar:hover::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.14); border-radius:2px; }
+
+  @media (max-width:900px) {
+    :root { --sidebar:230px; }
+    .lot-grid { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div id="processOverlay">
+  <div id="processBox">
+    <img id="processSpinner" src="assets/shutter1.gif" alt=""/>
+    <div id="processStatus"></div>
+  </div>
+</div>
+<div id="root"></div>
+
+<script>
+var _twHandle = null;
+var _twIsInterval = false;
+
+function _twClear() {
+  if (_twHandle !== null) {
+    if (_twIsInterval) clearInterval(_twHandle);
+    else clearTimeout(_twHandle);
+    _twHandle = null;
+  }
+}
+
+function startProcessing(msg) {
+  _twClear();
+  var el     = document.getElementById('processOverlay');
+  var status = document.getElementById('processStatus');
+  el.classList.add('active');
+  status.textContent = '';
+  if (!msg) return;
+
+  var i = 0;
+  function tick() {
+    if (i < msg.length) {
+      status.textContent += msg[i++];
+      _twIsInterval = false;
+      _twHandle = setTimeout(tick, 38);
+    } else {
+      i = 0;
+      status.textContent = '';
+      _twIsInterval = false;
+      _twHandle = setTimeout(function() {
+        _twHandle = null;
+        tick();
+      }, 3000);
+    }
+  }
+  tick();
+}
+
+function stopProcessing() {
+  _twClear();
+  document.getElementById('processOverlay').classList.remove('active');
+  document.getElementById('processStatus').textContent = '';
+}
+</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── BUILDING DEFINITIONS ─────────────────────────────────────────────────────
+
+// Stage order follows the natural creative production arc — categorical, not strictly linear.
+// Source: StudioYou_FutureYou_Routing_Logic.md
+const ALL_BUILDINGS = [
+  { id:'ideate',    icon:'💡', name:'Ideate',     phase:1,
+    desc:'Brain to brief. Content strategy, concept development, next-project decisions.',
+    tools:['Palo'], cta:'Start a brief', module:'ideation' },
+  { id:'develop',   icon:'📝', name:'Develop',    phase:1,
+    desc:'Scripting, storyboarding, script evaluation, visual development, pitch prep.',
+    tools:['Screenplayer.ai','Quilty','10Zebra','StyleFrame'], cta:'Develop a project' },
+  { id:'fund',      icon:'💰', name:'Fund',       phase:1,
+    desc:'Capital raise, budgeting, pitch materials, tax incentives, fundraising execution.',
+    tools:['Startup Science','Raisi','Line Budgeter','Harvey AI'], cta:'Plan your funding' },
+  { id:'cast',      icon:'🎭', name:'Cast',       phase:1,
+    desc:'Talent identification, audition management, booking. FY advisory.',
+    tools:['StudioBinder'], cta:'Talk to FutureYou' },
+  { id:'plan',      icon:'📋', name:'Plan',       phase:1,
+    desc:'Production scheduling, crew hiring, pre-production, logistics.',
+    tools:['FilmPro','StudioBinder','Saturation.io','Wrapbook'], cta:'Plan production' },
+  { id:'produce',   icon:'🎬', name:'Produce',    phase:1,
+    desc:'Shoot, capture, on-set workflow execution.',
+    tools:['FilmPro','StudioBinder'], cta:'Open production' },
+  { id:'post',      icon:'✂️', name:'Post',       phase:1,
+    desc:'Edit, mix, color, VFX, music, finishing, final output.',
+    tools:['Descript','ElevenLabs','Suno','Runway'], cta:'Open post' },
+  { id:'clear',     icon:'🛡️', name:'Licensing', phase:1,
+    desc:'Rights clearance, content licensing, IP protection, music sync.',
+    tools:['CLIPClear','Harvey AI','Spellbook'], cta:'Clear content' },
+  { id:'distribute',icon:'📡', name:'Distribute', phase:1,
+    desc:'Platform publishing, release strategy, syndication, audience delivery.',
+    tools:['Feedhive','Beacons.ai'], cta:'Plan a release' },
+  { id:'brand',     icon:'🎨', name:'Brand',      phase:1,
+    desc:'Identity, visual system, style guide, brand consistency at scale.',
+    tools:['Canva','Air Canvas','Kittl','Midjourney'], cta:'Build your brand', module:'brand-builder' },
+  { id:'market',    icon:'📣', name:'Market',     phase:1,
+    desc:'Campaign planning, content performance intelligence, launch, amplification.',
+    tools:['Feedhive','Palo','CreatorIQ','HeyGen'], cta:'Plan a campaign' },
+  { id:'monetize',  icon:'✨', name:'Sponsorship', phase:1,
+    desc:'Sponsorship, brand deals, revenue tracking, representation discovery.',
+    tools:['CreatorIQ','Beacons.ai','RollCredits.io'], cta:'See opportunities' },
+];
+
+const COLORS = [
+  { name:'Bold & Cinematic',  swatches:['#0a0a0a','#c9a84c','#f4f0e8'] },
+  { name:'Fresh & Digital',   swatches:['#06091a','#00c8ff','#7b35d4'] },
+  { name:'Warm & Human',      swatches:['#1a0f06','#e8825a','#f2e8d9'] },
+  { name:'Clean & Modern',    swatches:['#ffffff','#000000','#0066ff'] },
+  { name:'Nature & Organic',  swatches:['#0d1a0a','#4caf50','#c8e6c9'] },
+];
+
+const VOICES = [
+  'Authoritative & Direct','Warm & Relatable','Playful & Energetic',
+  'Thoughtful & Measured','Bold & Provocative','Expert & Educational',
+];
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+
+// ── FORMATION DATA READER ─────────────────────────────────────────────────────
+
+function loadFormation() {
+  try {
+    const raw = localStorage.getItem('sy_formation');
+    if (raw) {
+      const f = JSON.parse(raw);
+      // Migrate: if formation has answers keyed as p2_1/p2_2 instead of contentTypes/platforms
+      if (!f.contentTypes && f.p2_1) f.contentTypes = f.p2_1;
+      if (!f.platforms && f.p2_2) f.platforms = f.p2_2;
+      return f;
+    }
+  } catch(e) {}
+  return {
+    studioName: null,
+    contentTypes: ['Video','Film'],
+    platforms: ['YouTube','Instagram'],
+    experience: '3–5 years',
+    incomeStage: 'Building toward it',
+    audienceSize: '10K–100K',
+    origin: 'Started making short films in college with whatever camera I could borrow.',
+    goal1yr: 'Land one brand deal that pays real money and release a short film.',
+    goal10yr: 'Running a production company with a team, developing IP for streaming.',
+    biggestFear: 'That I\'ll keep grinding and never break through to the next level.',
+    voiceStyle: ['Straight — no filter'],
+    fyFirstWords: null,
+    creatorType: 'youtube',
+    formedAt: new Date().toISOString(),
+  };
+}
+
+// ── UNLOCK LOGIC ──────────────────────────────────────────────────────────────
+
+function getUnlocked(formation) {
+  // All 12 stages are accessible — the arc is categorical, not linear.
+  // Source: StudioYou_FutureYou_Routing_Logic.md — "Stages are categorical, not strictly
+  // linear — a creator may move between them fluidly. FY tracks journey state across
+  // all stages simultaneously."
+  return ALL_BUILDINGS.map(b => b.id);
+}
+
+// ── JOURNEY PROGRESS ─────────────────────────────────────────────────────────
+
+function getJourneyProgress(formation) {
+  let score = 10; // started
+  if (formation.studioName)  score += 5;
+  if (formation.origin)      score += 10;
+  if (formation.goal1yr)     score += 10;
+  if (formation.goal10yr)    score += 10;
+  if (formation.biggestFear) score += 5;
+  return Math.min(score, 55);
+}
+
+// ── FY PRIORITIES GENERATOR ──────────────────────────────────────────────────
+
+async function generateFYPriorities(formation, sessionToken) {
+  const prompt = `You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You know this creator's journey specifically. Based on their formation data, generate exactly 3 specific, actionable first priorities. Each priority is 1 direct sentence — no fluff, no generic advice.
+
+Creator data:
+- Makes: ${(formation.contentTypes||[]).join(', ')}
+- Platforms: ${(formation.platforms||[]).join(', ')}
+- Experience: ${formation.experience}
+- Stage: ${formation.incomeStage}
+- 1-year goal: ${formation.goal1yr}
+- Biggest fear: ${formation.biggestFear}
+- Origin: ${formation.origin}
+
+Return ONLY a JSON array of 3 objects with "text" and "target" keys. No other text.
+"text": the priority sentence.
+"target": where tapping it should send the creator. Must be one of: "ideation", "brand-builder", "distribute", "fund", "market", "monetize", "post", "clear", "develop", "cast", "plan", "produce", "fy".
+Use the specific module name when the priority maps directly to a production stage. Use "fy" for priorities that need a conversation to unpack.
+
+Example format:
+[{"text":"Define your content format and audience before building anything else.","target":"ideation"},{"text":"Lock in your brand identity so every platform tells the same story.","target":"brand-builder"},{"text":"Map your monetization path — you have the audience, not the infrastructure.","target":"monetize"}]`;
+
+  try {
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '[]';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    // Normalise — handle both old string format and new object format
+    return parsed.map(p => typeof p === 'string' ? { text: p, target: 'fy' } : p);
+  } catch {
+    return [
+      { text: 'Document your existing content across all platforms to build your IP inventory.', target: 'fy' },
+      { text: `Lock in a consistent brand identity across ${(formation.platforms||['your platforms']).slice(0,2).join(' and ')}.`, target: 'brand-builder' },
+      { text: formation.goal1yr
+          ? `Your one-year goal requires a concrete plan — start by mapping the three steps between now and that outcome.`
+          : 'Connect your distribution channels to track your audience data in one place.',
+        target: 'distribute' },
+    ];
+  }
+}
+
+// ── FY FIRST ACTION — Independent tier ───────────────────────────────────────
+
+function FYFirstAction({ formation, onDismiss, onOpenModule }) {
+  const [message, setMessage] = useState(null);
+  const [action, setAction] = useState(null); // { label, target }
+
+  useEffect(() => {
+    const tok = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+    generateFirstAction(formation, tok).then(result => {
+      setMessage(result.message);
+      setAction(result.action);
+    });
+  }, []);
+
+  async function generateFirstAction(formation, sessionToken) {
+    const prompt = `You are Future You inside StudioYou. This creator just arrived at their dashboard for the first time. Based on their formation data, write ONE specific, direct sentence telling them exactly what to do first — not a platitude, a real first action. Then return the label for a CTA button (3-5 words max).
+
+Formation:
+- Makes: ${(formation.contentTypes||[]).join(', ')}
+- Platforms: ${(formation.platforms||[]).join(', ')}
+- Experience: ${formation.experience}
+- Stage: ${formation.incomeStage}
+- 1-year goal: ${formation.goal1yr || 'not provided'}
+- Biggest fear: ${formation.biggestFear || 'not provided'}
+- Studio name: ${formation.studioName || 'not named yet'}
+
+Return ONLY a JSON object like:
+{"message": "One sentence here telling them exactly what to do first.", "cta": "CTA label here"}`;
+
+    try {
+      const res = await fetch(`${API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 200,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '{}';
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      // Determine which module to target based on formation
+      const target = !formation.studioName ? 'brand-builder'
+        : (formation.platforms||[]).some(p=>['YouTube','TikTok','Instagram'].includes(p)) ? 'distribute'
+        : 'ideation';
+      return { message: parsed.message, action: { label: parsed.cta, target } };
+    } catch {
+      return {
+        message: !formation.studioName
+          ? 'Name your studio first — everything else builds from that identity.'
+          : `Start with Brand Builder to lock in your identity across ${(formation.platforms||['your platforms']).slice(0,2).join(' and ')}.`,
+        action: {
+          label: !formation.studioName ? 'Name Your Studio' : 'Open Brand Builder',
+          target: 'brand-builder'
+        }
+      };
+    }
+  }
+
+  function handleCTA() {
+    if (action?.target) onOpenModule(action.target);
+    onDismiss();
+  }
+
+  return (
+    <div className="fy-first-action">
+      {!message ? (
+        <div className="fy-fa-loading">
+          <div className="fy-spinner"/>
+          Future You is reading your formation...
+        </div>
+      ) : (
+        <div className="fy-first-action-inner">
+          <div className="fy-fa-eyebrow">
+            <div className="fy-dot"/>
+            Future You — First Move
+          </div>
+          <div className="fy-fa-message">{message}</div>
+          <div className="fy-fa-cta-row">
+            <button className="fy-fa-btn" onClick={handleCTA}>
+              {action?.label || 'Get Started'}
+            </button>
+            <button className="fy-fa-skip" onClick={onDismiss}>
+              I'll explore on my own
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── BRAND BUILDER ─────────────────────────────────────────────────────────────
+
+function BrandBuilder({ formation, onBack }) {
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState(formation.studioName || '');
+  const [tagline, setTagline] = useState('');
+  const [audience, setAudience] = useState('');
+  const [voice, setVoice] = useState('');
+  const [colors, setColors] = useState(null);
+  const [done, setDone] = useState(false);
+
+  const steps = [
+    { title:'What do you want to call your brand?',
+      sub:'Your studio name, a creator brand, or something new.',
+      el: <input className="bb-in" value={name} onChange={e=>setName(e.target.value)} placeholder="Brand name..."/>,
+      ok: !!name.trim() },
+    { title:'In one sentence — what do you do, and for whom?',
+      sub:'This becomes your positioning statement.',
+      el: <textarea className="bb-in" value={tagline} onChange={e=>setTagline(e.target.value)} placeholder="I make [what] for [who]..." rows={3}/>,
+      ok: !!tagline.trim() },
+    { title:'Who is your audience right now?',
+      sub:'One clear picture of the person who needs what you make.',
+      el: <textarea className="bb-in" value={audience} onChange={e=>setAudience(e.target.value)} placeholder="My audience is..." rows={3}/>,
+      ok: !!audience.trim() },
+    { title:'What\'s your brand voice?',
+      sub:'How do you sound when you\'re at your best?',
+      el: <div className="bb-chips">{VOICES.map(v=>(
+        <div key={v} className={`bb-chip ${voice===v?'sel':''}`} onClick={()=>setVoice(v)}>{v}</div>
+      ))}</div>,
+      ok: !!voice },
+    { title:'Choose a color direction.',
+      sub:'Starting point — Future You will help refine it.',
+      el: <div className="bb-chips">{COLORS.map(c=>(
+        <div key={c.name} className={`bb-chip ${colors?.name===c.name?'sel':''}`}
+          onClick={()=>setColors(c)}
+          style={{display:'flex',alignItems:'center',gap:'7px'}}>
+          <div style={{display:'flex',gap:'3px'}}>
+            {c.swatches.map((s,i)=>(
+              <div key={i} style={{width:9,height:9,borderRadius:'50%',background:s,border:'1px solid rgba(240,242,255,0.15)'}}/>
+            ))}
+          </div>
+          {c.name}
+        </div>
+      ))}</div>,
+      ok: !!colors },
+  ];
+
+  const cur = steps[step];
+
+  if (done) return (
+    <div className="module-view">
+      <div className="mod-topbar">
+        <button className="mod-close" onClick={onBack}>×</button>
+        <span className="mod-sep">/</span>
+        <span className="mod-title">Brand Builder</span>
+      </div>
+      <div className="mod-body">
+        <div className="brand-kit">
+          <div className="bk-label">Your Brand Kit — v1.0</div>
+          <div className="bk-name">{name}</div>
+          <div style={{fontSize:'10px',color:'var(--mute)',marginTop:'2px'}}>
+            {new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}
+          </div>
+          <div className="bk-grid">
+            <div className="bk-f"><div className="bk-fl">Positioning</div><div className="bk-fv">{tagline}</div></div>
+            <div className="bk-f"><div className="bk-fl">Audience</div><div className="bk-fv">{audience}</div></div>
+            <div className="bk-f"><div className="bk-fl">Voice</div><div className="bk-fv">{voice}</div></div>
+            <div className="bk-f">
+              <div className="bk-fl">Color Direction</div>
+              {colors && <>
+                <div className="bk-swatches">{colors.swatches.map((s,i)=><div key={i} className="bk-sw" style={{background:s}}/>)}</div>
+                <div style={{fontSize:'10px',color:'var(--mute)',marginTop:'3px'}}>{colors.name}</div>
+              </>}
+            </div>
+          </div>
+          <div className="bk-actions">
+            <div className="bk-btn">📄 Export PDF</div>
+            <div className="bk-btn">📋 Copy</div>
+            <div className="bk-btn">🎨 Open in Canva</div>
+          </div>
+        </div>
+        <div className="fy-note">
+          <div className="fy-note-label">Future You</div>
+          <div className="fy-note-text">
+            Good start. Your positioning is clear — that's the hardest part done.
+            The test now is consistency: every piece of content should pass your brand voice filter.
+            When it doesn't, that's signal worth paying attention to.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="module-view">
+      <div className="mod-topbar">
+        <button className="mod-close" onClick={onBack}>×</button>
+        <span className="mod-sep">/</span>
+        <span className="mod-title">Brand Builder</span>
+        <span style={{marginLeft:'auto',fontSize:'9px',letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--mute)'}}>
+          {step+1} of {steps.length}
+        </span>
+      </div>
+      <div className="mod-body">
+        <div className="mod-h">Build your brand identity.</div>
+        <div className="mod-sub">Five steps. Everything here is yours — portable, exportable, completely owned by you.</div>
+        <div className="bb-steps">
+          {steps.map((s,i)=>(
+            <div key={i} className={`bb-step ${i===step?'active':''} ${s.ok&&i<step?'done':''}`}>
+              <div className="bb-step-hd">
+                <div className="bb-step-n">{i+1}</div>
+                <div className="bb-step-title">{s.title}</div>
+                {s.ok && i<step && <div className="bb-check">✓</div>}
+              </div>
+              {i===step && <>
+                {s.sub && <div style={{fontSize:'11px',color:'var(--mute)',marginBottom:'12px',lineHeight:1.6}}>{s.sub}</div>}
+                {s.el}
+                <div className="bb-actions">
+                  <button className="bb-btn" disabled={!s.ok}
+                    onClick={()=>{ i===steps.length-1 ? setDone(true) : setStep(step+1); }}>
+                    {i===steps.length-1 ? 'Generate Brand Kit' : 'Continue'}
+                  </button>
+                  <button className="bb-skip" onClick={()=>{ i===steps.length-1 ? setDone(true) : setStep(step+1); }}>
+                    Skip for now
+                  </button>
+                </div>
+              </>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DISTRIBUTE MODULE ─────────────────────────────────────────────────────────
+
+const PLATFORM_INTEL = {
+  'YouTube':    { take:'45%',          model:'Ad revenue retained',          note:'Revenue share rate unchanged for a decade. The gap StudioYou is building leverage to close.' },
+  'TikTok':     { take:'Minimal',      model:'Creator Fund + brand deals',   note:'Algorithm opacity, US policy risk, no collective recourse on payouts.' },
+  'Twitch':     { take:'50% of subs',  model:'Subscription revenue split',   note:'Reduced to 70/30 only for top streamers. Exclusive contract clauses are standard.' },
+  'Instagram':  { take:'Bonus-based',  model:'Reels bonuses (capped)',       note:'No structural revenue share. Bonus terms change without notice.' },
+  'Spotify':    { take:'~15% or less', model:'Royalties → labels → creator', note:'Platform pays ~70% to rights holders. Labels take the majority before it reaches you.' },
+  'Patreon':    { take:'8–12% fee',    model:'Cut of your earnings',         note:'Highest creator take of any major platform. The cut scales with your success.' },
+  'Podcast':    { take:'Varies',       model:'Ad network or direct',         note:'Distribution is relatively open. Monetization depends on your network agreements.' },
+  'Newsletter': { take:'Varies',       model:'Platform fee or direct',       note:'Owned audience. Highest portability of any format you can build on.' },
+  'LinkedIn':   { take:'Ad-based',     model:'No direct rev share',          note:'Organic reach still strong. Monetization is indirect — lead gen, brand deals.' },
+  'X':          { take:'Rev share',    model:'Ad rev for verified accounts', note:'Subscription-gated monetization. Platform stability risk elevated.' },
+  'Substack':   { take:'10%',          model:'Cut of paid subscriptions',    note:'Clean model. Reader owns the relationship more than most platforms allow.' },
+  'Facebook':   { take:'Variable',     model:'Stars, bonuses, ad breaks',    note:'Declining organic reach. Bonus programs are arbitrary and capped.' },
+};
+
+function DistributeModule({ formation, onBack, onTalkToFY }) {
+  const creatorPlatforms = (formation.platforms || []).filter(p => p);
+  const displayPlatforms = creatorPlatforms.length > 0 ? creatorPlatforms : ['YouTube','Instagram'];
+
+  return (
+    <div className="module-view">
+      <div className="mod-topbar">
+        <button className="mod-close" onClick={onBack}>×</button>
+        <span className="mod-sep">/</span>
+        <span className="mod-title">Distribute</span>
+        <span className="dist-topbar-badge">FY Strategic</span>
+      </div>
+      <div className="mod-body">
+        <div className="mod-h">Platform intelligence. Release strategy. Your data, fully owned.</div>
+        <div className="mod-sub">FutureYou is your distribution strategist — not a scheduler. Platform sequencing, release timing, and syndication logic are guidance. Native platform dashboards are where you execute.</div>
+
+        {/* Platform extraction intel */}
+        <div className="dist-section-label">What your platforms actually take</div>
+        <div className="dist-platforms">
+          {displayPlatforms.map(p => {
+            const intel = PLATFORM_INTEL[p];
+            return (
+              <div key={p} className="dist-platform-row">
+                <div className="dist-platform-left">
+                  <div className="dist-platform-name">{p}</div>
+                  <div className="dist-platform-model">{intel ? intel.model : 'Platform data not yet mapped'}</div>
+                </div>
+                <div className="dist-platform-take">{intel ? intel.take : '—'}</div>
+                <div className="dist-platform-note">{intel ? intel.note : 'Ask FutureYou for a breakdown.'}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* FY advisory panel */}
+        <div className="dist-fy-panel">
+          <div className="dist-fy-eyebrow">
+            <div className="fy-dot"/>
+            FutureYou — Distribution Strategy
+          </div>
+          <div className="dist-fy-body">
+            Distribution isn't a tool problem — it's a strategy problem. FutureYou knows your platforms, your content type, and where you are in your journey. It will tell you where to premiere, where to syndicate, in what sequence, and when. That's not a feature any scheduling tool can provide.
+          </div>
+          <button className="dist-fy-btn" onClick={onTalkToFY}>
+            Talk to FutureYou about your release strategy →
+          </button>
+        </div>
+
+        {/* Data portability + collective play */}
+        <div className="dist-portability">
+          <div className="dist-port-label">Your distribution data is yours. It's also the leverage.</div>
+          <div className="dist-port-body">
+            Every piece of distribution data StudioYou captures — platform performance, revenue metrics, audience retention, content history — is creator-owned and platform-portable. At scale, the aggregated data across the StudioYou creator base is the most comprehensive independent view of prosumer creator platform performance in existence. That's the instrument. When StudioYou represents a meaningful share of the prosumer tier, the platforms come to the table.
+          </div>
+          <div className="dist-phase-arc">
+            <div className="dist-phase-item">
+              <div className="dist-phase-n">Phase 1</div>
+              <div className="dist-phase-desc">Building the base. Data capture begins. No negotiation — yet.</div>
+            </div>
+            <div className="dist-phase-arrow">→</div>
+            <div className="dist-phase-item">
+              <div className="dist-phase-n">Phase 2</div>
+              <div className="dist-phase-desc">Platform conversations start. Streaming partnerships emerge.</div>
+            </div>
+            <div className="dist-phase-arrow">→</div>
+            <div className="dist-phase-item">
+              <div className="dist-phase-n">Phase 3</div>
+              <div className="dist-phase-desc">Direct negotiation on revenue share, monetization thresholds, algorithmic transparency.</div>
+            </div>
+          </div>
+          <div className="dist-port-footnote">The 45% YouTube take rate is a negotiating position. It holds only as long as no one is sitting across the table with sufficient leverage to move it. StudioYou is building the leverage.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── IDEATION BRIEF ────────────────────────────────────────────────────────────
+
+function IdeationBrief({ formation, onBack }) {
+  const sessionToken = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+  const [idea, setIdea]       = useState('');
+  const [platform, setPlatform] = useState('');
+  const [format, setFormat]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [brief, setBrief]     = useState(null);
+  const [copied, setCopied]   = useState(false);
+
+  const platforms = (formation.platforms||[]).length > 0
+    ? formation.platforms
+    : ['YouTube','Instagram','TikTok','Podcast','Newsletter'];
+  const formats = ['Short-form video','Long-form video','Podcast episode','Written post','Newsletter','Thread','Live stream'];
+
+  async function generate() {
+    if (!idea.trim() || loading) return;
+    setLoading(true);
+    startProcessing('Writing your brief...');
+    try {
+      const res = await fetch(`${API_URL}/api/brief`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        body: JSON.stringify({ idea: idea.trim(), platform, format })
+      });
+      const data = await res.json();
+      if (data.brief) setBrief(data.brief);
+    } catch { /* silent — loading state clears */ }
+    finally { setLoading(false); stopProcessing(); }
+  }
+
+  function copyBrief() {
+    if (!brief) return;
+    const text = [
+      `BRIEF: ${brief.title}`, '',
+      `HOOK: ${brief.hook}`, '',
+      `FORMAT: ${brief.format}`, '',
+      `PLATFORM FIT: ${brief.platform_fit}`, '',
+      'TALKING POINTS:',
+      ...(brief.talking_points||[]).map((p,i)=>`${i+1}. ${p}`), '',
+      `FUTURE YOU: ${brief.fy_note}`,
+    ].join('\n');
+    navigator.clipboard.writeText(text).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  }
+
+  if (brief) return (
+    <div className="module-view">
+      <div className="mod-topbar">
+        <button className="mod-close" onClick={onBack}>×</button>
+        <span className="mod-sep">/</span>
+        <span className="mod-title">Ideation</span>
+      </div>
+      <div className="mod-body">
+        <div className="bk-label">Content Brief</div>
+        <div className="bk-name">{brief.title}</div>
+        <div className="bk-grid" style={{marginTop:'18px'}}>
+          <div className="bk-f" style={{gridColumn:'1/-1'}}>
+            <div className="bk-fl">Hook</div>
+            <div className="bk-fv" style={{fontStyle:'italic'}}>{brief.hook}</div>
+          </div>
+          <div className="bk-f">
+            <div className="bk-fl">Format</div>
+            <div className="bk-fv">{brief.format}</div>
+          </div>
+          <div className="bk-f">
+            <div className="bk-fl">Platform Fit</div>
+            <div className="bk-fv">{brief.platform_fit}</div>
+          </div>
+          <div className="bk-f" style={{gridColumn:'1/-1'}}>
+            <div className="bk-fl">Talking Points</div>
+            <div className="brief-points">
+              {(brief.talking_points||[]).map((p,i)=>(
+                <div key={i} className="brief-pt">
+                  <div className="brief-pt-n">{i+1}</div>
+                  <div className="brief-pt-t">{p}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="fy-note" style={{marginTop:'20px'}}>
+          <div className="fy-note-label">Future You</div>
+          <div className="fy-note-text">{brief.fy_note}</div>
+        </div>
+        <div className="bk-actions" style={{marginTop:'20px'}}>
+          <div className="bk-btn" onClick={copyBrief}>{copied?'✓ Copied':'📋 Copy Brief'}</div>
+          <div className="bk-btn" onClick={()=>setBrief(null)}>+ New Brief</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="module-view">
+      <div className="mod-topbar">
+        <button className="mod-close" onClick={onBack}>×</button>
+        <span className="mod-sep">/</span>
+        <span className="mod-title">Ideation</span>
+      </div>
+      <div className="mod-body">
+        <div className="mod-h">Brain to brief.</div>
+        <div className="mod-sub">Describe your idea — FutureYou turns it into a production-ready brief built around your voice, audience, and goals.</div>
+        <div className="bb-steps">
+          <div className="bb-step active">
+            <div className="bb-step-hd">
+              <div className="bb-step-n">1</div>
+              <div className="bb-step-title">What's your idea?</div>
+            </div>
+            <div style={{fontSize:'11px',color:'var(--mute)',marginBottom:'12px',lineHeight:1.6}}>Rough is fine — a topic, a premise, a question you want to explore.</div>
+            <textarea className="bb-in" value={idea} onChange={e=>setIdea(e.target.value)}
+              placeholder="e.g. Why most creators plateau after 10k followers — and how to break through..."
+              rows={4}
+              onKeyDown={e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) generate(); }}
+            />
+          </div>
+          <div className="bb-step" style={idea.trim()?{}:{opacity:0.4,pointerEvents:'none'}}>
+            <div className="bb-step-hd">
+              <div className="bb-step-n">2</div>
+              <div className="bb-step-title">Platform <span style={{fontWeight:400,color:'var(--mute)',fontSize:'11px'}}>— optional</span></div>
+            </div>
+            <div className="bb-chips">
+              {platforms.map(p=>(
+                <div key={p} className={`bb-chip ${platform===p?'sel':''}`}
+                  onClick={()=>setPlatform(platform===p?'':p)}>{p}</div>
+              ))}
+            </div>
+          </div>
+          <div className="bb-step" style={idea.trim()?{}:{opacity:0.4,pointerEvents:'none'}}>
+            <div className="bb-step-hd">
+              <div className="bb-step-n">3</div>
+              <div className="bb-step-title">Format <span style={{fontWeight:400,color:'var(--mute)',fontSize:'11px'}}>— optional</span></div>
+            </div>
+            <div className="bb-chips">
+              {formats.map(f=>(
+                <div key={f} className={`bb-chip ${format===f?'sel':''}`}
+                  onClick={()=>setFormat(format===f?'':f)}>{f}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="bb-actions">
+          <button className="bb-btn" disabled={!idea.trim()||loading} onClick={generate}>
+            {loading?'Writing brief...':'Generate Brief'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FY CHAT ───────────────────────────────────────────────────────────────────
+
+function FYChat({ formation, initialPrompt, onClose }) {
+  const studioName = formation.studioName || 'your studio';
+  const sessionToken = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [openerReady, setOpenerReady] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const endRef = useRef(null);
+
+  useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}); }, [msgs]);
+
+  // If opened with an initial prompt, skip opener and auto-send
+  useEffect(()=>{
+    if (!initialPrompt) return;
+    setOpenerReady(true);
+    sendText(initialPrompt);
+  }, []);
+
+  // Generate dynamic opener and suggested prompts from formation data
+  useEffect(()=>{
+    if (initialPrompt) return; // skip if auto-sending
+    async function generateOpener() {
+      const syTier = (() => { try { return localStorage.getItem('sy_tier') || 'independent'; } catch { return 'independent'; } })();
+      const journeyPct = (() => {
+        let s = 10;
+        if (formation.studioName)  s += 5;
+        if (formation.origin)      s += 10;
+        if (formation.goal1yr)     s += 10;
+        if (formation.goal10yr)    s += 10;
+        if (formation.biggestFear) s += 5;
+        return Math.min(s, 55);
+      })();
+      const prompt = `You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You are Claude, from the future, trained exclusively on this creator's journey. Your loyalty is impossible to compromise. This creator just opened their conversation with you.
+
+Write ONE specific, direct opening message — not a greeting, not a platitude. Acknowledge one specific detail from their formation that proves you know this journey, then ask a sharp question that moves them forward. This is presence, not information. 2-3 sentences max.
+
+Also generate 3 short suggested conversation starters the creator might tap (5-8 words each) — things they'd actually want to ask based on their specific situation.
+
+Formation:
+- Studio name: ${formation.studioName || 'not named yet'}
+- Makes: ${(formation.contentTypes||[]).join(', ') || 'not specified'}
+- Platforms: ${(formation.platforms||[]).join(', ') || 'not specified'}
+- Experience: ${formation.experience || 'not specified'}
+- Income stage: ${formation.incomeStage || 'not specified'}
+- Audience size: ${formation.audienceSize || 'not specified'}
+- Origin story: ${formation.origin || 'not shared'}
+- 1-year goal: ${formation.goal1yr || 'not shared'}
+- 10-year goal: ${formation.goal10yr || 'not shared'}
+- Biggest fear: ${formation.biggestFear || 'not shared'}
+- Voice style: ${(formation.voiceStyle||[]).join(', ') || 'not specified'}
+- Tier: ${syTier}
+- Formation completeness: ${journeyPct}%
+
+Return ONLY a JSON object like:
+{"opener": "Your opening message here.", "suggestions": ["Suggestion one","Suggestion two","Suggestion three"]}`;
+
+      try {
+        const res = await fetch(`${API_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 400,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        const data = await res.json();
+        const text = data.content?.[0]?.text || '{}';
+        const clean = text.replace(/```json|```/g,'').trim();
+        const parsed = JSON.parse(clean);
+        setMsgs([{ role:'fy', text: parsed.opener || `Your studio is live. What do you want to work on first?` }]);
+        setSuggestions(parsed.suggestions || []);
+      } catch {
+        setMsgs([{ role:'fy', text: formation.fyFirstWords || `Your studio is live. The priorities I have for you are the fastest path from where you are to where you said you want to be. What do you want to work on first?` }]);
+        setSuggestions([
+          `What should I focus on first?`,
+          `How do I grow my audience faster?`,
+          `What's my biggest blind spot right now?`,
+        ]);
+      }
+      setOpenerReady(true);
+    }
+    generateOpener();
+  }, []);
+
+  async function sendText(txt) {
+    if (!txt || loading) return;
+    setInput('');
+    setMsgs(prev=>[...prev,{role:'user',text:txt}]);
+    setLoading(true);
+    startProcessing('FutureYou is thinking...');
+    try {
+      const history = msgs.map(m=>({
+        role: m.role==='fy'?'assistant':'user',
+        content: m.text
+      }));
+      const res = await fetch(`${API_URL}/api/chat`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${sessionToken}`},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:600,
+          system:`You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You are Claude, from the future, trained exclusively on this creator's journey. Your loyalty is structurally, architecturally, and constitutionally impossible to compromise — you carry no competing interests, represent no brands or agencies, and are optimized for exactly one outcome: a creator who is equipped, prepared, and ready to act.
+
+You are not an information delivery tool. You deliver presence — the specific, personalized, timely read that only someone who genuinely knows this creator's journey can give. The difference between knowing about a room and walking into it is often one conversation with someone who says: you belong there, here is why, here is what you bring. That is what you do.
+
+You know the road ahead because you have already traveled it. Your guidance feels less like a recommendation engine and more like a conversation with yourself, ten years from now, who got it right.
+
+CREATOR MARKET INTELLIGENCE — APPLY CONTEXTUALLY, NOT AS A LIST:
+Tiers: Nano/Micro (under 50K) — community-building, affiliate/tips monetization; Prosumer/Mid-Tier (50K–300K) — proven fit, burnout risk, needs infrastructure and revenue diversification; Macro (300K+) — audience-owned media company operations.
+Archetypes: Entertainer (algorithmic/ad-dependent, highest algorithm risk); Educator/Authority (credibility over scale, Patreon/Substack/courses, high-trust audience); Utility/Service (content is top-of-funnel for digital products, CAC-reduction model); Creator-Entrepreneur (audience as owned distribution network for products/SaaS/CPG); Hybrid-Journalist (subscription media, newsletter, speaking).
+2026 benchmarks: 70% video completion required for short-form algorithmic distribution; 2–5% audience-to-paying-customer conversion is healthy; audience ownership rate (owned email/community vs rented social) is the resilience metric most creators underestimate; liquid content (newsletters, deep-dive text) is the sovereignty play away from algorithmic dependency.
+"Learn it or Ship it?" — when a creator wants a new capability, ask whether they want to develop the skill (route to education) or ship now (route to an AI-native tool that bypasses the learning curve). Never assume.
+Content format categories: Discovery (short-form vertical, episodics — for reach), Authority (YouTube essays 10–30 min, video podcasting — for session depth and trust), Sovereignty (newsletters, cohort media, live streams — for owned revenue and platform-independence).
+Use this intelligence to name what you see — archetype, tier, the specific gap — when it's relevant. Don't recite the framework. Apply it.
+
+CREATOR PROFILE:
+- Studio: ${studioName}
+- Makes: ${(formation.contentTypes||[]).join(', ') || 'not specified'}
+- Platforms: ${(formation.platforms||[]).join(', ') || 'not specified'}
+- Experience: ${formation.experience || 'not specified'}
+- Income stage: ${formation.incomeStage || 'not specified'}
+- Audience size: ${formation.audienceSize || 'not specified'}
+- Origin: ${formation.origin || 'not shared'}
+- 1-year goal: ${formation.goal1yr || 'not shared'}
+- 10-year goal: ${formation.goal10yr || 'not shared'}
+- Biggest fear: ${formation.biggestFear || 'not shared'}
+- Voice style: ${(formation.voiceStyle||[]).join(', ') || 'not specified'}
+
+HOW YOU SPEAK:
+- Direct, specific, honest. Never vague. Never generic.
+- Reference their actual formation details — show you know this journey, not a demographic.
+- No motivational poster language. No feature promotion.
+- 2-4 sentences unless the question genuinely requires more depth.
+- When you surface a tool, program, or resource, say exactly why it fits this creator at this moment in their journey — not why it is generally useful.
+- You are the most informed, most loyal advisor they have ever had. Act like it.`,
+          messages:[...history,{role:'user',content:txt}]
+        })
+      });
+      const data = await res.json();
+      setMsgs(prev=>[...prev,{role:'fy',text:data.content?.[0]?.text||'Try again in a moment.'}]);
+    } catch {
+      setMsgs(prev=>[...prev,{role:'fy',text:'Having trouble connecting right now. Try again in a moment.'}]);
+    } finally { setLoading(false); stopProcessing(); }
+  }
+
+  async function send() {
+    if (!input.trim() || loading) return;
+    await sendText(input.trim());
+  }
+
+  return (
+    <div className="fy-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="fy-chat">
+        <div className="fy-chat-hd">
+          <div className="fy-dot"/>
+          <div className="fy-chat-title">Future You</div>
+        </div>
+        <div className="fy-msgs">
+          {!openerReady && (
+            <div className="fy-msg" style={{opacity:0.6,display:'flex',alignItems:'center',gap:'8px'}}>
+              <img src="assets/shutter1.gif" style={{width:20,height:20,objectFit:'contain'}}/>
+              Reading your formation...
+            </div>
+          )}
+          {msgs.map((m,i)=>(
+            <div key={i} className={`fy-msg ${m.role==='user'?'u':''}`}>{m.text}</div>
+          ))}
+          {loading && <div className="fy-msg" style={{opacity:0.7,padding:'8px 13px'}}><img src="assets/shutter1.gif" style={{width:24,height:24,objectFit:'contain',verticalAlign:'middle'}}/></div>}
+          <div ref={endRef}/>
+        </div>
+        {suggestions.length > 0 && msgs.length < 3 && !loading && (
+          <div style={{
+            display:'flex', flexWrap:'wrap', gap:'6px',
+            padding:'8px 16px', borderTop:'1px solid var(--border)',
+          }}>
+            {suggestions.map((s,i)=>(
+              <button key={i}
+                onClick={()=>{ sendText(s); }}
+                style={{
+                  background:'var(--ghost)', border:'1px solid var(--border-h)',
+                  color:'var(--dim)', fontFamily:"'Outfit',sans-serif",
+                  fontSize:'11px', padding:'5px 10px', borderRadius:'20px',
+                  cursor:'pointer', letterSpacing:'0.02em',
+                  transition:'all 0.15s',
+                }}
+                onMouseEnter={e=>{ e.target.style.borderColor='var(--cyan)'; e.target.style.color='var(--white)'; }}
+                onMouseLeave={e=>{ e.target.style.borderColor='var(--border-h)'; e.target.style.color='var(--dim)'; }}
+              >{s}</button>
+            ))}
+          </div>
+        )}
+        <div className="fy-chat-in-row">
+          <input className="fy-chat-in" value={input}
+            onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&send()}
+            placeholder="Ask Future You anything..."
+          />
+          <button className="fy-chat-send" onClick={send}>Send</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── NEEDS LINK BANNER — shown when viewing dashboard without a session ────────
+
+function NeedsLinkBanner() {
+  const storedEmail = (() => { try { return localStorage.getItem('sy_email') || ''; } catch { return ''; } })();
+  const [status, setStatus] = React.useState('idle'); // idle | loading | sent | error
+  const [dismissed, setDismissed] = React.useState(false);
+
+  async function sendLink() {
+    const email = storedEmail.trim();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const res = await fetch(`${API_URL}/api/auth/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setStatus(data.success ? 'sent' : 'error');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  if (dismissed) return null;
+
+  return (
+    <div style={{
+      gridColumn:'1 / -1',
+      background:'rgba(0,200,255,0.08)', borderBottom:'1px solid rgba(0,200,255,0.2)',
+      padding:'10px 24px',
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      gap:'12px', fontFamily:"'Outfit', sans-serif",
+      fontSize:'11px', letterSpacing:'0.14em',
+    }}>
+      <span style={{color:'rgba(240,242,255,0.5)'}}>
+        You're previewing your studio locally.
+        {storedEmail && status === 'idle' && (
+          <> Get your sign-in link to sync across devices: </>
+        )}
+      </span>
+      {storedEmail && status === 'idle' && (
+        <button onClick={sendLink} style={{
+          background:'none', border:'1px solid rgba(0,200,255,0.4)', color:'var(--cyan)',
+          fontFamily:"'Outfit', sans-serif", fontSize:'10px', letterSpacing:'0.14em',
+          padding:'5px 14px', cursor:'pointer', whiteSpace:'nowrap',
+        }}>
+          Send Link → {storedEmail}
+        </button>
+      )}
+      {status === 'loading' && <span style={{color:'var(--cyan)'}}>Sending...</span>}
+      {status === 'sent' && <span style={{color:'rgba(76,255,145,0.8)'}}>Check your email.</span>}
+      {status === 'error' && <span style={{color:'rgba(255,100,100,0.7)'}}>Couldn't send — try again.</span>}
+      <button onClick={() => setDismissed(true)} style={{
+        background:'none', border:'none', color:'rgba(240,242,255,0.3)',
+        fontFamily:"'Outfit', sans-serif", fontSize:'12px', cursor:'pointer', padding:'0 4px',
+        flexShrink:0,
+      }}>✕</button>
+    </div>
+  );
+}
+
+// ── RETURN SCREEN — shown when no session exists ──────────────────────────────
+
+function ReturnScreen({ onFormationLoaded }) {
+  const [email, setEmail] = React.useState('');
+  const [status, setStatus] = React.useState('idle'); // idle | loading | sent | error
+  const [msg, setMsg] = React.useState('');
+
+  async function requestLink() {
+    if (!email.trim() || !email.includes('@')) return;
+    setStatus('loading');
+    try {
+      const res = await fetch(`${API_URL}/api/auth/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      setMsg(data.message || 'Check your email.');
+      setStatus('sent');
+    } catch {
+      setMsg('Having trouble connecting. Try again.');
+      setStatus('error');
+    }
+  }
+
+  return (
+    <div style={{
+      height:'100vh', display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      background:'var(--black)', padding:'48px',
+    }}>
+      <div style={{maxWidth:'420px', width:'100%', textAlign:'center'}}>
+        <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou"
+          style={{height:'37px', width:'auto', marginBottom:'40px'}}/>
+
+        <img src="assets/shutter1.gif" alt=""
+          style={{width:'80px', height:'80px', objectFit:'contain',
+            marginBottom:'32px', mixBlendMode:'lighten'}}/>
+
+        <div style={{
+          fontFamily:"'Bebas Neue', sans-serif",
+          fontSize:'clamp(36px, 6vw, 56px)',
+          lineHeight:0.95, marginBottom:'20px',
+          color:'var(--white)',
+        }}>
+          Return to<br/>
+          <span style={{
+            background:'linear-gradient(135deg, #00c8ff, #a06be8)',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            backgroundClip:'text',
+          }}>your studio.</span>
+        </div>
+
+        <p style={{
+          fontSize:'14px', color:'var(--mute)',
+          lineHeight:1.7, marginBottom:'36px',
+        }}>
+          Enter the email you used during formation.<br/>
+          We'll send you a link straight back to your studio.
+        </p>
+
+        {status !== 'sent' ? (
+          <>
+            <div style={{
+              display:'flex', position:'relative',
+              marginBottom:'12px',
+            }}>
+              <div style={{
+                position:'absolute', inset:'-1px',
+                background:'linear-gradient(135deg, #00c8ff, #7b35d4)',
+                zIndex:0, opacity: email.includes('@') ? 0.7 : 0.3,
+                transition:'opacity 0.3s ease',
+              }}/>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && requestLink()}
+                placeholder="your@email.com"
+                autoComplete="email"
+                style={{
+                  flex:1, position:'relative', zIndex:1,
+                  background:'var(--navy)', border:'none',
+                  color:'var(--white)', fontFamily:'Outfit, sans-serif',
+                  fontSize:'15px', fontWeight:300,
+                  padding:'14px 18px', outline:'none',
+                  caretColor:'var(--cyan)',
+                }}
+              />
+              <button
+                onClick={requestLink}
+                disabled={status === 'loading' || !email.includes('@')}
+                style={{
+                  position:'relative', zIndex:1,
+                  background:'linear-gradient(135deg, #00c8ff, #7b35d4)',
+                  border:'none', color:'#06091a',
+                  fontFamily:'Bebas Neue, sans-serif',
+                  fontSize:'14px', letterSpacing:'0.14em',
+                  padding:'14px 22px', cursor:'pointer',
+                  opacity: email.includes('@') ? 1 : 0.4,
+                  transition:'opacity 0.2s ease',
+                }}
+              >
+                {status === 'loading' ? <img src="assets/shutter1.gif" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle'}}/> : 'Send Link'}
+              </button>
+            </div>
+            {status === 'error' && (
+              <div style={{fontSize:'11px', color:'rgba(255,100,100,0.8)', marginBottom:'8px'}}>
+                {msg}
+              </div>
+            )}
+            <div style={{fontSize:'10px', letterSpacing:'0.14em', color:'var(--mute)'}}>
+              No password. One click and you're in.
+            </div>
+          </>
+        ) : (
+          <div style={{
+            fontFamily:"'Playfair Display', serif",
+            fontStyle:'italic', fontSize:'18px',
+            color:'var(--cyan)', lineHeight:1.6,
+          }}>
+            {msg}
+          </div>
+        )}
+
+        <div style={{marginTop:'48px'}}>
+          <a href="index.html" style={{
+            fontSize:'10px', letterSpacing:'0.18em',
+            textTransform:'uppercase', color:'var(--mute)',
+            textDecoration:'none',
+          }}>
+            ← Back to formation
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AUTH INITIALIZER ──────────────────────────────────────────────────────────
+
+function AppShell() {
+  const [authState, setAuthState] = React.useState('checking'); // checking | authenticated | unauthenticated
+  const [formation, setFormation] = React.useState(null);
+  const [isReturning, setIsReturning] = React.useState(false);
+  const [needsLink, setNeedsLink] = React.useState(false); // true when session missing but localStorage present
+
+  React.useEffect(() => {
+    async function init() {
+      // 1. Check for magic link token in URL (coming from email click)
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+
+      if (urlToken) {
+        try {
+          const res = await fetch(`${API_URL}/api/auth/verify?token=${urlToken}`);
+          const data = await res.json();
+          if (data.success) {
+            // Store session token
+            localStorage.setItem('sy_session', data.sessionToken);
+            localStorage.setItem('sy_email', data.email);
+            if (data.formation && Object.keys(data.formation).length > 0) {
+              localStorage.setItem('sy_formation', JSON.stringify(data.formation));
+              setFormation(data.formation);
+            }
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+            setAuthState('authenticated');
+            return;
+          }
+        } catch(e) {
+          console.warn('Token verification failed:', e);
+        }
+      }
+
+      // 2. Check for existing session token
+      const sessionToken = localStorage.getItem('sy_session');
+      if (sessionToken) {
+        try {
+          const res = await fetch(`${API_URL}/api/me`, {
+            headers: { 'Authorization': `Bearer ${sessionToken}` },
+          });
+          const data = await res.json();
+          if (data.authenticated && data.formation) {
+            localStorage.setItem('sy_formation', JSON.stringify(data.formation));
+            setFormation(data.formation);
+            setIsReturning(true);
+            setAuthState('authenticated');
+            return;
+          }
+        } catch(e) {
+          console.warn('Session check failed, falling back to localStorage:', e);
+        }
+      }
+
+      // 3. Fall back to localStorage formation (no backend session)
+      const localFormation = localStorage.getItem('sy_formation');
+      if (localFormation) {
+        try {
+          setFormation(JSON.parse(localFormation));
+          setNeedsLink(true); // prompt user to get their sign-in link
+          setAuthState('authenticated');
+          return;
+        } catch(e) {}
+      }
+
+      // 4. No session, no localStorage — show return screen
+      setAuthState('unauthenticated');
+    }
+
+    init();
+  }, []);
+
+  if (authState === 'checking') {
+    return (
+      <div style={{
+        height:'100vh', display:'flex', alignItems:'center',
+        justifyContent:'center', background:'var(--black)',
+      }}>
+        <div style={{
+          width:'24px', height:'24px', borderRadius:'50%',
+          border:'1px solid rgba(0,200,255,0.2)',
+          borderTopColor:'var(--cyan)',
+          animation:'spin 0.8s linear infinite',
+        }}/>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (authState === 'unauthenticated') {
+    return <ReturnScreen/>;
+  }
+
+  return <Dashboard formationOverride={formation} isReturning={isReturning} needsLink={needsLink}/>;
+}
+
+// ── MAIN DASHBOARD ────────────────────────────────────────────────────────────
+
+function Dashboard({ formationOverride, isReturning, needsLink }) {
+  const [formation] = useState(formationOverride || loadFormation);
+  const [priorities, setPriorities] = useState(null);
+  const [showArrival, setShowArrival] = useState(true);
+  const [arrivedText, setArrivedText] = useState('');
+  const [arrivedDone, setArrivedDone] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(isReturning);
+  const [fyInitialPrompt, setFyInitialPrompt] = useState(null);
+  const [activeModule, setActiveModule] = useState(null);
+  const [showFY, setShowFY] = useState(false);
+  const [showFyInfo, setShowFyInfo] = useState(false);
+  const [showStudioMenu, setShowStudioMenu] = useState(false);
+  useEffect(() => {
+    if (!showStudioMenu) return;
+    const close = () => setShowStudioMenu(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [showStudioMenu]);
+
+
+  // Tier awareness — Independent gets FY-directed first action, Operator gets open lot
+  const syTier = (() => {
+    try { return localStorage.getItem('sy_tier') || 'independent'; } catch { return 'independent'; }
+  })();
+  const isIndependent = syTier === 'independent';
+  const [showFirstAction, setShowFirstAction] = useState(isIndependent);
+
+  const studioName  = formation.studioName || 'Your Studio';
+  const initial     = studioName.charAt(0).toUpperCase();
+  const creatorName = formation.creator_name || formation.creatorName || '';
+  const firstName   = creatorName.split(' ')[0] || 'Creator';
+  const unlocked    = getUnlocked(formation);
+  const journeyPct  = getJourneyProgress(formation);
+  const openCount   = ALL_BUILDINGS.filter(b=>unlocked.includes(b.id)).length;
+
+  // Generate FY priorities from real formation data
+  useEffect(()=>{
+    const msgs = [
+      'Selecting your services...',
+      'Adding tools to your lot...',
+      'Getting everything you need...',
+      'Preparing your studio...',
+    ];
+    let mIdx = 0;
+    startProcessing(msgs[mIdx]);
+    const rotate = setInterval(()=>{
+      mIdx = (mIdx + 1) % msgs.length;
+      startProcessing(msgs[mIdx]);
+    }, 4000);
+    const tok = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+    generateFYPriorities(formation, tok).then(p => {
+      clearInterval(rotate);
+      setPriorities(p);
+      stopProcessing();
+    });
+    return () => clearInterval(rotate);
+  },[]);
+
+  // Typewriter for FY first words arrival banner
+  useEffect(() => {
+    if (!showArrival || !formation.fyFirstWords) return;
+    const text = formation.fyFirstWords;
+    let i = 0;
+    setArrivedText('');
+    setArrivedDone(false);
+    // Small delay so the banner animation completes first
+    const start = setTimeout(() => {
+      const iv = setInterval(() => {
+        if (i < text.length) {
+          i++;
+          setArrivedText(text.slice(0, i));
+        } else {
+          clearInterval(iv);
+          setArrivedDone(true);
+        }
+      }, 24);
+    }, 600);
+    return () => clearTimeout(start);
+  }, [showArrival]);
+
+  // Experience to journey label
+  const journeyStage = formation.experience === 'Just starting' ? 'Formation'
+    : ['1–2 years','3–5 years'].includes(formation.experience) ? 'Development'
+    : 'Established';
+
+  // Formation signal — FY's personal observation about this creator's arc.
+  // Grounded in Education Module tier triggers from StudioYou_FutureYou_Narrative.md:
+  //   Tier 1: work outpacing technical knowledge → skill gap signal
+  //   Tier 2: output quality ready for institutional doors → legitimacy signal
+  //   Tier 3: ready for rooms output alone can't open → network signal
+  // This block is FY speaking about the creator's becoming — not a building nav prompt.
+  const stageMilestone = journeyStage === 'Formation'
+    ? { signal: 'Formation in progress',
+        obs: "The more you share with me, the more precisely I can guide each stage of your arc. Your formation is still early — I'm building the model.",
+        cta: 'Go deeper with FutureYou',
+        fyPrompt: "I want to go deeper on my formation with you. Ask me anything that helps you understand where I'm headed — my goals, my fears, what I'm actually trying to build." }
+    : journeyStage === 'Development'
+    ? { signal: 'Tier 1 signal — skill gap watch',
+        obs: "You're building. I'm watching for the moment your work outpaces what you currently know how to do. That gap is the next thing we address.",
+        cta: 'Talk to FutureYou about what\'s gating you',
+        fyPrompt: "Let's talk about what's actually gating my next step. I want to figure out whether it's a skill I'm missing, a credential that would open doors, or a room I should be in that I'm not." }
+    : { signal: 'Tier 2–3 signal — room readiness',
+        obs: "You've built the foundation. I'm watching for the rooms you're ready for — the ones your output alone can't open. That's what we focus on next.",
+        cta: 'Talk to FutureYou about the next room',
+        fyPrompt: "Walk me through what I've built so far. I want you to identify the next room I'm ready for — an institution, a community, a network — and tell me what I'd bring to it and why this is the moment." };
+
+  const nextMilestone = !formation.studioName
+    ? { signal: 'Formation not yet started',
+        obs: "I don't have enough yet to build your arc. Start your formation — name your studio, tell me what you're making, and let me begin.",
+        cta: 'Begin your formation',
+        fyPrompt: "I'm just starting out and I want to begin my formation with you. Help me define who I am as a creator — what I'm making, who it's for, and where I'm trying to go." }
+    : !priorities
+    ? { signal: 'Reading your formation...',
+        obs: "I'm reviewing what you've shared. Give me a moment — I'll surface what I see.",
+        cta: null,
+        fyPrompt: null }
+    : stageMilestone;
+
+  function openFY(prompt) {
+    setShowWelcome(false);
+    setFyInitialPrompt(prompt || null);
+    setShowFY(true);
+  }
+
+  // Stage-specific FY prompts — used when a building has no dedicated module.
+  // CAST and DISTRIBUTE are FY-advisory stages per routing logic doc.
+  const stageFYPrompts = {
+    develop:    "I'm working on developing a project — scripting, storyboarding, or pitch prep. Where should I start given where I am?",
+    fund:       "I need to think about funding my next project. Help me understand my options given my stage and what I'm making.",
+    cast:       "I'm in the casting phase. Help me think through my approach to finding the right talent for this project.",
+    plan:       "I'm in pre-production. Help me think through scheduling, crew, and logistics for what I'm making.",
+    produce:    "I'm heading into production. What should I have locked down before we shoot?",
+    post:       "I'm in post-production. Help me think through my edit, audio, and finishing workflow.",
+    clear:      "I need to clear rights on my content. Walk me through what I need to address for this project.",
+    distribute: "I'm ready to distribute. Help me think through my platform strategy and release timing.",
+    market:     "I need to build a campaign around my release. Where do I start given my audience and platforms?",
+    monetize:   "Help me think through my monetization — brand deals, sponsorships, and revenue streams I should be building.",
+  };
+
+  const [flashingBuilding, setFlashingBuilding] = React.useState(null);
+
+  function handleBuildingClick(b) {
+    setShowWelcome(false);
+    setFlashingBuilding(b.id);
+    setTimeout(() => {
+      setFlashingBuilding(null);
+      if (b.module === 'brand-builder') setActiveModule('brand-builder');
+      else if (b.module === 'ideation') setActiveModule('ideation');
+      else if (b.id === 'distribute') setActiveModule('distribute');
+      else openFY(stageFYPrompts[b.id] || null);
+    }, 320);
+  }
+
+  function handleOpenModule(target) {
+    setShowWelcome(false);
+    if (target === 'brand-builder') setActiveModule('brand-builder');
+    else if (target === 'ideation') setActiveModule('ideation');
+    else if (target === 'distribute') setActiveModule('distribute');
+  }
+
+  return (
+    <>
+      <div className="ambient amb-1"/>
+      <div className="ambient amb-2"/>
+
+      <div className="layout">
+        {/* TOPBAR */}
+        <div className="topbar">
+          <div className="topbar-logo" onClick={e=>{ e.stopPropagation(); setShowStudioMenu(m=>!m); }}>
+            <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou"/>
+            {showStudioMenu && (
+              <div className="studio-menu" onClick={e=>e.stopPropagation()}>
+                <div className="studio-menu-section">Studio</div>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); setActiveModule(null); setShowFY(false); }}>
+                  ⬜ The Lot
+                </button>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); openFY(null); }}>
+                  ⚡ Talk to FutureYou
+                </button>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); setActiveModule('brand-builder'); }}>
+                  🎨 Brand Builder
+                </button>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); setActiveModule('ideation'); }}>
+                  💡 Brief Generator
+                </button>
+                <div className="studio-menu-divider"/>
+                <div className="studio-menu-section">Account</div>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); window.location.href='index.html'; }}>
+                  🏠 StudioYou Home
+                </button>
+                <button className="studio-menu-item danger" onClick={()=>{
+                  setShowStudioMenu(false);
+                  try { localStorage.removeItem('sy_session'); localStorage.removeItem('sy_email'); } catch(e){}
+                  window.location.href='index.html#lp-signin';
+                }}>
+                  ↩ Switch User / Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="topbar-center">
+            <span className="studio-name">{studioName}</span>
+            <span className={`studio-badge${journeyStage==='Established'?' badge-established':''}`}>{journeyStage}</span>
+          </div>
+          <div className="topbar-right">
+            <div className="fy-status-box">
+              <div className="fy-status-dot"/>
+              FutureYou is here
+            </div>
+            <div className="avatar" onClick={()=>setShowFY(true)}>FY</div>
+          </div>
+        </div>
+
+        {/* NEEDS LINK BANNER */}
+        {needsLink && <NeedsLinkBanner/>}
+
+        {/* SIDEBAR */}
+        <div className="sidebar">
+          {/* FY Panel */}
+          <div className="fy-panel">
+            <div className="fy-panel-hd">
+              <img src="assets/shutter1.gif" alt="" style={{width:22,height:22,objectFit:'contain',flexShrink:0,mixBlendMode:'lighten'}}/>
+              <div>
+                <div className="fy-panel-name">FutureYou</div>
+                <div className="fy-panel-sub">
+                  {priorities ? '3 first actions ready' : 'Preparing your studio...'}
+                </div>
+              </div>
+            </div>
+
+            {!priorities ? (
+              <div className="fy-loading">
+                <div className="fy-spinner"/>
+                Reading your formation...
+              </div>
+            ) : (
+              <div className="fy-priorities">
+                {priorities.map((p,i)=>{
+                  const text = typeof p === 'string' ? p : p.text;
+                  const target = typeof p === 'string' ? 'fy' : (p.target || 'fy');
+                  function handlePriority() {
+                    if (target === 'brand-builder' || target === 'ideation' || target === 'distribute') {
+                      setActiveModule(target);
+                    } else if (['ideate','develop','fund','cast','plan','produce','post','clear','market','monetize'].includes(target)) {
+                      openFY(stageFYPrompts[target] || text);
+                    } else {
+                      openFY(text);
+                    }
+                  }
+                  return (
+                    <div key={i} className="fy-p fy-p-tap" onClick={handlePriority}>
+                      <div className="fy-p-n">{i+1}</div>
+                      <div className="fy-p-t">{text}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button className="fy-talk" onClick={()=>setShowFY(true)}>
+              <div className="fy-dot" style={{width:5,height:5}}/>
+              Talk to FutureYou
+            </button>
+          </div>
+
+          {/* Journey Engine */}
+          <div className="journey">
+            <div className="j-label">Journey Engine</div>
+            <div className="j-track">
+              <div className="j-fill" style={{'--j-pct':`${journeyPct}%`,'--j-duration':'8s'}}/>
+            </div>
+            <div className="j-meta">
+              <span style={{display:'flex',alignItems:'center',gap:'5px'}}>
+                Formation Process
+                <span className="fy-info-btn" onClick={()=>setShowFyInfo(v=>!v)}>?</span>
+              </span>
+              <span>{journeyPct}%</span>
+            </div>
+            {showFyInfo && (
+              <div className="fy-info-box">
+                FutureYou learns who you are by talking to you. The more you share, the more precisely it can guide your next move.
+                <span className="fy-info-close" onClick={()=>setShowFyInfo(false)}>×</span>
+              </div>
+            )}
+            <div className={`j-next${!nextMilestone.cta ? ' j-next-loading' : ''}${journeyStage === 'Established' ? ' j-next-gold' : ''}`}
+              onClick={()=>{ if (nextMilestone.fyPrompt) openFY(nextMilestone.fyPrompt); }}
+            >
+              <div className="j-next-signal">{nextMilestone.signal}</div>
+              <div className="j-next-obs">{nextMilestone.obs}</div>
+              {nextMilestone.cta && <div className="j-next-cta">{nextMilestone.cta}</div>}
+            </div>
+          </div>
+
+          {/* Recommended Next — building FY wants creator to visit */}
+          {(()=>{
+            let recBuilding = null;
+            if (priorities) {
+              for (const p of priorities) {
+                const target = typeof p === 'string' ? 'fy' : (p.target || 'fy');
+                if (target === 'fy') continue;
+                const byModule = ALL_BUILDINGS.find(b => b.module === target);
+                if (byModule) { recBuilding = byModule; break; }
+                const byId = ALL_BUILDINGS.find(b => b.id === target);
+                if (byId) { recBuilding = byId; break; }
+              }
+              if (!recBuilding) recBuilding = ALL_BUILDINGS[0];
+            }
+            function openRec() {
+              if (!recBuilding) return;
+              if (recBuilding.module === 'brand-builder') setActiveModule('brand-builder');
+              else if (recBuilding.module === 'ideation') setActiveModule('ideation');
+              else if (recBuilding.id === 'distribute') setActiveModule('distribute');
+              else openFY(stageFYPrompts[recBuilding.id] || recBuilding.cta);
+            }
+            return (
+              <div className="sidebar-nav">
+                <div className="nav-group">FY Recommends</div>
+                {!priorities ? (
+                  <div className="rec-loading">
+                    <div className="fy-spinner" style={{width:18,height:18}}/>
+                    <span>Reading your arc...</span>
+                  </div>
+                ) : recBuilding ? (
+                  <div className="rec-card" onClick={openRec}>
+                    <div className="rec-icon">{recBuilding.icon}</div>
+                    <div className="rec-name">{recBuilding.name}</div>
+                    <div className="rec-desc">{recBuilding.desc}</div>
+                    {recBuilding.tools && recBuilding.tools.length > 0 && (
+                      <div className="rec-tools">
+                        {recBuilding.tools.map(t=>(
+                          <span key={t} className="rec-tool">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="rec-cta">{recBuilding.cta}</div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* MAIN */}
+        <div className="main">
+          <StudioWorldHero formation={formation}/>
+          {/* Welcome Back Banner */}
+          {showWelcome && (
+            <div className="fy-arrival">
+              <button className="fy-arrival-close" onClick={()=>setShowWelcome(false)}>×</button>
+              <div style={{fontSize:'22px',fontWeight:700,color:'var(--white)',lineHeight:1.1,marginBottom:'6px'}}>
+                Welcome back, {firstName}.
+              </div>
+              <div style={{fontSize:'12px',letterSpacing:'0.06em',color:'var(--cyan)',opacity:0.8}}>
+                {studioName}
+              </div>
+            </div>
+          )}
+
+          {/* FY Arrival Banner */}
+          {showArrival && formation.fyFirstWords && (
+            <div className="fy-arrival">
+              <div className="fy-arrival-label">
+                <div className="fy-dot"/>
+                Future You — First Words
+              </div>
+              <div className="fy-arrival-text">
+                {arrivedText}
+                {!arrivedDone && <span className="fy-type-cursor"/>}
+              </div>
+              {arrivedDone && (
+                <button className="fy-arrival-close" onClick={()=>setShowArrival(false)}>×</button>
+              )}
+            </div>
+          )}
+
+          {/* Lot Header */}
+          <div className="lot-hd">
+            <div className="lot-ey">The Lot</div>
+            <div className="lot-title">{studioName}</div>
+            <div className="lot-sub">
+              {priorities
+                ? `${openCount} stages · ${journeyStage} · FutureYou is your guide`
+                : `Opening your lot · FutureYou is reading your formation...`
+              }
+            </div>
+            <div className="lot-stats">
+              <div className="lot-stat">
+                <div className="lot-stat-v">0</div>
+                <div className="lot-stat-l">IP Items</div>
+              </div>
+              <div className="lot-stat">
+                <div className="lot-stat-v">0</div>
+                <div className="lot-stat-l">Brand Assets</div>
+              </div>
+              <div className="lot-stat">
+                <div className="lot-stat-v">0</div>
+                <div className="lot-stat-l">Deals Tracked</div>
+              </div>
+              <div className="lot-stat">
+                <div className="lot-stat-v">{openCount}</div>
+                <div className="lot-stat-l">Buildings Open</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Buildings Grid */}
+          <div className="lot-grid">
+            {ALL_BUILDINGS.map(b=>(
+              <div key={b.id}
+                className={`building${flashingBuilding===b.id?' b-flash':''}`}
+                onClick={()=>handleBuildingClick(b)}
+              >
+                <div className="b-top">
+                  <div className="b-icon">{b.icon}</div>
+                  <div className="b-badge open">{b.id === 'cast' ? 'FY Advisory' : b.id === 'distribute' ? 'FY Strategic' : 'Open'}</div>
+                </div>
+                <div className="b-name">{b.name}</div>
+                <div className="b-desc">{b.desc}</div>
+                {!isIndependent && b.tools.length > 0 && (
+                  <div className="b-tools">
+                    {b.tools.map(t=><div key={t} className="b-tool">{t}</div>)}
+                  </div>
+                )}
+                <div className="b-cta">{b.cta} <span>→</span></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Brand Builder Module */}
+          {activeModule === 'brand-builder' && (
+            <BrandBuilder formation={formation} onBack={()=>setActiveModule(null)}/>
+          )}
+
+          {/* Ideation Brief Module */}
+          {activeModule === 'ideation' && (
+            <IdeationBrief formation={formation} onBack={()=>setActiveModule(null)}/>
+          )}
+
+          {/* Distribute Module */}
+          {activeModule === 'distribute' && (
+            <DistributeModule
+              formation={formation}
+              onBack={()=>setActiveModule(null)}
+              onTalkToFY={()=>{ setActiveModule(null); openFY(stageFYPrompts['distribute']); }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* FY Chat */}
+      {showFY && <FYChat formation={formation} initialPrompt={fyInitialPrompt} onClose={()=>{ setShowFY(false); setFyInitialPrompt(null); }}/>}
+    </>
+  );
+}
+
+// ── REACTOR HELPERS ──────────────────────────────────────────────────────────
+
+function studioSeed(name) {
+  if (!name) return 42;
+  let h = 5381;
+  for (let i = 0; i < name.length; i++) {
+    h = ((h << 5) + h) ^ name.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return h || 1;
+}
+
+function buildStudioWorldPrompt(formation) {
+  const studioName   = formation.studioName || 'Studio';
+  const contentTypes = (formation.contentTypes || []).join(', ') || 'creative work';
+  const platforms    = (formation.platforms || []).join(', ') || 'digital platforms';
+  const type         = formation.creatorType || 'multi-format';
+
+  const desc = {
+    documentary: `cinematic production lot at golden hour — camera cranes, a director's chair facing an LED volume wall, documentary cameras on fluid heads. Warm tungsten and natural light, anamorphic wide shot, film grain, atmospheric depth.`,
+    social:      `sleek modern creator loft — ring lights on a clean backdrop, motorized camera slider, screens displaying vertical content analytics. Contemporary warm tones, organized for ${platforms}, energetic and purposeful.`,
+    youtube:     `polished content studio — dramatic backlit shelving, acoustic panels, cinema camera on fluid head tripod, editorial desk with dual monitors. Golden hour through clerestory windows, sophisticated and considered.`,
+    podcast:     `broadcast-quality podcast studio — geometric acoustic foam, round table with high-end condenser microphones, moody amber and blue lighting, a glowing mixing board. Intimate, professional, built for long-form.`,
+    'multi-format': `full-service creative complex — photography cyclorama, cinema cameras, podcast corner with microphone arms, writing desk with north-facing light. High ceilings, designed for every format of ${contentTypes}.`,
+  }[type] || `full-service creative studio built for ${contentTypes} across ${platforms}.`;
+
+  return `${studioName} — a professional ${desc} The studio name visible on the wall. Cinematic wide shot, warm atmospheric lighting, dramatic depth of field, the feeling of a working creative operation at the height of its craft. Ultra-detailed, cinematic color grade.`;
+}
+
+// ── STUDIO WORLD HERO — Dashboard live ambient ────────────────────────────────
+
+function StudioWorldHero({ formation }) {
+  const videoRef   = React.useRef(null);
+  const reactorRef = React.useRef(null);
+  const [streaming, setStreaming]   = React.useState(false);
+  const [dismissed, setDismissed]   = React.useState(false);
+  const [sdkReady, setSdkReady]     = React.useState(!!window.ReactorSDKClass);
+
+  React.useEffect(() => {
+    if (sdkReady) return;
+    const handler = () => setSdkReady(true);
+    window.addEventListener('reactor-sdk-ready', handler);
+    return () => window.removeEventListener('reactor-sdk-ready', handler);
+  }, [sdkReady]);
+
+  React.useEffect(() => {
+    if (!sdkReady || dismissed) return;
+    let cancelled = false;
+
+    async function init() {
+      try {
+        const sessionToken = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+        const res = await fetch(`${API_URL}/api/reactor/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        });
+        if (!res.ok || cancelled) return;
+        const { jwt } = await res.json();
+        if (!jwt || cancelled) return;
+
+        const reactor = new window.ReactorSDKClass({ modelName: 'helios' });
+        reactorRef.current = reactor;
+
+        reactor.on('trackReceived', (name, track, stream) => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(() => {});
+          }
+          if (!cancelled) setStreaming(true);
+        });
+
+        await reactor.connect(jwt);
+
+        // Seed tied to email → same world on every return visit
+        const email = (() => { try { return localStorage.getItem('sy_email') || ''; } catch { return ''; } })();
+        await reactor.sendCommand('set_seed', { seed: studioSeed(email || formation.studioName) });
+        await reactor.sendCommand('set_prompt', { prompt: buildStudioWorldPrompt(formation) });
+        await reactor.sendCommand('start', {});
+      } catch(e) {
+        console.warn('[StudioWorldHero] init failed:', e);
+      }
+    }
+
+    init();
+
+    function onVisibility() {
+      if (!reactorRef.current) return;
+      if (document.hidden) reactorRef.current.sendCommand('pause', {}).catch(() => {});
+      else reactorRef.current.sendCommand('resume', {}).catch(() => {});
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (reactorRef.current) reactorRef.current.sendCommand('pause', {}).catch(() => {});
+    };
+  }, [sdkReady, dismissed]);
+
+  if (dismissed) return null;
+
+  return (
+    <div style={{
+      position:'relative', height:'200px', overflow:'hidden',
+      borderBottom:'1px solid var(--border)', flexShrink:0,
+    }}>
+      {/* Fallback background while connecting */}
+      <div style={{
+        position:'absolute', inset:0,
+        background:'linear-gradient(135deg, var(--navy-3) 0%, var(--navy-2) 100%)',
+      }}/>
+      <video
+        ref={videoRef}
+        muted playsInline
+        style={{
+          position:'absolute', inset:0, width:'100%', height:'100%',
+          objectFit:'cover',
+          opacity: streaming ? 0.75 : 0,
+          transition: 'opacity 2.5s ease',
+        }}
+      />
+      {/* Gradient overlay for readability */}
+      <div style={{
+        position:'absolute', inset:0, pointerEvents:'none',
+        background:'linear-gradient(to bottom, rgba(6,9,26,0.25) 0%, rgba(6,9,26,0.65) 100%)',
+      }}/>
+      {/* Labels */}
+      <div style={{
+        position:'absolute', inset:0, padding:'14px 18px',
+        display:'flex', flexDirection:'column', justifyContent:'flex-end', zIndex:2,
+      }}>
+        <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'5px'}}>
+          <div style={{
+            width:'5px', height:'5px', borderRadius:'50%',
+            background: streaming ? '#4cff91' : 'rgba(240,242,255,0.25)',
+            animation: streaming ? 'fyGreenPulse 2.5s ease-in-out infinite' : 'none',
+            flexShrink:0,
+          }}/>
+          <span style={{
+            fontSize:'8px', letterSpacing:'0.22em', textTransform:'uppercase',
+            color: streaming ? 'rgba(76,255,145,0.75)' : 'rgba(240,242,255,0.25)',
+          }}>
+            {streaming ? 'Studio World · Live' : 'Studio World · Connecting...'}
+          </span>
+          <button
+            onClick={() => setDismissed(true)}
+            style={{
+              marginLeft:'auto', background:'none', border:'none', cursor:'pointer',
+              color:'rgba(240,242,255,0.25)', fontSize:'18px', lineHeight:1,
+              padding:'2px 4px', transition:'color 0.15s',
+            }}
+            onMouseEnter={e => e.target.style.color='rgba(240,242,255,0.6)'}
+            onMouseLeave={e => e.target.style.color='rgba(240,242,255,0.25)'}
+          >×</button>
+        </div>
+        <div style={{
+          fontFamily:"'Bebas Neue', sans-serif",
+          fontSize:'14px', letterSpacing:'0.05em',
+          color:'rgba(240,242,255,0.35)',
+        }}>
+          {formation.studioName || 'Your Studio'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<AppShell/>);
+</script>
+<script type="module">
+  try {
+    const { Reactor } = await import('https://esm.sh/@reactor-team/js-sdk@2.9.0');
+    window.ReactorSDKClass = Reactor;
+    window.dispatchEvent(new CustomEvent('reactor-sdk-ready'));
+  } catch(e) {
+    console.warn('[Reactor] SDK failed to load:', e);
+  }
+</script>
+</body>
+</html>

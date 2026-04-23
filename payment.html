@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Complete Your Studio</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── PROCESS INDICATOR — Claude-style, fixed position, cursor free ── */
+  #processOverlay {
+    display: none;
+    position: fixed;
+    bottom: 28px; right: 28px;
+    z-index: 9000;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    pointer-events: none;
+  }
+  #processOverlay.active { display: flex; }
+  #processStatus {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #00c8ff; opacity: 0.8;
+    text-align: right;
+    max-width: 220px;
+    line-height: 1.5;
+    border-right: 2px solid #00c8ff;
+    padding-right: 6px;
+    animation: statusType 0.4s steps(20, end);
+  }
+  @keyframes statusType {
+    from { width: 0; opacity: 0; }
+    to   { width: 100%; opacity: 0.8; }
+  }
+  #processSpinner {
+    width: 36px; height: 36px;
+    object-fit: contain;
+    animation: spinnerFloat 2s ease-in-out infinite;
+  }
+  @keyframes spinnerFloat {
+    0%,100% { transform: translateY(0); opacity: 0.85; }
+    50%      { transform: translateY(-4px); opacity: 1; }
+  }
+  :root {
+    --black:   #050507;
+    --navy-1:  #080c14;
+    --navy-2:  #0d1320;
+    --navy-3:  #121929;
+    --border:  rgba(255,255,255,0.07);
+    --ghost:   rgba(255,255,255,0.04);
+    --white:   #f0f2ff;
+    --dim:     rgba(240,242,255,0.6);
+    --mute:    rgba(240,242,255,0.3);
+    --cyan:    #00c8ff;
+    --gold:    #e8c97a;
+    --grad:    linear-gradient(135deg, #00c8ff, #e8c97a);
+    --gradT:   linear-gradient(135deg, #00c8ff, #a06be8);
+  }
+  html, body {
+    min-height: 100vh;
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    background-size: 256px; pointer-events: none; z-index: 0;
+  }
+
+  /* ambient */
+  .amb {
+    position: fixed; border-radius: 50%;
+    pointer-events: none; z-index: 0;
+  }
+  .amb-1 { top: -20vh; right: -10vw; width: 60vw; height: 60vh;
+    background: radial-gradient(ellipse, rgba(0,200,255,0.05) 0%, transparent 70%); }
+  .amb-2 { bottom: -10vh; left: -10vw; width: 50vw; height: 50vh;
+    background: radial-gradient(ellipse, rgba(232,201,122,0.04) 0%, transparent 70%); }
+
+  /* topbar */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 18px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,5,7,0.9);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .topbar img { height: 26px; width: auto; }
+  .topbar-right {
+    font-size: 9px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--mute);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .secure-badge {
+    display: flex; align-items: center; gap: 5px;
+    color: rgba(76,255,145,0.7);
+    font-size: 9px; letter-spacing: 0.16em;
+  }
+  .secure-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #4cff91;
+  }
+
+  /* layout */
+  .page-wrap {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    padding-top: 62px;
+    position: relative; z-index: 1;
+  }
+
+  /* left — order summary */
+  .summary-panel {
+    padding: 52px 48px 52px 52px;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    gap: 32px;
+  }
+
+  .summary-eyebrow {
+    font-size: 9px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--mute);
+    margin-bottom: 4px;
+  }
+
+  .summary-tier {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 6vw, 72px);
+    letter-spacing: 0.04em; line-height: 0.9;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .summary-descriptor {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 14px; color: var(--mute);
+    margin-top: 6px;
+  }
+
+  .summary-divider {
+    border: none; border-top: 1px solid var(--border);
+  }
+
+  /* line items */
+  .line-items { display: flex; flex-direction: column; gap: 14px; }
+  .line-item {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+  }
+  .li-label { font-size: 13px; color: var(--dim); }
+  .li-value { font-size: 14px; color: var(--white); font-weight: 400; }
+  .li-value.gold { color: var(--gold); }
+  .li-value.strike {
+    text-decoration: line-through;
+    color: var(--mute); font-size: 12px;
+  }
+
+  .total-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .total-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 0.08em; color: var(--white);
+  }
+  .total-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 0.04em;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* founding callout */
+  .founding-callout {
+    padding: 16px 18px;
+    background: rgba(232,201,122,0.06);
+    border: 1px solid rgba(232,201,122,0.2);
+  }
+  .founding-callout-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--gold); margin-bottom: 5px;
+  }
+  .founding-callout-text {
+    font-size: 12px; color: var(--mute); line-height: 1.6;
+  }
+
+  /* what you get */
+  .whats-included { display: flex; flex-direction: column; gap: 10px; }
+  .wi-label {
+    font-size: 9px; letter-spacing: 0.24em;
+    text-transform: uppercase; color: var(--mute);
+    margin-bottom: 4px;
+  }
+  .wi-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px; color: var(--dim); line-height: 1.5;
+  }
+  .wi-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--cyan); opacity: 0.7;
+    margin-top: 6px; flex-shrink: 0;
+  }
+
+  /* right — payment form */
+  .payment-panel {
+    padding: 52px 40px;
+    display: flex; flex-direction: column; gap: 24px;
+    background: var(--navy-1);
+  }
+
+  .payment-heading {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.06em; color: var(--white);
+    margin-bottom: 4px;
+  }
+  .payment-sub {
+    font-size: 12px; color: var(--mute); line-height: 1.6;
+  }
+
+  /* field groups */
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field-group { flex: 1; }
+
+  .field-label {
+    font-size: 9px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--mute);
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--navy-2);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 300;
+    padding: 12px 14px; outline: none;
+    transition: border-color 0.2s ease;
+    caret-color: var(--cyan);
+  }
+  .field-input:focus { border-color: rgba(0,200,255,0.3); }
+  .field-input::placeholder { color: var(--mute); }
+
+  /* card field placeholder */
+  .card-field-wrap {
+    background: var(--navy-2);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    transition: border-color 0.2s ease;
+    position: relative;
+  }
+  .card-field-wrap:focus-within { border-color: rgba(0,200,255,0.3); }
+  .card-field-placeholder {
+    font-size: 14px; color: var(--mute);
+    display: flex; align-items: center;
+    justify-content: space-between;
+  }
+  .card-icons {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .card-icon {
+    width: 30px; height: 20px;
+    background: rgba(240,242,255,0.08);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: var(--mute);
+    letter-spacing: 0.06em;
+  }
+
+  /* beta notice */
+  .beta-notice {
+    padding: 14px 16px;
+    background: rgba(0,200,255,0.05);
+    border: 1px solid rgba(0,200,255,0.15);
+    font-size: 12px; color: var(--dim); line-height: 1.65;
+  }
+  .beta-notice strong { color: var(--cyan); font-weight: 400; }
+
+  /* submit */
+  .submit-btn {
+    width: 100%; padding: 16px;
+    background: var(--grad);
+    border: none; color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+  }
+  .submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+
+  .submit-note {
+    font-size: 10px; letter-spacing: 0.12em;
+    color: var(--mute); text-align: center; line-height: 1.6;
+  }
+
+  /* success state */
+  .success-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--black);
+    z-index: 200;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 24px; padding: 48px;
+    text-align: center;
+  }
+  .success-overlay.open { display: flex; animation: fade-in 0.5s ease; }
+  @keyframes fade-in { from{opacity:0} to{opacity:1} }
+
+  .success-heading {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    letter-spacing: 0.04em; line-height: 0.95;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .success-sub {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 16px; color: var(--dim);
+    max-width: 440px; line-height: 1.7;
+  }
+  .success-cta {
+    background: var(--grad); border: none;
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 0.14em;
+    padding: 16px 48px; cursor: pointer;
+    transition: opacity 0.2s ease;
+    margin-top: 8px;
+  }
+  .success-cta:hover { opacity: 0.88; }
+
+  @media (max-width: 820px) {
+    .page-wrap { grid-template-columns: 1fr; }
+    .summary-panel { padding: 32px 24px; border-right: none; border-bottom: 1px solid var(--border); }
+    .payment-panel { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+<div id="processOverlay">
+  <div id="processStatus"></div>
+  <img id="processSpinner" src="assets/shutter1.gif" alt=""/>
+</div>
+<div class="amb amb-1"></div>
+<div class="amb amb-2"></div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou"/>
+  <div class="topbar-right">
+    <div class="secure-badge">
+      <div class="secure-dot"></div>
+      Secure Checkout
+    </div>
+    &nbsp;·&nbsp; studioyou.app
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- LEFT: Order Summary -->
+  <div class="summary-panel" id="summaryPanel">
+    <div>
+      <div class="summary-eyebrow">You're building</div>
+      <div class="summary-tier" id="summaryTier">Independent</div>
+      <div class="summary-descriptor" id="summaryDescriptor">The guided creator. Future You in directive mode.</div>
+    </div>
+
+    <hr class="summary-divider">
+
+    <div class="line-items" id="lineItems">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="founding-callout" id="foundingCallout" style="display:none;">
+      <div class="founding-callout-label">Founding Member — Formation Fee Waived</div>
+      <div class="founding-callout-text">
+        You're in the first 500. Your rate is locked permanently, and the $149 formation fee is on us.
+      </div>
+    </div>
+
+    <div class="whats-included" id="whatsIncluded">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- RIGHT: Payment Form -->
+  <div class="payment-panel">
+    <div>
+      <div class="payment-heading">Complete Your Studio</div>
+      <div class="payment-sub">Beta access — your tier is locked in today. Billing activates at public launch.</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Full Name</div>
+      <input class="field-input" type="text" id="fieldName" placeholder="Your name" autocomplete="name"/>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Email</div>
+      <input class="field-input" type="email" id="fieldEmail" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+
+    <div class="beta-notice">
+      <strong>Beta pricing is locked in today — no payment collected now.</strong> When billing activates at public launch, your founding rate is guaranteed. Enter your details to reserve your studio.
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Card Details — Reserved for Launch</div>
+      <div class="card-field-wrap">
+        <div class="card-field-placeholder">
+          <span>Will be collected at launch</span>
+          <div class="card-icons">
+            <div class="card-icon">VISA</div>
+            <div class="card-icon">MC</div>
+            <div class="card-icon">AMEX</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">
+      Reserve My Studio
+    </button>
+
+    <div class="submit-note">
+      No charge today. Your founding rate is locked permanently.<br>
+      Cancel any time before launch with no obligation.
+    </div>
+  </div>
+</div>
+
+<!-- Success Overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-heading">Studio Reserved.<br>You're in.</div>
+  <div class="success-sub" id="successMessage">
+    Future You is ready. Your studio is built. Check your email — your link is on its way.
+  </div>
+  <button class="success-cta" onclick="window.location.href='dashboard.html'">
+    Enter Your Studio
+  </button>
+</div>
+
+<script>
+function startProcessing(msg) {
+  const el = document.getElementById('processOverlay');
+  const status = document.getElementById('processStatus');
+  status.textContent = msg || '';
+  status.style.display = msg ? 'block' : 'none';
+  el.classList.add('active');
+}
+function stopProcessing() {
+  document.getElementById('processOverlay').classList.remove('active');
+  document.getElementById('processStatus').textContent = '';
+}
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+
+const TIER_META = {
+  independent: {
+    name: 'Independent',
+    descriptor: 'The guided creator. Future You in directive mode.',
+    features: [
+      'Future You in directive mode — active guidance, not a chatbot',
+      'Full studio formation experience — every module, day one',
+      'Curated tool stack, fully managed by the platform',
+      'Full access to every tool on the curated lot',
+      'No infrastructure decisions. No subscription chaos.',
+    ]
+  },
+  operator: {
+    name: 'Operator',
+    descriptor: 'The working creator. Future You in peer mode.',
+    features: [
+      'Future You in peer mode — a partner, not a guide',
+      'Open lot — choose your own tool stack',
+      'Enterprise tool rates: Bulk Pricing = YOU save BIG',
+      'Full platform infrastructure — build your own formation',
+      'No onboarding fee',
+    ]
+  }
+};
+
+const PRICES = {
+  independent: { monthly: 199, annual: 129, annualTotal: 1548 },
+  operator:    { monthly: 149, annual: 99,  annualTotal: 1188 }
+};
+
+function init() {
+  const tier    = localStorage.getItem('sy_tier') || 'independent';
+  const billing = localStorage.getItem('sy_billing') || 'annual';
+  const email   = localStorage.getItem('sy_email') || '';
+  const meta    = TIER_META[tier] || TIER_META.independent;
+  const price   = PRICES[tier];
+  const isFounder = true; // everyone in beta is a founding member
+
+  // Summary header
+  document.getElementById('summaryTier').textContent = meta.name;
+  document.getElementById('summaryDescriptor').textContent = meta.descriptor;
+
+  // Pre-fill email — lock field if already stored from formation so it can't be mistyped
+  const emailField = document.getElementById('fieldEmail');
+  if (email) {
+    emailField.value = email;
+    emailField.readOnly = true;
+    emailField.style.color = 'rgba(240,242,255,0.4)';
+    emailField.style.cursor = 'default';
+    emailField.title = 'Email set during formation — use Resend below to get a new link';
+    // Inject resend UI below the field
+    const resendEl = document.createElement('div');
+    resendEl.id = 'resendWrap';
+    resendEl.style.cssText = 'margin-top:6px;font-size:10px;letter-spacing:0.12em;color:rgba(240,242,255,0.3);';
+    resendEl.innerHTML = 'Didn\'t get the email? '
+      + '<button id="resendBtn" onclick="resendLink()" style="background:none;border:none;color:var(--cyan);'
+      + 'font-family:\'Outfit\',sans-serif;font-size:10px;letter-spacing:0.12em;cursor:pointer;padding:0;">'
+      + 'Resend →</button>'
+      + ' <span id="resendConfirm" style="color:rgba(76,255,145,0.7);display:none;">Sent.</span>';
+    emailField.parentNode.appendChild(resendEl);
+  }
+
+  // Line items
+  const isAnnual = billing === 'annual';
+  const monthlyRate = isAnnual ? price.annual : price.monthly;
+  const isIndependent = tier === 'independent';
+
+  let items = [];
+  items.push({ label: `${isAnnual ? 'Annual' : 'Monthly'} subscription`, value: `$${monthlyRate}/mo` });
+  if (isAnnual) items.push({ label: 'Billed annually', value: `$${price.annualTotal}/yr` });
+  if (isIndependent) {
+    if (isFounder) {
+      items.push({ label: 'Formation fee (one-time)', value: 'WAIVED', gold: true });
+      items.push({ label: 'Regular formation fee', value: '$149', strike: true });
+    } else {
+      items.push({ label: 'Formation fee (one-time)', value: '$149' });
+    }
+  }
+
+  const lineItems = document.getElementById('lineItems');
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'line-item';
+    row.innerHTML = `
+      <span class="li-label">${item.label}</span>
+      <span class="li-value${item.gold ? ' gold' : ''}${item.strike ? ' strike' : ''}">${item.value}</span>
+    `;
+    lineItems.appendChild(row);
+  });
+
+  // Total row
+  const totalRow = document.createElement('div');
+  totalRow.className = 'total-row';
+  totalRow.innerHTML = `
+    <span class="total-label">Due Today</span>
+    <span class="total-amount">$0</span>
+  `;
+  lineItems.appendChild(totalRow);
+
+  // Founding callout
+  if (isFounder && isIndependent) {
+    document.getElementById('foundingCallout').style.display = 'block';
+  }
+
+  // What's included
+  const wi = document.getElementById('whatsIncluded');
+  const wiLabel = document.createElement('div');
+  wiLabel.className = 'wi-label';
+  wiLabel.textContent = "What's included";
+  wi.appendChild(wiLabel);
+
+  meta.features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'wi-item';
+    item.innerHTML = `<div class="wi-dot"></div><span>${f}</span>`;
+    wi.appendChild(item);
+  });
+}
+
+async function resendLink() {
+  const email = (localStorage.getItem('sy_email') || '').trim();
+  if (!email) return;
+  const btn = document.getElementById('resendBtn');
+  const confirm = document.getElementById('resendConfirm');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+  try {
+    await fetch(`${API_URL}/api/auth/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+  } catch(e) { /* non-fatal */ }
+  if (confirm) confirm.style.display = 'inline';
+  setTimeout(() => {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    if (confirm) confirm.style.display = 'none';
+  }, 4000);
+}
+
+async function handleSubmit() {
+  const name  = document.getElementById('fieldName').value.trim();
+  const rawEmail = document.getElementById('fieldEmail').value.trim();
+  const email = rawEmail.toLowerCase();
+  const tier  = localStorage.getItem('sy_tier') || 'independent';
+  const billing = localStorage.getItem('sy_billing') || 'annual';
+
+  if (!name) { document.getElementById('fieldName').focus(); return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('fieldEmail').focus(); return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Reserving...';
+  btn.style.opacity = '0.6';
+  btn.disabled = true;
+  document.getElementById('processOverlay').classList.add('active');
+  startProcessing('Reserving your studio...');
+
+  // Persist normalized email (covers the skip path where email wasn't set yet)
+  localStorage.setItem('sy_email', email);
+
+  try {
+    // Get existing formation and update with name/email
+    const formation = (() => {
+      try { return JSON.parse(localStorage.getItem('sy_formation') || '{}'); } catch(e) { return {}; }
+    })();
+    formation.reservationName = name;
+    formation.email = email;
+    localStorage.setItem('sy_formation', JSON.stringify(formation));
+
+    // POST to backend — saves formation and triggers magic link email
+    await fetch(`${API_URL}/api/formation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, formation: { ...formation, tier, billing } })
+    });
+  } catch(e) { /* non-fatal — localStorage is the fallback */ }
+
+  // Show success
+  stopProcessing();
+  const successMsg = document.getElementById('successMessage');
+  const tierName = tier === 'independent' ? 'Independent' : 'Operator';
+  successMsg.textContent = `${tierName} studio reserved. Your rate is locked. Studio link is on its way.`;
+  document.getElementById('successOverlay').classList.add('open');
+}
+
+init();
+</script>
+</body>
+</html>

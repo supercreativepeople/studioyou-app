@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Studio Archetypes | StudioYou</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #root { width: 100%; max-width: 1200px; }
+        .container { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 40px 20px; text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .status-line { font-size: 0.9em; margin-top: 10px; opacity: 0.9; font-family: monospace; }
+        .video-container {
+            width: 100%; aspect-ratio: 16/9; background: #000;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden; min-height: 300px;
+        }
+        .loading-spinner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .loading-spinner img { width: 60px; height: 60px; margin-bottom: 15px; }
+        .loading-spinner p { color: white; font-size: 1.1em; }
+        .placeholder-message { color: #ccc; text-align: center; padding: 40px; font-size: 1.1em; }
+        .error-box { background: #fee; color: #c33; padding: 20px; text-align: center; border-radius: 8px; margin: 20px; font-family: monospace; font-size: 0.85em; line-height: 1.5; }
+        .success-box { background: #efe; color: #3c3; padding: 20px; border-radius: 8px; margin: 20px; font-family: monospace; font-size: 0.85em; }
+        .archetypes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px; padding: 40px;
+        }
+        .archetype-card {
+            background: #f9f9f9; border: 2px solid #ddd; border-radius: 8px;
+            padding: 20px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .archetype-card:hover {
+            border-color: #667eea; box-shadow: 0 8px 20px rgba(102,126,234,0.2);
+            transform: translateY(-4px);
+        }
+        .archetype-card.selected { border-color: #667eea; background: #f0f4ff; }
+        .archetype-card h3 { color: #667eea; margin-bottom: 10px; font-size: 1.3em; }
+        .archetype-card p { color: #555; line-height: 1.6; font-size: 0.95em; }
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 40px; text-align: center;
+        }
+        .cta-section h2 { font-size: 1.8em; margin-bottom: 15px; }
+        .cta-section p { font-size: 1.1em; margin-bottom: 25px; opacity: 0.95; }
+        .debug-panel {
+            background: #1e1e1e; color: #0f0; padding: 15px;
+            font-family: 'Monaco', monospace; font-size: 0.75em;
+            max-height: 400px; overflow-y: auto; border-top: 1px solid #333;
+            line-height: 1.3;
+        }
+        .debug-log-item { padding: 3px 0; border-bottom: 1px solid #333; }
+        .debug-log-item.info { color: #0f0; }
+        .debug-log-item.warn { color: #ff0; }
+        .debug-log-item.error { color: #f33; }
+        .debug-log-item.success { color: #0ff; }
+        .debug-toggle {
+            position: fixed; bottom: 20px; right: 20px; background: #667eea;
+            color: white; border: none; padding: 10px 15px; border-radius: 4px;
+            cursor: pointer; font-size: 0.85em; z-index: 1000;
+        }
+        .debug-toggle:hover { background: #764ba2; }
+        .reactor-response {
+            background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+            padding: 15px; margin: 15px 0; font-family: monospace; font-size: 0.8em;
+            max-height: 300px; overflow-y: auto; word-break: break-word; white-space: pre-wrap;
+        }
+        .info-banner {
+            background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px;
+            border-radius: 4px; font-size: 0.9em; color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+        const debugLogs = [];
+        const maxLogs = 100;
+
+        const log = (level, message, data) => {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const logEntry = { level, timestamp, message, data: data ? JSON.stringify(data) : '' };
+            debugLogs.unshift(logEntry);
+            if (debugLogs.length > maxLogs) debugLogs.pop();
+            const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
+            console.log(prefix + ' ' + message, data || '');
+        };
+
+        // Build cinematic prompt from archetype
+        const buildCinematicPrompt = (archetypeId) => {
+            const archetypeContexts = {
+                'documentary': {
+                    vibe: 'investigative and cinematic',
+                    setting: 'archive studio with film reels and production equipment',
+                    camera: 'documentary-style tracking shots'
+                },
+                'social-creator': {
+                    vibe: 'dynamic and energetic',
+                    setting: 'social media creation studio with dashboards',
+                    camera: 'quick cuts and transitions'
+                },
+                'youtube-creator': {
+                    vibe: 'cinematic and narrative-driven',
+                    setting: 'professional production studio',
+                    camera: 'cinematic storytelling through studio space'
+                },
+                'podcast-host': {
+                    vibe: 'intimate and conversational',
+                    setting: 'soundproof studio with microphone',
+                    camera: 'close-up audio booth scenes'
+                },
+                'multi-format': {
+                    vibe: 'versatile and expansive',
+                    setting: 'full production complex',
+                    camera: 'wide establishing shots'
+                }
+            };
+
+            const context = archetypeContexts[archetypeId] || archetypeContexts['documentary'];
+
+            return `You are Helios, the StudioYou cinematic world-building engine.
+
+CREATE A 45-SECOND CINEMATIC SHORT FILM in 3 acts:
+
+Act 1 - REVEAL (0-15s):
+Camera pans through a ${context.setting}. The space bears the creator's unique identity.
+Vibe: ${context.vibe}
+Opening shot: Wide establishing reveal of the studio world.
+
+Act 2 - JOURNEY (15-30s):
+Show the creator's workflow and creative process. Display tools, inspirations, and past successes.
+Key focus: Their unique creative voice in action.
+
+Act 3 - FUTURE (30-45s):
+Full reveal of studio potential. Show all available tools and creative possibilities.
+Closing: Inspiring vision of unlimited creative potential.
+
+TECHNICAL SPECS:
+- Camera movement: ${context.camera}
+- Visual style: Cinematic 4K, professional color grading, dynamic lighting
+- Audio: Inspiring, contemporary instrumental music
+- Tone: Personalized, empowering, professional
+- Format: Cinematic short film`;
+        };
+
+        // Step 1: Fetch token from backend
+        const fetchReactorTokenFromBackend = async (email) => {
+            try {
+                log('info', 'Step 1: Fetching Reactor token from StudioYou backend', { endpoint: 'https://studioyou-api-198959034459.us-east1.run.app/api/reactor/token' });
+                
+                const response = await fetch('https://studioyou-api-198959034459.us-east1.run.app/api/reactor/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Backend returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('success', 'Step 1 COMPLETE: Token received from backend', { token: data.token ? '***' : 'empty' });
+                return data.token;
+            } catch (err) {
+                log('error', 'Step 1 FAILED: Backend unavailable', { error: err.message });
+                throw new Error(`Backend error: ${err.message}`);
+            }
+        };
+
+        // Step 2: Initialize Reactor SDK
+        const initializeReactorSDK = async (token) => {
+            try {
+                log('info', 'Step 2: Loading Reactor SDK from CDN', { url: 'https://reactor.unstable.run/sdk/v0.0.111/reactor.umd.js' });
+                
+                if (window.Reactor) {
+                    log('success', 'Step 2a: Reactor already loaded in window');
+                    return window.Reactor;
+                }
+
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://reactor.unstable.run/sdk/v0.0.111/reactor.umd.js';
+                    script.onerror = () => reject(new Error('SDK load failed'));
+                    script.onload = () => {
+                        if (window.Reactor) {
+                            log('success', 'Step 2b: Reactor SDK loaded successfully');
+                            resolve();
+                        } else {
+                            reject(new Error('SDK loaded but Reactor not on window'));
+                        }
+                    };
+                    document.head.appendChild(script);
+                });
+
+                return window.Reactor;
+            } catch (err) {
+                log('error', 'Step 2 FAILED: SDK load error', { error: err.message });
+                throw new Error(`SDK load failed: ${err.message}`);
+            }
+        };
+
+        // Step 3: Create Reactor instance and connect
+        const connectToReactor = async (token) => {
+            try {
+                log('info', 'Step 3: Creating Reactor instance and connecting', { tokenLength: token ? token.length : 0 });
+                
+                const reactor = new window.Reactor({
+                    apiKey: token,
+                    onConnect: () => log('info', 'Step 3b: Reactor SDK onConnect fired'),
+                    onDisconnect: () => log('warn', 'Step 3c: Reactor SDK onDisconnect fired'),
+                    onError: (err) => log('error', 'Step 3d: Reactor SDK error', { message: err.message })
+                });
+
+                // Try both connection methods
+                if (reactor.connect && typeof reactor.connect === 'function') {
+                    await reactor.connect(token);
+                    log('success', 'Step 3e: Connected using reactor.connect()');
+                } else if (reactor.authenticate && typeof reactor.authenticate === 'function') {
+                    await reactor.authenticate(token);
+                    log('success', 'Step 3e: Connected using reactor.authenticate()');
+                } else {
+                    log('warn', 'Step 3e: No connect/auth method found, proceeding anyway');
+                }
+
+                log('success', 'Step 3 COMPLETE: Reactor instance ready');
+                return reactor;
+            } catch (err) {
+                log('error', 'Step 3 FAILED: Connection error', { error: err.message });
+                throw new Error(`Reactor connection failed: ${err.message}`);
+            }
+        };
+
+        // Step 4: Send prompt to Reactor and generate video
+        const generateVideoWithReactor = async (reactor, prompt, archetypeId) => {
+            try {
+                log('info', 'Step 4: Sending cinematic prompt to Reactor', { archetypeId, promptLength: prompt.length });
+                
+                const result = await reactor.sendCommand({
+                    type: 'world_build',
+                    archetype: archetypeId,
+                    prompt: prompt,
+                    visual_style: 'cinematic 4K, professional color grading',
+                    duration: 45,
+                    music_style: 'inspiring, contemporary instrumental'
+                });
+
+                log('success', 'Step 4 COMPLETE: Video generated by Reactor', { hasVideoUrl: !!result.videoUrl });
+                return result;
+            } catch (err) {
+                log('error', 'Step 4 FAILED: Video generation error', { error: err.message });
+                throw new Error(`Video generation failed: ${err.message}`);
+            }
+        };
+
+        function ArchetypesExplorer() {
+            const [selectedArchetype, setSelectedArchetype] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [debugVisible, setDebugVisible] = useState(true);
+            const [reactorStatus, setReactorStatus] = useState('Ready');
+            const [error, setError] = useState(null);
+            const [reactorResponse, setReactorResponse] = useState(null);
+
+            const archetypes = [
+                { id: 'documentary', name: 'Documentary', description: 'In-depth, investigative storytelling with cinematic production quality.' },
+                { id: 'social-creator', name: 'Social Creator', description: 'Short, engaging content optimized for Instagram, TikTok, and social platforms.' },
+                { id: 'youtube-creator', name: 'YouTube Creator', description: 'Long-form video content with strong narratives and audience engagement.' },
+                { id: 'podcast-host', name: 'Podcast Host', description: 'Audio-first storytelling with conversational depth and personality.' },
+                { id: 'multi-format', name: 'Multi-Format Studio', description: 'Flexible production workflow for all formats: web, mobile, broadcast.' }
+            ];
+
+            useEffect(() => {
+                log('info', '=== REACTOR/HELIOS INTEGRATION TEST ===');
+                log('info', 'Archetypes Explorer initialized');
+                log('info', 'Architecture: Frontend → Backend Token → Reactor SDK → Video Generation');
+            }, []);
+
+            const handleArchetypeSelect = useCallback(async (archetypeId) => {
+                log('info', `\n>>> USER SELECTED: ${archetypeId.toUpperCase()} <<<\n`);
+                setSelectedArchetype(archetypeId);
+                setLoading(true);
+                setError(null);
+                setReactorResponse(null);
+                setReactorStatus('Starting 4-step pipeline...');
+
+                try {
+                    // Step 1: Get token from backend
+                    setReactorStatus('Step 1/4: Fetching backend token...');
+                    const token = await fetchReactorTokenFromBackend('test@studioyou.app');
+
+                    // Step 2: Load SDK
+                    setReactorStatus('Step 2/4: Loading Reactor SDK...');
+                    await initializeReactorSDK(token);
+
+                    // Step 3: Connect to Reactor
+                    setReactorStatus('Step 3/4: Connecting to Reactor...');
+                    const reactor = await connectToReactor(token);
+
+                    // Build prompt
+                    const prompt = buildCinematicPrompt(archetypeId);
+                    log('info', 'Cinematic prompt ready', { promptLength: prompt.length });
+
+                    // Step 4: Generate video
+                    setReactorStatus('Step 4/4: Generating video with Helios...');
+                    const result = await generateVideoWithReactor(reactor, prompt, archetypeId);
+
+                    setReactorResponse(result);
+                    setReactorStatus('✓ PIPELINE COMPLETE: Video ready');
+                    log('success', '\n=== FULL INTEGRATION SUCCESSFUL ===\n');
+                } catch (err) {
+                    log('error', `PIPELINE FAILED: ${err.message}`);
+                    setError(err.message);
+                    setReactorStatus('Error — see logs');
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Creator Studio Archetypes</h1>
+                        <p>Choose your creative path</p>
+                        <p className="status-line">Status: {reactorStatus}</p>
+                    </div>
+
+                    <div className="video-container">
+                        {loading && (
+                            <div className="loading-spinner">
+                                <img src="https://media.giphy.com/media/3o7TKU2TransJOJqRK0/giphy.gif" alt="Loading" />
+                                <p>{reactorStatus}</p>
+                            </div>
+                        )}
+                        {error && !loading && (
+                            <div className="error-box">
+                                <p><strong>⚠️ Pipeline Error</strong></p>
+                                <p>{error}</p>
+                                <p style={{marginTop: '10px', fontSize: '0.85em'}}>Check debug logs below for detailed step-by-step error trace</p>
+                            </div>
+                        )}
+                        {reactorResponse && reactorResponse.videoUrl && (
+                            <video src={reactorResponse.videoUrl} controls autoPlay muted style={{width: '100%', height: '100%'}} />
+                        )}
+                        {!loading && !selectedArchetype && !error && (
+                            <div className="placeholder-message">
+                                <p>Select an archetype to start the Reactor/Helios pipeline</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {!error && (
+                        <div className="info-banner">
+                            <strong>Pipeline Flow:</strong> Frontend → Backend token endpoint → Reactor SDK → Helios video generation. Check debug logs to see each step.
+                        </div>
+                    )}
+
+                    <div className="archetypes-grid">
+                        {archetypes.map((archetype) => (
+                            <div
+                                key={archetype.id}
+                                className={`archetype-card ${selectedArchetype === archetype.id ? 'selected' : ''}`}
+                                onClick={() => handleArchetypeSelect(archetype.id)}
+                                role="button"
+                                tabIndex="0"
+                            >
+                                <h3>{archetype.name}</h3>
+                                <p>{archetype.description}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="cta-section">
+                        <h2>Ready to Create?</h2>
+                        <p>Select an archetype to generate your studio world</p>
+                    </div>
+
+                    {debugVisible && (
+                        <div className="debug-panel">
+                            {debugLogs.length === 0 ? (
+                                <div className="debug-log-item info">Waiting for pipeline initialization...</div>
+                            ) : (
+                                debugLogs.map((log, idx) => (
+                                    <div key={idx} className={`debug-log-item ${log.level}`}>
+                                        {log.timestamp} {log.message} {log.data && `→ ${log.data}`}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    <button className="debug-toggle" onClick={() => setDebugVisible(!debugVisible)}>
+                        {debugVisible ? 'Hide' : 'Show'} Debug
+                    </button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ArchetypesExplorer />);
+    </script>
+</body>
+</html>

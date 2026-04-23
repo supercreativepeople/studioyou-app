@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Bill of Rights — StudioYou</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#06091a;--navy:#0b0d1a;--white:#f0f2ff;--dim:rgba(240,242,255,0.65);--mute:rgba(240,242,255,0.32);--gold:#c9a84c;--gradG:linear-gradient(135deg,#c9a84c,#e8c96a);--border:rgba(0,200,255,0.08);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--white);font-family:'Outfit',sans-serif;font-weight:300;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");background-size:256px;pointer-events:none;z-index:9999;}
+#loader{position:fixed;inset:0;background:var(--black);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity 0.6s ease,visibility 0.6s ease;}
+#loader.hidden{opacity:0;visibility:hidden;}
+.loader-gif{width:120px;height:120px;object-fit:contain;}
+.loader-label{font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--mute);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:0.3}50%{opacity:1}}
+nav{position:sticky;top:0;z-index:100;background:rgba(6,9,26,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo img{height:24px;width:auto;}
+.nav-back{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--mute);text-decoration:none;transition:color 0.2s ease;}
+.nav-back:hover{color:#c9a84c;}
+.hero{padding:80px 48px 60px;max-width:860px;margin:0 auto;text-align:center;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.hero-eye{font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;opacity:0;animation:fadeUp 0.6s ease 0.2s forwards;}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,9vw,108px);line-height:0.95;color:var(--white);margin-bottom:24px;opacity:0;animation:fadeUp 0.6s ease 0.35s forwards;}
+.hero-title span{background:var(--gradG);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(15px,1.8vw,20px);color:var(--dim);line-height:1.65;max-width:540px;margin:0 auto 32px;opacity:0;animation:fadeUp 0.6s ease 0.5s forwards;}
+.hero-stamp{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--mute);opacity:0;animation:fadeUp 0.6s ease 0.65s forwards;}
+.gold-rule{width:48px;height:1px;background:var(--gradG);margin:56px auto;}
+.preamble{max-width:660px;margin:0 auto;padding:0 48px 72px;}
+.pull-quote{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,5vw,60px);line-height:1;background:var(--gradG);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:48px;letter-spacing:0.04em;}
+.preamble p{font-size:15px;line-height:1.85;color:var(--dim);margin-bottom:22px;}
+.rights-wrap{max-width:800px;margin:0 auto;padding:0 48px 72px;}
+.sec-eye{font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.sec-heading{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,72px);line-height:1;color:var(--white);margin-bottom:56px;letter-spacing:0.02em;}
+.right-item{display:grid;grid-template-columns:44px 1fr;gap:0 24px;padding:28px 0;border-bottom:1px solid rgba(201,168,76,0.08);opacity:0;transform:translateY(16px);transition:opacity 0.45s ease,transform 0.45s ease;}
+.right-item.vis{opacity:1;transform:translateY(0);}
+.right-item:last-child{border-bottom:none;}
+.right-num{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:0.15em;color:var(--gold);opacity:0.65;padding-top:3px;}
+.right-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--white);margin-bottom:8px;line-height:1.35;}
+.right-body{font-size:13px;line-height:1.85;color:var(--dim);}
+.commitments{background:var(--navy);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:72px 48px;margin-bottom:72px;}
+.commit-inner{max-width:800px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:56px;}
+@media(max-width:680px){.commit-inner{grid-template-columns:1fr;}}
+.commit-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:28px;}
+.commit-list li{font-size:12px;line-height:1.75;color:var(--dim);padding-left:18px;position:relative;}
+.commit-list li::before{content:'';position:absolute;left:0;top:8px;width:5px;height:5px;background:var(--gold);border-radius:50%;opacity:0.55;}
+.fy-section{max-width:660px;margin:0 auto 72px;padding:0 48px;}
+.fy-card{border:1px solid rgba(201,168,76,0.2);background:rgba(201,168,76,0.02);padding:44px;position:relative;overflow:hidden;}
+.fy-card::before{content:'FY';position:absolute;right:20px;top:12px;font-family:'Bebas Neue',sans-serif;font-size:72px;color:rgba(201,168,76,0.05);line-height:1;}
+.fy-opener{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(15px,1.8vw,19px);color:var(--gold);line-height:1.6;margin-bottom:24px;}
+.fy-body{font-size:13px;line-height:1.9;color:var(--dim);margin-bottom:18px;}
+.bottom-cta{text-align:center;padding:72px 48px 100px;position:relative;overflow:hidden;}
+.bottom-cta::before{content:'YOU';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:clamp(180px,28vw,440px);color:transparent;-webkit-text-stroke:1px rgba(201,168,76,0.04);pointer-events:none;white-space:nowrap;}
+.cta-heading{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,7vw,88px);line-height:1;color:var(--white);margin-bottom:18px;position:relative;z-index:2;}
+.cta-heading span{background:var(--gradG);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.cta-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--dim);margin-bottom:36px;position:relative;z-index:2;}
+.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2;}
+.btn-primary{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:0.14em;background:var(--gradG);color:var(--black);border:none;padding:15px 38px;cursor:pointer;text-decoration:none;display:inline-block;transition:opacity 0.2s ease;}
+.btn-primary:hover{opacity:0.85;}
+.btn-ghost{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:0.14em;background:transparent;color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:15px 38px;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s ease;}
+.btn-ghost:hover{border-color:var(--gold);background:rgba(201,168,76,0.05);}
+.share-note{margin-top:24px;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--mute);position:relative;z-index:2;}
+footer{border-top:1px solid var(--border);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-logo img{height:20px;width:auto;opacity:0.5;}
+.footer-copy{font-size:10px;color:var(--mute);letter-spacing:0.12em;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:2px;}
+@media(max-width:600px){nav,.hero,.preamble,.rights-wrap,.commitments,.fy-section,.bottom-cta,footer{padding-left:20px;padding-right:20px;}.right-item{grid-template-columns:32px 1fr;gap:0 12px;}.fy-card{padding:28px 20px;}}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <img src="assets/bill-of-rights.gif" alt="" class="loader-gif" onerror="this.style.display='none'">
+  <div class="loader-label">Loading your rights</div>
+</div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou"></a>
+  <a href="javascript:history.back()" class="nav-back">← Back</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-eye">SuperCreativePeople, Inc. &nbsp;·&nbsp; 2026</div>
+  <h1 class="hero-title">Creator<br><span>Bill of Rights</span></h1>
+  <p class="hero-sub">A constitutional commitment to every creator on this platform. Not aspirational. Operational.</p>
+  <div class="hero-stamp">studioyou.studio &nbsp;·&nbsp; This document is public. Share it freely.</div>
+</section>
+
+<div class="gold-rule"></div>
+
+<div class="preamble">
+  <div class="pull-quote">YOU own everything YOU create.</div>
+  <p>This document is not a terms of service. It is not a legal agreement. It is a promise — stated plainly, in language you can actually read, about how StudioYou will always treat you and what will never change regardless of how big this platform gets.</p>
+  <p>Every creator who has ever been burned by a platform, an agency, a network, or a contract they didn't fully understand deserves to know exactly where they stand before they build anything here. So here it is.</p>
+  <p>These are not aspirational values. They are operational commitments. They govern every product decision, every partnership, every revenue model, and every future feature on this platform. If something we build ever contradicts what is written here, the document wins.</p>
+  <p style="color:var(--gold);font-family:'Playfair Display',serif;font-style:italic;">Read it once. Trust it forever. Hold us to it.</p>
+</div>
+
+<div class="gold-rule"></div>
+
+<div class="rights-wrap">
+  <div class="sec-eye">The Twelve Rights</div>
+  <div class="sec-heading">Your Rights as a<br>StudioYou Creator</div>
+
+  <div class="right-item"><div class="right-num">01</div><div><div class="right-title">You own everything you create.</div><div class="right-body">Every piece of content, every format, every idea developed on this platform belongs to you. StudioYou makes no claim — partial or total, present or future — on anything you create here. Not your IP. Not your brand. Not your audience. Not your voice. Yours. Completely and permanently.</div></div></div>
+
+  <div class="right-item"><div class="right-num">02</div><div><div class="right-title">Your data is yours.</div><div class="right-body">Everything the platform knows about your business — your audience data, your distribution history, your deal records, your vendor relationships, your brand partnerships, your market intelligence, your performance analytics — belongs to you. It is yours to access, export, and take with you at any time, in a format you can actually use.</div></div></div>
+
+  <div class="right-item"><div class="right-num">03</div><div><div class="right-title">You can leave whenever you want. With everything.</div><div class="right-body">Cancel in two clicks. No retention screens. No guilt flows. No data held hostage. When you leave, the platform packages everything you built — your complete business record, your IP documentation, your relationship history, your audience data — and gives it to you. You leave with more than you came with. That is the point.</div></div></div>
+
+  <div class="right-item"><div class="right-num">04</div><div><div class="right-title">We will never take a cut of what you earn.</div><div class="right-body">StudioYou does not touch your revenue. Not a percentage. Not a royalty. Not a commission. Not a transaction fee on deals you close. The platform charges the ecosystem — tool providers, brands, agencies — for access to the creator base. You are not the product. You are the reason everyone else pays.</div></div></div>
+
+  <div class="right-item"><div class="right-num">05</div><div><div class="right-title">The price you see is the price you pay.</div><div class="right-body">No hidden fees. No features locked behind surprise upsells. No auto-renewing premium tiers buried in settings. No bait-and-switch pricing. What the platform costs is stated clearly before you sign up and cannot change without explicit notice and your consent.</div></div></div>
+
+  <div class="right-item"><div class="right-num">06</div><div><div class="right-title">Your platform relationships are yours.</div><div class="right-body">Every brand contact, every agency relationship, every vendor, every collaborator you develop through StudioYou belongs to your network — not the platform's. If you leave, you take your contacts, your deal history, and your relationship data with you. We introduce. You own the relationship.</div></div></div>
+
+  <div class="right-item"><div class="right-num">07</div><div><div class="right-title">You will never be surprised by a contract.</div><div class="right-body">Before any significant platform transition — a major deal, a representation agreement, an output deal — FutureYou will prepare you. Plain-language context on what you are being asked to sign. Pattern recognition on what is standard and what is not. Vetted independent legal resources at the moment you need them.</div></div></div>
+
+  <div class="right-item"><div class="right-num">08</div><div><div class="right-title">Your guide is loyal only to you.</div><div class="right-body">FutureYou is trained on your journey, your data, your goals. It has no competing interests. It does not represent brands. It does not work for agencies. It is not optimized for platform engagement metrics. It exists for one purpose: to help you build the career you are capable of building. Its loyalty is structurally, architecturally, constitutionally impossible to compromise.</div></div></div>
+
+  <div class="right-item"><div class="right-num">09</div><div><div class="right-title">Your wellbeing is part of the platform.</div><div class="right-body">StudioYou measures your success in decades, not quarters. Financial health, sustainable creative practice, and personal wellness are built into the platform — not as optional modules, but as core guidance. FutureYou notices when the pace is unsustainable. It says something.</div></div></div>
+
+  <div class="right-item"><div class="right-num">10</div><div><div class="right-title">The platform grows with you, not over you.</div><div class="right-body">You will never outgrow StudioYou in a direction the platform penalizes. When a MrBeast deal comes, or a Netflix call, or a CAA conversation — the platform prepares you for it, equips you for it, introduces you to independent representation for it, and steps back. Your success is not a threat to the platform. It is the entire point.</div></div></div>
+
+  <div class="right-item"><div class="right-num">11</div><div><div class="right-title">You move at your pace.</div><div class="right-body">No module is mandatory. No timeline is imposed. The studio lot builds itself around your journey — not a product roadmap someone else designed. The platform meets you where you are on day one and is still useful on day one thousand.</div></div></div>
+
+  <div class="right-item"><div class="right-num">12</div><div><div class="right-title">This document cannot be changed without you.</div><div class="right-body">These rights are not subject to a unilateral terms-of-service update. Any material change to this Bill of Rights will be communicated directly, explained plainly, and subject to creator community input before implementation. The platform was built for you. The document that governs it does not change without your voice in the room.</div></div></div>
+
+</div>
+
+<div class="commitments">
+  <div class="commit-inner">
+    <div>
+      <div class="sec-eye">Unconditional</div>
+      <div class="sec-heading" style="font-size:clamp(30px,4vw,46px);margin-bottom:0;">What We Will<br>Never Do</div>
+      <ul class="commit-list">
+        <li>Claim ownership of, license, or retain any rights to content you create on this platform</li>
+        <li>Sell, rent, or share your personal data or creator data with third parties without explicit consent</li>
+        <li>Take a percentage of revenue you earn independently outside the platform</li>
+        <li>Make your data difficult to export or inaccessible when you choose to leave</li>
+        <li>Use dark patterns — confusing cancellation flows, hidden fees, guilt-trip retention screens</li>
+        <li>Allow brands or agencies to cold-reach or solicit you without your initiation</li>
+        <li>Optimize FutureYou for platform retention at the expense of your actual interests</li>
+        <li>Hold your audience data, deal history, or relationship records hostage to your subscription status</li>
+        <li>Change the terms of this document without direct notification and community input</li>
+        <li>Prioritize platform revenue over creator sovereignty in any product decision</li>
+      </ul>
+    </div>
+    <div>
+      <div class="sec-eye">Active Commitments</div>
+      <div class="sec-heading" style="font-size:clamp(30px,4vw,46px);margin-bottom:0;">What We Will<br>Always Do</div>
+      <ul class="commit-list">
+        <li>Give you full, portable access to everything you have built on this platform — on request, in a usable format, at any time</li>
+        <li>Prepare you for high-stakes transitions with plain-language context, pattern recognition, and vetted independent resources</li>
+        <li>Maintain FutureYou as an advisor loyal exclusively to your goals, your growth, and your long-term wellbeing</li>
+        <li>Include financial health and personal wellness guidance as core platform functions, not optional features</li>
+        <li>Keep the subscription price honest — stated clearly, changed only with notice and consent</li>
+        <li>Provide warm, vetted introductions to independent legal, financial, and representation resources when you need them</li>
+        <li>Treat your departure as a graduation, not a failure — and send you off with everything you built</li>
+        <li>Hold the creator community's trust as the platform's most valuable and non-negotiable asset</li>
+        <li>Measure platform success by creator outcomes — careers built, deals made fairly, creators who lasted</li>
+        <li>Be held accountable to this document by the community it was written for</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="fy-section">
+  <div class="sec-eye">A Note on FutureYou</div>
+  <div class="sec-heading" style="font-size:clamp(30px,4.5vw,52px);max-width:440px;margin-bottom:28px;">The Guide That's Already on Your Side</div>
+  <div class="fy-card">
+    <div class="fy-opener">"If I could go back and guide my twenty-year-old self, everything would be different. FutureYou is that guide — for every creator who deserves one."</div>
+    <p class="fy-body">Every creator who has ever felt unrepresented, unprepared, or unprotected in this industry deserved someone in their corner who had already seen how the story ends. Someone whose only loyalty was to them. Someone who knew the road because they had already traveled it.</p>
+    <p class="fy-body">FutureYou is that presence. Not an AI assistant. Not a chatbot. The most informed, most loyal advisor you have ever had — because it is trained on your journey, your data, your decisions, and your growth. It begins as the collective wisdom of every creator who came before you. Over time it becomes something more specific: an intelligence that knows your career, your patterns, your blind spots, and your potential better than any external advisor ever could.</p>
+    <p class="fy-body">It will tell you what you need to hear, not what feels good to hear. It will flag the contract clause before you sign it. It will notice the burnout before you feel it. And when you are ready to walk through a door the platform cannot follow you through — FutureYou will hand you everything you built and step back.</p>
+    <p class="fy-body" style="color:var(--gold);font-family:'Playfair Display',serif;font-style:italic;margin-bottom:0;">That is what loyalty looks like. That is what this platform is built on.</p>
+  </div>
+</div>
+
+<section class="bottom-cta">
+  <h2 class="cta-heading">Build <span>Studio YOU.</span></h2>
+  <p class="cta-sub">The studio that was always supposed to be yours.</p>
+  <div class="cta-btns">
+    <a href="subscribe.html?src=direct" class="btn-primary">Start Building</a>
+    <a href="index.html" class="btn-ghost">Learn More</a>
+  </div>
+  <div class="share-note">This document is public. Share it freely.</div>
+</section>
+
+<footer>
+  <div class="footer-copy">SuperCreativePeople, Inc. &nbsp;·&nbsp; studioyou.studio &nbsp;·&nbsp; lee@supercreativepeople.com</div>
+</footer>
+
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1800);
+});
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const siblings = [...entry.target.parentElement.querySelectorAll('.right-item')];
+      const idx = siblings.indexOf(entry.target);
+      setTimeout(() => entry.target.classList.add('vis'), idx * 55);
+      obs.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.right-item').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

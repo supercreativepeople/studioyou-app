@@ -1290,6 +1290,226 @@ function FYForm({ formationLevel, phaseId, isPulsing }) {
 const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app'; // TODO: replace with your Cloud Run URL
 
 // ── ENTER STUDIO COMPONENT ───────────────────────────────────────────────────
+// ── FY SUMMARY SCREEN (Phase 'fy_summary') ────────────────────────────────
+// Displays what StudioYou has learned from formation chat so far.
+// Bridges formation to studio naming with narrative recap + CTA.
+
+function FYSummaryScreen({ fyFormation, onComplete }) {
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const contentTypes = (fyFormation.contentTypes || []).join(', ') || 'creative work';
+  const platforms = (fyFormation.platforms || []).join(', ') || 'your platforms';
+  const experience = fyFormation.experience || 'some time';
+  const origin = fyFormation.origin || 'a story';
+  const goal1yr = fyFormation.goal1yr || 'something meaningful';
+  const biggestFear = fyFormation.biggestFear || 'uncertainty';
+
+  const narrativeText = `You make ${contentTypes} on ${platforms}. 
+You've been at this for ${experience}. 
+Your origin: ${origin}. 
+Where you want to be in one year: ${goal1yr}. 
+What makes you hesitate: ${biggestFear}.
+
+You came here because you don't want to build on someone else's terms. 
+You want your studio. Your brand. Your rules. Your future.
+
+That's what we're building together.`;
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '40px 20px',
+      textAlign: 'center',
+    }}>
+      <div style={{ maxWidth: '640px' }}>
+        <h1 style={{
+          fontSize: '42px',
+          fontWeight: '700',
+          marginBottom: '8px',
+          letterSpacing: '0.5px',
+          color: 'var(--white)',
+        }}>
+          YOUR FORMATION
+        </h1>
+        <p style={{
+          fontSize: '12px',
+          letterSpacing: '1px',
+          color: 'var(--cyan)',
+          textTransform: 'uppercase',
+          marginBottom: '60px',
+          opacity: 0.8,
+        }}>
+          Ready to Build
+        </p>
+
+        <p style={{
+          fontSize: '16px',
+          lineHeight: '1.6',
+          color: 'var(--mute)',
+          marginBottom: '50px',
+        }}>
+          I see what you're making. I see where you're headed.<br/>
+          I see what makes you hesitate, and what drives you.<br/>
+          <br/>
+          <strong>This is enough to begin.</strong>
+        </p>
+
+        <div style={{
+          background: 'rgba(0,200,255,0.05)',
+          border: '1px solid rgba(0,200,255,0.2)',
+          borderRadius: '8px',
+          padding: '32px',
+          marginBottom: '50px',
+          textAlign: 'left',
+        }}>
+          <p style={{
+            fontSize: '15px',
+            lineHeight: '1.8',
+            color: 'var(--white)',
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'var(--mono)',
+            margin: 0,
+          }}>
+            {narrativeText}
+          </p>
+        </div>
+
+        <button
+          onClick={onComplete}
+          style={{
+            padding: '14px 32px',
+            fontSize: '14px',
+            fontWeight: '700',
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            background: 'linear-gradient(90deg, #00c8ff, #e8c97a)',
+            color: '#000',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.opacity = '0.85';
+            e.target.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          Let's build your studio →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── STUDIO RESERVED SCREEN (Phase 'studio_reserved') ──────────────────────
+// Confirmation moment before dashboard entry.
+// "You're in. The lot is ready."
+
+function StudioReservedScreen({ studioName, onComplete }) {
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const displayName = studioName || 'YOUR STUDIO';
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '40px 20px',
+      textAlign: 'center',
+    }}>
+      <div style={{ maxWidth: '640px' }}>
+        <h1 style={{
+          fontSize: '56px',
+          fontWeight: '700',
+          letterSpacing: '1px',
+          lineHeight: '1.2',
+          color: 'var(--cyan)',
+          marginBottom: '12px',
+        }}>
+          STUDIO<br/>RESERVED.
+        </h1>
+        <h2 style={{
+          fontSize: '42px',
+          fontWeight: '700',
+          letterSpacing: '1px',
+          color: 'var(--white)',
+          marginBottom: '60px',
+        }}>
+          YOU'RE IN.
+        </h2>
+
+        <div style={{
+          background: 'rgba(232,201,122,0.05)',
+          border: '1px solid rgba(232,201,122,0.3)',
+          borderRadius: '8px',
+          padding: '32px',
+          marginBottom: '50px',
+        }}>
+          <p style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--white)',
+            marginBottom: '16px',
+          }}>
+            {displayName}
+          </p>
+          <p style={{
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: 'var(--mute)',
+            margin: 0,
+          }}>
+            studio reserved. Your rate is locked.<br/>
+            Studio link is on its way.
+          </p>
+        </div>
+
+        <button
+          onClick={onComplete}
+          style={{
+            padding: '14px 32px',
+            fontSize: '14px',
+            fontWeight: '700',
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            background: 'linear-gradient(90deg, #00c8ff, #e8c97a)',
+            color: '#000',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.opacity = '0.85';
+            e.target.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          Enter your studio →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EnterStudio({ answers, fyText }) {
   const savedEmail = (() => { try { return localStorage.getItem('sy_email') || ''; } catch(e) { return ''; } })();
   const [email, setEmail] = React.useState(savedEmail);
@@ -2055,6 +2275,191 @@ function VisualIdentityPhase({ answers, onComplete }) {
 
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 
+// ── PHASE 'FY_SUMMARY': FORMATION RECAP ──────────────────────────────────────
+
+function FYSummaryScreen({ fyFormation, onComplete }) {
+  const narrativeText = (() => {
+    const f = fyFormation || {};
+    const contentTypes = Array.isArray(f.contentTypes) ? f.contentTypes.join(', ') : f.contentTypes || 'content';
+    const platforms = Array.isArray(f.platforms) ? f.platforms.join(', ') : f.platforms || 'platforms';
+    const experience = f.experience || 'your time';
+    const origin = f.origin || 'your journey';
+    const goal1yr = f.goal1yr || 'your vision';
+    const biggestFear = f.biggestFear || 'your hesitations';
+    
+    return `You make ${contentTypes} on ${platforms}. You've been at this for ${experience}. Your origin: ${origin}. Where you want to be in one year: ${goal1yr}. What makes you hesitate: ${biggestFear}.`;
+  })();
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '60px 40px',
+      fontFamily: "'Outfit', sans-serif",
+      background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)',
+      color: '#fff',
+      textAlign: 'center',
+    }}>
+      <div style={{
+        maxWidth: '700px',
+        lineHeight: '1.8',
+      }}>
+        <h2 style={{
+          fontSize: '48px',
+          fontWeight: '700',
+          marginBottom: '16px',
+          letterSpacing: '-1px',
+          textTransform: 'uppercase',
+        }}>
+          YOUR FORMATION
+        </h2>
+        <p style={{
+          fontSize: '14px',
+          color: '#4cff91',
+          marginBottom: '60px',
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+        }}>
+          Ready to build
+        </p>
+
+        <p style={{
+          fontSize: '18px',
+          marginBottom: '48px',
+          fontStyle: 'italic',
+          color: '#ccc',
+          lineHeight: '1.8',
+        }}>
+          I see what you're making. I see where you're headed. I see what makes you hesitate, and what drives you.
+        </p>
+
+        <p style={{
+          fontSize: '16px',
+          marginBottom: '48px',
+          fontStyle: 'italic',
+          color: '#999',
+          lineHeight: '1.8',
+        }}>
+          This is enough to begin.
+        </p>
+
+        <div style={{
+          background: 'rgba(0, 200, 255, 0.05)',
+          border: '1px solid rgba(0, 200, 255, 0.2)',
+          borderRadius: '8px',
+          padding: '32px',
+          marginBottom: '48px',
+          fontSize: '16px',
+          lineHeight: '1.8',
+          textAlign: 'left',
+          fontStyle: 'italic',
+          color: '#ddd',
+        }}>
+          {narrativeText}
+          <br />
+          <br />
+          You came here because you don't want to build on someone else's terms. You want your studio. Your brand. Your rules. Your future.
+          <br />
+          <br />
+          That's what we're building together.
+        </div>
+
+        <button
+          onClick={onComplete}
+          style={{
+            width: '100%',
+            padding: '16px 32px',
+            fontSize: '16px',
+            fontWeight: '600',
+            border: 'none',
+            borderRadius: '4px',
+            background: 'linear-gradient(90deg, #00c8ff 0%, #e8c97a 100%)',
+            color: '#000',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
+          Let's build your studio →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PHASE 'STUDIO_RESERVED': ARRIVAL CONFIRMATION ────────────────────────────
+
+function StudioReservedScreen({ studioName, onComplete }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '60px 40px',
+      fontFamily: "'Outfit', sans-serif",
+      background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)',
+      color: '#fff',
+      textAlign: 'center',
+    }}>
+      <div style={{
+        maxWidth: '600px',
+      }}>
+        <h1 style={{
+          fontSize: '56px',
+          fontWeight: '700',
+          marginBottom: '32px',
+          letterSpacing: '-1px',
+          lineHeight: '1.2',
+        }}>
+          STUDIO RESERVED.
+          <br />
+          YOU'RE IN.
+        </h1>
+
+        <p style={{
+          fontSize: '18px',
+          marginBottom: '48px',
+          color: '#ccc',
+          lineHeight: '1.8',
+        }}>
+          {studioName || 'Your Studio'} studio reserved. Your rate is locked. Studio link is on its way.
+        </p>
+
+        <button
+          onClick={onComplete}
+          style={{
+            width: '100%',
+            padding: '16px 32px',
+            fontSize: '16px',
+            fontWeight: '600',
+            border: 'none',
+            borderRadius: '4px',
+            background: 'linear-gradient(90deg, #00c8ff 0%, #e8c97a 100%)',
+            color: '#000',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
+          Enter your studio →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 function App() {
   const [phase, setPhase] = useState('home');     // 'home',0,'fy',6,7
   const [qIndex, setQIndex] = useState(0);
@@ -2186,7 +2591,7 @@ function App() {
   }, [qIndex, phase]);
 
   // ── PHASE transitions
-  const PHASE_ORDER = ['home', 0, 'fy', 'visual', 6, 7];
+  const PHASE_ORDER = ['home', 0, 'fy', 'fy_summary', 6, 'visual', 'studio_reserved', 7];
 
   function nextPhase() {
     const idx = PHASE_ORDER.indexOf(phase);
@@ -2205,8 +2610,7 @@ function App() {
   function handleVisualComplete(visualData) {
     localStorage.setItem('sy_visual', JSON.stringify(visualData));
     transition(() => {
-      setPhase(6);
-      buildLot();
+      setPhase('studio_reserved');
     });
   }
 
@@ -2230,8 +2634,16 @@ function App() {
     setFyTyping(false);
     setFyDone(true);
     transition(() => {
-      setPhase('visual');
+      setPhase('fy_summary');
     });
+  }
+
+  function handleFYSummaryComplete() {
+    transition(() => setPhase(6)); // Go to studio naming
+  }
+
+  function handleStudioReservedComplete() {
+    transition(() => setPhase(7)); // Go to dashboard
   }
 
   function transition(fn) {
@@ -2746,6 +3158,16 @@ function App() {
         </div>
       )}
 
+      {/* ── PHASE 'FY_SUMMARY': FORMATION RECAP */}
+      {phase === 'fy_summary' && (
+        <div className={`screen ${screenOut ? 'out' : ''}`}>
+          <FYSummaryScreen
+            fyFormation={fyFormation}
+            onComplete={handleFYSummaryComplete}
+          />
+        </div>
+      )}
+
       {/* ── PHASE VISUAL: STUDIO PORTRAIT */}
       {phase === 'visual' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
@@ -2805,6 +3227,16 @@ function App() {
         </div>
       )}
 
+      {/* ── PHASE 'STUDIO_RESERVED': ARRIVAL CONFIRMATION */}
+      {phase === 'studio_reserved' && (
+        <div className={`screen ${screenOut ? 'out' : ''}`}>
+          <StudioReservedScreen
+            studioName={localStorage.getItem('sy_studio_name') || answers.studio_name}
+            onComplete={handleStudioReservedComplete}
+          />
+        </div>
+      )}
+
       {/* ── PHASE 7: FY SPEAKS (+ email capture) */}
       {phase === 7 && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
@@ -2823,7 +3255,7 @@ function App() {
       )}
 
       {/* Phase label footer */}
-      <div className={`phase-label ${phase === 0 || phase === 'visual' || phase === 6 || phase === 7 ? 'hidden' : ''}`}>
+      <div className={`phase-label ${phase === 0 || phase === 'visual' || phase === 6 || phase === 7 || phase === 'fy_summary' || phase === 'studio_reserved' ? 'hidden' : ''}`}>
         {phase === 'fy' && fyFilledCount > 0 && `${fyFilledCount} of 6 — your studio is taking shape`}
       </div>
 

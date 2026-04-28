@@ -217,6 +217,7 @@
         const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
         function Dashboard() {
+            const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
             const [messages, setMessages] = React.useState([]);
             const [input, setInput] = React.useState('');
             const [loading, setLoading] = React.useState(false);
@@ -283,9 +284,10 @@
                     setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
                 } catch (error) {
                     console.error('Chat error:', error);
+                    const errorMsg = error.message || 'Connection error';
                     setMessages(prev => [...prev, {
                         role: 'assistant',
-                        content: 'Connection error. Please try again.'
+                        content: `Can't reach FutureYou. Error: ${errorMsg}. Check console for details.`
                     }]);
                 } finally {
                     setLoading(false);
@@ -430,7 +432,21 @@
             );
         }
 
+        // Define API endpoint
+        const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+        
         ReactDOM.render(<Dashboard />, document.getElementById('root'));
+    </script>
+    <script>
+        // Debug logging for API connectivity
+        console.log('StudioYou Dashboard loaded');
+        console.log('API_URL:', 'https://studioyou-api-198959034459.us-east1.run.app');
+        
+        // Test API health on load
+        fetch('https://studioyou-api-198959034459.us-east1.run.app/api/health')
+            .then(r => r.json())
+            .then(d => console.log('API Health:', d))
+            .catch(e => console.error('API Health Check Failed:', e.message));
     </script>
 </body>
 </html>

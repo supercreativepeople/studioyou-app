@@ -270,14 +270,18 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            email: email || 'guest',
+                            email: email && email.trim() ? email : null,
                             messages: [...messages, userMessage],
                             tier: tier,
                             systemPrompt: systemPrompt
                         })
                     });
 
-                    if (!response.ok) throw new Error('Chat request failed');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMsg = errorData.error || `HTTP ${response.status}`;
+                        throw new Error(`Chat request failed: ${errorMsg}`);
+                    }
                     
                     const data = await response.json();
                     setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);

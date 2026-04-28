@@ -267,18 +267,26 @@
                         systemPrompt += ` Operating in PEER ADVISOR MODE: The creator directs. You advise with 2-3 curated options and reasoning. Full toolkit visible. Let them choose.`;
                     }
 
+                    const requestBody = {
+                        email: email && email.trim() ? email : null,
+                        messages: [...messages, userMessage],
+                        tier: tier,
+                        systemPrompt: systemPrompt
+                    };
+                    
+                    console.log('Sending formation/chat request:', requestBody);
+                    
                     const response = await fetch(`${API_URL}/api/formation/chat`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: email || 'guest',
-                            messages: [...messages, userMessage],
-                            tier: tier,
-                            systemPrompt: systemPrompt
-                        })
+                        body: JSON.stringify(requestBody)
                     });
 
-                    if (!response.ok) throw new Error('Chat request failed');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMsg = errorData.error || `HTTP ${response.status}`;
+                        throw new Error(`Chat request failed: ${errorMsg}`);
+                    }
                     
                     const data = await response.json();
                     setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);

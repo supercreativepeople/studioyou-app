@@ -217,7 +217,6 @@
         const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
         function Dashboard() {
-            const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
             const [messages, setMessages] = React.useState([]);
             const [input, setInput] = React.useState('');
             const [loading, setLoading] = React.useState(false);
@@ -267,35 +266,26 @@
                         systemPrompt += ` Operating in PEER ADVISOR MODE: The creator directs. You advise with 2-3 curated options and reasoning. Full toolkit visible. Let them choose.`;
                     }
 
-                    const requestBody = {
-                        email: email && email.trim() ? email : null,
-                        messages: [...messages, userMessage],
-                        tier: tier,
-                        systemPrompt: systemPrompt
-                    };
-                    
-                    console.log('Sending formation/chat request:', requestBody);
-                    
                     const response = await fetch(`${API_URL}/api/formation/chat`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
+                        body: JSON.stringify({
+                            email: email || 'guest',
+                            messages: [...messages, userMessage],
+                            tier: tier,
+                            systemPrompt: systemPrompt
+                        })
                     });
 
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMsg = errorData.error || `HTTP ${response.status}`;
-                        throw new Error(`Chat request failed: ${errorMsg}`);
-                    }
+                    if (!response.ok) throw new Error('Chat request failed');
                     
                     const data = await response.json();
                     setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
                 } catch (error) {
                     console.error('Chat error:', error);
-                    const errorMsg = error.message || 'Connection error';
                     setMessages(prev => [...prev, {
                         role: 'assistant',
-                        content: `Can't reach FutureYou. Error: ${errorMsg}. Check console for details.`
+                        content: 'Connection error. Please try again.'
                     }]);
                 } finally {
                     setLoading(false);
@@ -441,17 +431,6 @@
         }
 
         ReactDOM.render(<Dashboard />, document.getElementById('root'));
-    </script>
-    <script>
-        // Debug logging for API connectivity
-        console.log('StudioYou Dashboard loaded');
-        console.log('API_URL:', 'https://studioyou-api-198959034459.us-east1.run.app');
-        
-        // Test API health on load
-        fetch('https://studioyou-api-198959034459.us-east1.run.app/api/health')
-            .then(r => r.json())
-            .then(d => console.log('API Health:', d))
-            .catch(e => console.error('API Health Check Failed:', e.message));
     </script>
 </body>
 </html>

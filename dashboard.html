@@ -1637,6 +1637,11 @@ function FYFormationChat({ onComplete, onFormationChange }) {
       setApiMessages(updatedApiMsgs);
       if (onFormationChange) onFormationChange(newForm);
 
+      // Persist studio name to localStorage for dynamic reference
+      if (newForm.studioName) {
+        localStorage.setItem('sy_studio_name', newForm.studioName);
+      }
+
       // Persist draft
       try {
         localStorage.setItem('sy_formation_draft', JSON.stringify({
@@ -2757,7 +2762,7 @@ function App() {
           <div className="lot-wrap">
             <div className="lot-header">
               <div className="lot-name">
-                {answers.studio_name || 'Your Studio'}
+                {localStorage.getItem('sy_studio_name') || answers.studio_name || 'YOUR STUDIO'}
               </div>
               <div className={`lot-sub lot-sub-pulse`} style={{color:'#4cff91'}}>
                 {revealedBuildings.length < BUILDINGS.length ? 'Opening your lot...' : 'Formation complete'}

@@ -1,440 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioYou Dashboard</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
-        }
-        .dashboard {
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 280px;
-            background: #1a1a1a;
-            border-right: 1px solid #333;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .sidebar-section {
-            margin-bottom: 24px;
-        }
-        .sidebar-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #888;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        .sidebar-item {
-            padding: 10px 12px;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            border-left: 2px solid transparent;
-        }
-        .sidebar-item:hover {
-            background: #2a2a2a;
-        }
-        .sidebar-item.active {
-            background: #2a2a2a;
-            color: #64c8ff;
-            border-left-color: #64c8ff;
-        }
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .topbar {
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 60px;
-        }
-        .topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .topbar-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e0e0e0;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .badge-universal {
-            background: rgba(100, 200, 255, 0.15);
-            color: #64c8ff;
-        }
-        .badge-pro {
-            background: rgba(200, 100, 255, 0.15);
-            color: #c864ff;
-        }
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 24px;
-            overflow-y: auto;
-        }
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .message {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-        .message.user {
-            justify-content: flex-end;
-        }
-        .message-content {
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            line-height: 1.5;
-            font-size: 14px;
-        }
-        .message.assistant .message-content {
-            background: #2a2a2a;
-            color: #e0e0e0;
-        }
-        .message.user .message-content {
-            background: #0066cc;
-            color: white;
-        }
-        .input-area {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-        .input-field {
-            flex: 1;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #e0e0e0;
-            font-size: 14px;
-            font-family: inherit;
-            resize: none;
-            max-height: 120px;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: #64c8ff;
-            background: #333;
-        }
-        .send-btn {
-            background: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .send-btn:hover {
-            background: #0052a3;
-        }
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .stage-badge {
-            background: rgba(100, 200, 100, 0.15);
-            color: #64c864;
-        }
-        .settings-btn {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #e0e0e0;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        .settings-btn:hover {
-            background: #333;
-            border-color: #666;
-        }
-        .empty-state {
-            text-align: center;
-            color: #888;
-            padding: 40px 20px;
-        }
-        .empty-state-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #b0b0b0;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Build Studio YOU.</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black:   #06091a;
+    --navy:    #0b0d1a;
+    --white:   #f0f2ff;
+    --dim:     rgba(240,242,255,0.65);
+    --mute:    rgba(240,242,255,0.3);
+    --ghost:   rgba(240,242,255,0.06);
+    --cyan:    #00c8ff;
+    --purple:  #7b35d4;
+    --grad:    linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%);
+    --gradT:   linear-gradient(135deg, #00c8ff 0%, #a06be8 100%);
+  }
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    overflow: hidden;
+  }
+</style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
+<script type="text/babel">
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
-    <script type="text/babel">
-        const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+const FY_FIELDS = ['contentTypes','platforms','experience','origin','goal1yr','biggestFear'];
 
-        function Dashboard() {
-            const [messages, setMessages] = React.useState([]);
-            const [input, setInput] = React.useState('');
-            const [loading, setLoading] = React.useState(false);
-            const [tier, setTier] = React.useState('universal');
-            const [email, setEmail] = React.useState('');
-            const [formation, setFormation] = React.useState(null);
-            const [journeyStage, setJourneyStage] = React.useState('ideate');
-            const messagesEndRef = React.useRef(null);
+function FormationExplainer({ onClose }) {
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(6,9,26,0.85)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:500}}>
+      <div style={{maxWidth:480,width:'100%',background:'#0b0d1a',border:'1px solid rgba(0,200,255,0.18)',padding:'36px 40px'}}>
+        <div style={{fontSize:'9px',letterSpacing:'0.3em',textTransform:'uppercase',color:'#00c8ff',opacity:0.7,marginBottom:16}}>StudioYou | The Ultimate Creator Platform</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:'0.06em',color:'#f0f2ff',marginBottom:20}}>This is how FutureYou learns TodayYou.</div>
+        <div style={{fontSize:14,lineHeight:1.8,color:'rgba(240,242,255,0.65)',marginBottom:28}}>
+          <p style={{marginBottom:14}}>Formation is the interview that builds your ultimate guide; YOU, thirty years from now, back to enrich you with all that knowledge and experience. FutureYou is not an AI guide. It's your personal time machine that will guide you every step of the way.</p>
+          <p style={{marginBottom:14}}>Every answer shapes FutureYou: the intelligence at the core of your studio. The more honest you are, the more useful FutureYou becomes. Pass anything you're not ready for — no answer is wrong, and you can always come back.</p>
+          <p>Set aside 20–30 minutes. At the end, your studio opens and FutureYou speaks to you directly — for the first time.</p>
+        </div>
+        <button onClick={onClose} style={{background:'linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%)',border:'none',color:'#06091a',fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:'0.14em',padding:'12px 28px',cursor:'pointer',transition:'opacity 0.2s ease'}}>Got it — let's go</button>
+      </div>
+    </div>
+  );
+}
 
-            // Initialize from localStorage
-            React.useEffect(() => {
-                const storedEmail = localStorage.getItem('email');
-                const storedTier = localStorage.getItem('tier') || 'universal';
-                const storedStage = localStorage.getItem('journeyStage') || 'ideate';
-                
-                // Backward compatibility: rename tiers
-                let normalizedTier = storedTier;
-                if (storedTier === 'independent') normalizedTier = 'universal';
-                if (storedTier === 'operator') normalizedTier = 'pro';
-                
-                setEmail(storedEmail || '');
-                setTier(normalizedTier);
-                setJourneyStage(storedStage);
-                localStorage.setItem('tier', normalizedTier); // Update storage
-            }, []);
+function FYDataCard({ onDismiss, onSaved }) {
+  const [email, setEmail] = React.useState('');
+  const [saved, setSaved] = React.useState(false);
 
-            // Auto-scroll to latest message
-            React.useEffect(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [messages]);
+  function handleSave() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
+    try {
+      localStorage.setItem('sy_email', email.trim().toLowerCase());
+    } catch(e) {}
+    setSaved(true);
+    setTimeout(onDismiss, 2000);
+    if (onSaved) onSaved(email);
+  }
 
-            const sendMessage = async () => {
-                if (!input.trim() || loading) return;
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(6,9,26,0.85)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:500}}>
+      <div style={{maxWidth:420,width:'100%',background:'#0b0d1a',border:'1px solid rgba(0,200,255,0.18)',padding:'36px 40px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:24}}>
+          <div style={{width:5,height:5,borderRadius:'50%',background:'#00c8ff',flexShrink:0,animation:'pulse 2.5s ease-in-out infinite'}}/>
+          <div style={{fontSize:'11px',letterSpacing:'0.14em',textTransform:'uppercase',color:'#00c8ff'}}>Future You</div>
+        </div>
+        {!saved ? (
+          <>
+            <div style={{fontSize:14,lineHeight:1.8,color:'rgba(240,242,255,0.65)',marginBottom:28}}>Your answers are being saved as you go — if you're on this browser, you're protected. Want access from any device? Drop your email. Five seconds. Completely your call.</div>
+            <div style={{display:'flex',gap:12,alignItems:'center',marginBottom:20}}>
+              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSave()} placeholder="your@email.com" style={{flex:1,background:'#0b0d1a',border:'1px solid rgba(0,200,255,0.18)',borderRadius:4,padding:'10px 12px',color:'#f0f2ff',fontSize:13}} autoComplete="email"/>
+              <button onClick={handleSave} style={{background:'linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%)',border:'none',color:'#06091a',fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:'0.12em',padding:'10px 20px',cursor:'pointer'}}>Save</button>
+              <button onClick={onDismiss} style={{background:'transparent',border:'1px solid rgba(0,200,255,0.2)',color:'rgba(240,242,255,0.6)',fontSize:12,letterSpacing:'0.12em',padding:'10px 20px',cursor:'pointer',transition:'all 0.2s ease'}}>Keep going</button>
+            </div>
+          </>
+        ) : (
+          <div style={{fontSize:14,color:'rgba(0,200,255,0.8)'}}>Saved. Your formation is protected across devices.</div>
+        )}
+      </div>
+      <style>{`@keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }`}</style>
+    </div>
+  );
+}
 
-                const userMessage = { role: 'user', content: input };
-                setMessages(prev => [...prev, userMessage]);
-                setInput('');
-                setLoading(true);
+const FY_QUESTIONS = {
+  contentTypes: "What types of content do you create?",
+  platforms: "Where does your work live right now?",
+  experience: "How long have you been making things?",
+  origin: "Why did you start creating?",
+  goal1yr: "What do you want to achieve in the next 12 months?",
+  biggestFear: "What's the biggest thing holding you back?"
+};
 
-                try {
-                    // Build system prompt with tier mode
-                    let systemPrompt = `You are FutureYou, the career arc navigator for StudioYou.`;
-                    
-                    if (tier === 'universal') {
-                        systemPrompt += ` Operating in DIRECTIVE MODE: The creator tells you what they want. You handle routing to tools, platforms, communities. Tools are invisible. You make the decisions.`;
-                    } else {
-                        systemPrompt += ` Operating in PEER ADVISOR MODE: The creator directs. You advise with 2-3 curated options and reasoning. Full toolkit visible. Let them choose.`;
-                    }
+function FYFormationChat({ onComplete }) {
+  const [displayMessages, setDisplayMessages] = React.useState([]);
+  const [apiMessages, setApiMessages] = React.useState([]);
+  const [formation, setFormation] = React.useState({});
+  const [inputText, setInputText] = React.useState('');
+  const [isTyping, setIsTyping] = React.useState(false);
+  const [isComplete, setIsComplete] = React.useState(false);
+  const inputRef = React.useRef(null);
+  const messagesEnd = React.useRef(null);
 
-                    const response = await fetch(`${API_URL}/api/formation/chat`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: email && email.trim() ? email : null,
-                            messages: [...messages, userMessage],
-                            tier: tier,
-                            systemPrompt: systemPrompt
-                        })
-                    });
+  const filledCount = FY_FIELDS.filter(f => {
+    const v = formation[f];
+    return v && (Array.isArray(v) ? v.length > 0 : v !== '');
+  }).length;
 
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMsg = errorData.error || `HTTP ${response.status}`;
-                        throw new Error(`Chat request failed: ${errorMsg}`);
-                    }
-                    
-                    const data = await response.json();
-                    setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-                } catch (error) {
-                    console.error('Chat error:', error);
-                    setMessages(prev => [...prev, {
-                        role: 'assistant',
-                        content: 'Connection error. Please try again.'
-                    }]);
-                } finally {
-                    setLoading(false);
-                }
-            };
+  React.useEffect(() => {
+    messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [displayMessages]);
 
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            };
-
-            const handleTierChange = (newTier) => {
-                setTier(newTier);
-                localStorage.setItem('tier', newTier);
-            };
-
-            const handleStageChange = (stage) => {
-                setJourneyStage(stage);
-                localStorage.setItem('journeyStage', stage);
-            };
-
-            const isUniversal = tier === 'universal';
-
-            return (
-                <div className="dashboard">
-                    {/* Sidebar */}
-                    <div className="sidebar">
-                        <div className="sidebar-section">
-                            <div className="sidebar-label">Journey Stages</div>
-                            {['ideate', 'develop', 'produce', 'distribute', 'monetize'].map(stage => (
-                                <div
-                                    key={stage}
-                                    className={`sidebar-item ${journeyStage === stage ? 'active' : ''}`}
-                                    onClick={() => handleStageChange(stage)}
-                                >
-                                    {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="sidebar-section">
-                            <div className="sidebar-label">Creator Tier</div>
-                            <div
-                                className={`sidebar-item ${isUniversal ? 'active' : ''}`}
-                                onClick={() => handleTierChange('universal')}
-                            >
-                                🎯 Universal
-                            </div>
-                            <div
-                                className={`sidebar-item ${!isUniversal ? 'active' : ''}`}
-                                onClick={() => handleTierChange('pro')}
-                            >
-                                ⚙️ Pro
-                            </div>
-                        </div>
-
-                        <div className="sidebar-section">
-                            <div className="sidebar-label">Account</div>
-                            <input
-                                type="email"
-                                placeholder="your@email.com"
-                                value={email}
-                                onChange={(e) => {
-                                    setEmail(e.target.value);
-                                    localStorage.setItem('email', e.target.value);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: '#2a2a2a',
-                                    border: '1px solid #444',
-                                    borderRadius: '6px',
-                                    color: '#e0e0e0',
-                                    fontSize: '13px'
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="main-content">
-                        {/* Topbar */}
-                        <div className="topbar">
-                            <div className="topbar-left">
-                                <div className="topbar-title">FutureYou</div>
-                                <span className={`badge stage-badge`}>
-                                    {journeyStage.toUpperCase()}
-                                </span>
-                                <span className={`badge ${isUniversal ? 'badge-universal' : 'badge-pro'}`}>
-                                    {isUniversal ? 'Universal' : 'Pro'}
-                                </span>
-                            </div>
-                            <div className="topbar-right">
-                                <button className="settings-btn">⚙️ Settings</button>
-                            </div>
-                        </div>
-
-                        {/* Chat Area */}
-                        <div className="chat-container">
-                            <div className="messages">
-                                {messages.length === 0 ? (
-                                    <div className="empty-state">
-                                        <div className="empty-state-title">Welcome to FutureYou</div>
-                                        <p>Tell me what you want to make next, and I'll guide you.</p>
-                                    </div>
-                                ) : (
-                                    messages.map((msg, idx) => (
-                                        <div key={idx} className={`message ${msg.role}`}>
-                                            <div className="message-content">
-                                                {msg.content}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                                <div ref={messagesEndRef} />
-                            </div>
-
-                            {/* Input Area */}
-                            <div className="input-area">
-                                <textarea
-                                    className="input-field"
-                                    placeholder="What do you want to create?"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    disabled={loading}
-                                    rows="3"
-                                />
-                                <button
-                                    className="send-btn"
-                                    onClick={sendMessage}
-                                    disabled={loading || !input.trim()}
-                                >
-                                    {loading ? '...' : 'Send'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('sy_formation_draft');
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.apiMessages && draft.apiMessages.length > 0) {
+          const display = [];
+          draft.apiMessages.forEach(m => {
+            if (m.role === 'assistant') {
+              try {
+                const p = JSON.parse(m.content);
+                if (p.message) display.push({ role:'fy', text: p.message });
+              } catch(e) {}
+            } else if (m.role === 'user' && m.content !== 'Start the formation conversation.') {
+              display.push({ role:'user', text: m.content });
+            }
+          });
+          if (display.length > 0) {
+            setApiMessages(draft.apiMessages);
+            setFormation(draft.formation || {});
+            setDisplayMessages(display);
+            return;
+          }
         }
+      }
+    } catch(e) {}
+    callFY([], {});
+  }, []);
 
-        ReactDOM.render(<Dashboard />, document.getElementById('root'));
-    </script>
+  async function callFY(currentApiMsgs, currentFormation) {
+    setIsTyping(true);
+
+    try {
+      const res = await fetch(`${API_URL}/api/formation/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: currentApiMsgs, formation: currentFormation }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'No response');
+
+      const fyMsg = data.message || '';
+      const newForm = { ...currentFormation, ...(data.formation || {}) };
+      const complete = data.complete || false;
+
+      const assistantApiMsg = { role: 'assistant', content: JSON.stringify({ message: fyMsg, formation: newForm, complete }) };
+      const updatedApiMsgs = [...currentApiMsgs, assistantApiMsg];
+
+      setFormation(newForm);
+      setApiMessages(updatedApiMsgs);
+
+      try {
+        localStorage.setItem('sy_formation_draft', JSON.stringify({
+          apiMessages: updatedApiMsgs,
+          formation: newForm,
+          savedAt: new Date().toISOString(),
+        }));
+      } catch(e) {}
+
+      typewriteFY(fyMsg, () => {
+        setIsTyping(false);
+        if (complete) {
+          setIsComplete(true);
+          setTimeout(() => onComplete(newForm, fyMsg), 1200);
+        } else {
+          setTimeout(() => inputRef.current?.focus(), 80);
+        }
+      });
+
+    } catch(e) {
+      setIsTyping(false);
+      typewriteFY("Something went wrong reaching FutureYou. Try sending your message again.", () => {});
+    }
+  }
+
+  function typewriteFY(text, onDone) {
+    const id = Date.now();
+    setDisplayMessages(prev => [...prev, { role:'fy', text:'', id }]);
+    let i = 0;
+    const iv = setInterval(() => {
+      if (i < text.length) {
+        i++;
+        setDisplayMessages(prev => prev.map(m => m.id === id ? { ...m, text: text.slice(0, i) } : m));
+      } else {
+        clearInterval(iv);
+        if (onDone) onDone();
+      }
+    }, 22);
+  }
+
+  async function sendMessage(text) {
+    const t = (text || inputText).trim();
+    if (!t || isTyping) return;
+    setInputText('');
+    setDisplayMessages(prev => [...prev, { role:'user', text: t }]);
+    const userApiMsg = { role:'user', content: t };
+    const newApiMsgs = [...apiMessages, userApiMsg];
+    setApiMessages(newApiMsgs);
+    await callFY(newApiMsgs, formation);
+  }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',padding:'40px'}}>
+      <div style={{display:'flex',gap:4,marginBottom:28,alignItems:'center'}}>
+        {FY_FIELDS.map(f => {
+          const v = formation[f];
+          const filled = v && (Array.isArray(v) ? v.length > 0 : v !== '');
+          return <div key={f} style={{width:8,height:8,borderRadius:'50%',background:filled?'#00c8ff':'rgba(0,200,255,0.2)',transition:'all 0.3s ease'}}/>;
+        })}
+        <span style={{fontSize:'11px',color:'rgba(240,242,255,0.5)',marginLeft:12,letterSpacing:'0.1em'}}>{filledCount > 0 ? `${filledCount} of 6` : 'Formation'}</span>
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',marginBottom:20,display:'flex',flexDirection:'column',gap:12}}>
+        {displayMessages.map((m, i) => (
+          <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+            <div style={{maxWidth:'70%',padding:'12px 16px',borderRadius:6,background:m.role==='fy'?'rgba(0,200,255,0.08)':'#0066cc',color:'#f0f2ff',fontSize:14,lineHeight:1.5}}>
+              {m.text}{isTyping && i === displayMessages.length - 1 && m.role==='fy' && <span style={{animation:'blink 1s infinite',marginLeft:4}}>|</span>}
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEnd} />
+      </div>
+
+      {!isComplete && (
+        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <textarea value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}} placeholder={isTyping ? '' : 'Tell FutureYou...'} disabled={isTyping} rows={2} ref={inputRef} style={{flex:1,background:'#0b0d1a',border:'1px solid rgba(0,200,255,0.2)',borderRadius:6,padding:'12px 16px',color:'#f0f2ff',fontSize:14,fontFamily:'Outfit,sans-serif',resize:'none',maxHeight:120}}/>
+          <button onClick={()=>sendMessage()} disabled={isTyping||!inputText.trim()} style={{background:'#0066cc',color:'white',border:'none',borderRadius:4,padding:'10px 20px',cursor:isTyping||!inputText.trim()?'default':'pointer',opacity:isTyping||!inputText.trim()?0.5:1,fontSize:14,fontWeight:600}}>→</button>
+        </div>
+      )}
+      <style>{`@keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }`}</style>
+    </div>
+  );
+}
+
+function App() {
+  const [phase, setPhase] = React.useState('intro'); // intro, chat, email
+  const [formation, setFormation] = React.useState({});
+  const [futureYouMsg, setFutureYouMsg] = React.useState('');
+
+  return (
+    <div style={{width:'100%',height:'100%',background:'#06091a'}}>
+      {phase === 'intro' && <FormationExplainer onClose={()=>setPhase('chat')}/>}
+      {phase === 'chat' && <FYFormationChat onComplete={(f,msg)=>{setFormation(f);setFutureYouMsg(msg);setPhase('email');}}/>}
+      {phase === 'email' && <FYDataCard onDismiss={()=>setPhase('dashboard')} onSaved={(e)=>{localStorage.setItem('sy_email',e);}}/>}
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
 </body>
 </html>

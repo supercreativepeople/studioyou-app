@@ -2332,7 +2332,7 @@ function App() {
     const isFilm   = contentTypes.some(c => ['Film','Documentary','Animation'].includes(c));
     const isSocial = platforms && platforms.length > 0 ? platforms.some(p => ['TikTok','Instagram'].includes(p)) : false;
     const isYT = platforms && platforms.includes('YouTube');
-    const isPod    = const isPod = platforms && platforms.includes('Podcast platforms');
+    const isPod = platforms && platforms.includes('Podcast platforms');
 
     let unlocked = ['ideate', 'develop', 'produce', 'distribute', 'monetize', 'clear'];
     if (isSocial || isYT || isPod) unlocked.push('brand', 'market');

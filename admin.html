@@ -1,0 +1,454 @@
+<!--
+╔════════════════════════════════════════════════════════════════════════════╗
+║ FILE: admin.html                                                           ║
+║ VERSION: Phase 10.20 - Admin Dashboard                                     ║
+║ CREATED: April 30, 2026                                                    ║
+║ MODIFIED: April 30, 2026 - 08:30 UTC                                       ║
+║ STATUS: Ready for Deployment                                               ║
+║ DEPLOYMENT TARGET: studioyou-app (development only)                        ║
+║                                                                            ║
+║ PURPOSE:                                                                   ║
+║ Admin interface for user management. Allows:                               ║
+║ - List all users (email, name, signup date, studio name)                   ║
+║ - View user formation data (read-only)                                     ║
+║ - Delete user records (for testing)                                        ║
+║                                                                            ║
+║ USAGE:                                                                     ║
+║ 1. Open admin.html in browser                                              ║
+║ 2. Click "Load Users" to fetch all users from database                     ║
+║ 3. Click user email to view full formation data                            ║
+║ 4. Click "Delete" to remove user (irreversible)                            ║
+║                                                                            ║
+║ API ENDPOINTS:                                                             ║
+║ - GET /api/admin/users — list all users                                    ║
+║ - GET /api/admin/users/{email} — view user details                         ║
+║ - DELETE /api/admin/users/{email} — delete user                            ║
+║                                                                            ║
+║ NOTES:                                                                     ║
+║ - This is for development/testing only                                     ║
+║ - No authentication required (assumes local access)                        ║
+║ - Delete is permanent — no confirmation yet                                ║
+║ - All timestamps in UTC                                                    ║
+║                                                                            ║
+║ AUTHOR: Claude (Anthropic)                                                 ║
+║ SOURCE: StudioYou Phase 10.20 Admin Dashboard                              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudioYou — Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f4b 100%);
+            color: #f0f2ff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            color: #00c8ff;
+        }
+
+        .subtitle {
+            color: #a0a9b8;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #00c8ff;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #00e6ff;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: transparent;
+            color: #00c8ff;
+            border: 1px solid #00c8ff;
+        }
+
+        button.secondary:hover {
+            background: rgba(0, 200, 255, 0.1);
+        }
+
+        button.danger {
+            background: #ff4444;
+            color: white;
+        }
+
+        button.danger:hover {
+            background: #ff6666;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: rgba(76, 255, 145, 0.2);
+            color: #4cff91;
+            border: 1px solid #4cff91;
+        }
+
+        .status.error {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff8888;
+            border: 1px solid #ff8888;
+        }
+
+        .status.loading {
+            background: rgba(0, 200, 255, 0.2);
+            color: #00c8ff;
+            border: 1px solid #00c8ff;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .users-table thead {
+            background: rgba(0, 200, 255, 0.1);
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .users-table th {
+            font-weight: 600;
+            color: #00c8ff;
+            font-size: 0.9rem;
+        }
+
+        .users-table tbody tr:hover {
+            background: rgba(0, 200, 255, 0.05);
+        }
+
+        .user-email {
+            color: #00c8ff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .user-email:hover {
+            color: #00e6ff;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btns button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        .detail-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .detail-panel.show {
+            display: block;
+        }
+
+        .detail-panel h3 {
+            color: #00c8ff;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+
+        .detail-item {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #a0a9b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            color: #f0f2ff;
+            font-family: 'Monaco', monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+
+        .empty {
+            text-align: center;
+            color: #a0a9b8;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 200, 255, 0.3);
+            border-top-color: #00c8ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .user-count {
+            color: #a0a9b8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <p class="subtitle">StudioYou User Management</p>
+        </header>
+
+        <div class="status" id="status"></div>
+
+        <div class="controls">
+            <button onclick="loadUsers()">Load Users</button>
+            <button class="secondary" onclick="clearDetail()">Clear Detail View</button>
+        </div>
+
+        <div id="usersContainer">
+            <p class="empty">Click "Load Users" to fetch data from database</p>
+        </div>
+
+        <div class="detail-panel" id="detailPanel">
+            <h3>User Details</h3>
+            <div id="detailContent"></div>
+            <button class="danger" onclick="deleteCurrentUser()" style="margin-top: 20px;">Delete User</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+        let currentUser = null;
+
+        function showStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status show ${type}`;
+        }
+
+        function hideStatus() {
+            document.getElementById('status').className = 'status';
+        }
+
+        async function loadUsers() {
+            showStatus('Loading users...');
+            try {
+                const response = await fetch(`${API_URL}/api/admin/users`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`Loaded ${data.count} users`, 'success');
+                    renderUsersTable(data.users);
+                    setTimeout(hideStatus, 2000);
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        function renderUsersTable(users) {
+            const container = document.getElementById('usersContainer');
+
+            if (users.length === 0) {
+                container.innerHTML = '<p class="empty">No users found</p>';
+                return;
+            }
+
+            let html = `
+                <p class="user-count">${users.length} total users</p>
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Studio Name</th>
+                            <th>Signup Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                const date = new Date(user.created_at).toLocaleDateString();
+                const firstName = user.first_name || 'N/A';
+                const studioName = user.studio_name || 'N/A';
+
+                html += `
+                    <tr>
+                        <td><span class="user-email" onclick="viewUser('${user.email}')">${user.email}</span></td>
+                        <td>${firstName}</td>
+                        <td>${studioName}</td>
+                        <td>${date}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="secondary" onclick="viewUser('${user.email}')">View</button>
+                                <button class="danger" onclick="deleteUser('${user.email}')">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        async function viewUser(email) {
+            showStatus('Loading user details...');
+            try {
+                const response = await fetch(`${API_URL}/api/admin/users/${email}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    renderUserDetails(data.user);
+                    hideStatus();
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        function renderUserDetails(user) {
+            const panel = document.getElementById('detailPanel');
+            const content = document.getElementById('detailContent');
+
+            let html = '';
+            for (const [key, value] of Object.entries(user)) {
+                const displayValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+                html += `
+                    <div class="detail-item">
+                        <div class="detail-label">${key}</div>
+                        <div class="detail-value">${displayValue || 'null'}</div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+            panel.classList.add('show');
+        }
+
+        function clearDetail() {
+            document.getElementById('detailPanel').classList.remove('show');
+            currentUser = null;
+        }
+
+        async function deleteUser(email) {
+            if (!confirm(`Delete user ${email}? This cannot be undone.`)) return;
+            showStatus('Deleting user...');
+            try {
+                const response = await fetch(`${API_URL}/api/admin/users/${email}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('User deleted successfully', 'success');
+                    clearDetail();
+                    setTimeout(loadUsers, 1000);
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        function deleteCurrentUser() {
+            if (!currentUser) return;
+            deleteUser(currentUser.email);
+        }
+    </script>
+</body>
+</html>

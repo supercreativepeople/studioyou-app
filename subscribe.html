@@ -1343,6 +1343,75 @@ async function confirmSubscription() {
 }
 
 // ── API CALL ──────────────────────────────────────────────────────────────
+// Note: API_URL pointing to Cloud Run backend for all Claude calls
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+
+// ── SESSION VALIDATION ────────────────────────────────────────────────────
+// ── SESSION GUIDANCE (Not gating, just informing user's next step) ──
+// Check user state and display appropriate guide; allow exploration anyway
+
+async function checkUserState() {
+  const email = (localStorage.getItem('sy_email') || '').trim();
+  const session = (localStorage.getItem('sy_session') || '').trim();
+  
+  // Normal flow: user did formation, clicked magic link
+  if (email && session) {
+    try {
+      const res = await fetch(`${API_URL}/api/me`, {
+        headers: { 'Authorization': `Bearer ${session}` }
+      });
+      if (res.ok) {
+        return true;  // Session valid, show pricing
+      }
+    } catch(e) {}
+  }
+  
+  // Abnormal: user somehow got here without proper flow
+  if (!email) {
+    showGuide('formation');  // "Start your formation first"
+    return false;
+  }
+  
+  if (!session) {
+    showGuide('verify', email);  // "Check your email"
+    return false;
+  }
+  
+  return false;
+}
+
+function showGuide(type, email) {
+  const fyMessages = document.getElementById('fyMessages');
+  if (!fyMessages) return;
+  
+  let html = '';
+  
+  if (type === 'formation') {
+    // User hasn't done formation yet
+    html = `
+      <div style="padding:32px; text-align:center; color:rgba(240,242,255,0.6); font-size:14px; line-height:1.8;">
+        <div style="font-size:16px; font-weight:500; margin-bottom:16px;">Build Your Studio First</div>
+        <p style="margin-bottom:16px;">Every tool, every feature starts with your formation — a 20-minute conversation with FutureYou about who you are and where you're going.</p>
+        <p style="margin-bottom:24px; font-size:13px; color:rgba(240,242,255,0.4);">You move at your pace. Nothing is mandatory. You can explore and come back anytime.</p>
+        <a href="index.html" style="display:inline-block; padding:12px 28px; background:rgba(0,200,255,0.8); color:var(--black); text-decoration:none; font-weight:500; border-radius:2px; cursor:pointer;">Start Your Formation</a>
+      </div>
+    `;
+  } else if (type === 'verify') {
+    // User has email but no session
+    html = `
+      <div style="padding:32px; text-align:center; color:rgba(240,242,255,0.6); font-size:14px; line-height:1.8;">
+        <div style="font-size:16px; font-weight:500; margin-bottom:16px;">Verify Your Studio</div>
+        <p style="margin-bottom:16px;">We sent a magic link to <strong>${email}</strong> to create your session. Click it to unlock your studio and start building.</p>
+        <p style="margin-bottom:24px; font-size:13px; color:rgba(240,242,255,0.4);">Didn't receive it? Request a new one below.</p>
+        <button onclick="subResendLink()" style="padding:12px 28px; background:rgba(0,200,255,0.8); color:var(--black); border:none; font-weight:500; border-radius:2px; cursor:pointer; font-size:13px; font-family:'Outfit',sans-serif;">Resend Magic Link</button>
+      </div>
+    `;
+  }
+  
+  fyMessages.innerHTML = html;
+  document.getElementById('fySend').disabled = true;
+  document.getElementById('input').disabled = true;
+}
 
 async function streamFYResponse(systemPrompt, messages, targetBubble, msgEl) {
   isStreaming = true;
@@ -1350,16 +1419,20 @@ async function streamFYResponse(systemPrompt, messages, targetBubble, msgEl) {
   document.getElementById('fySend').disabled = true;
 
   const payload = {
-    model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
     system: systemPrompt,
     messages: messages
   };
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    // Route through backend /api/chat endpoint with session auth
+    const sessionToken = localStorage.getItem('sy_session') || '';
+    const res = await fetch(`${API_URL}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionToken}`
+      },
       body: JSON.stringify(payload)
     });
 
@@ -1553,7 +1626,7 @@ async function subResendLink() {
   const confirm = document.getElementById('subResendConfirm');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
   try {
-    await fetch('https://studioyou-api-198959034459.us-east1.run.app/api/auth/request', {
+    await fetch(`${API_URL}/api/auth/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -1603,8 +1676,29 @@ if (isDirectFlow) {
 
 // ── BOOT ──────────────────────────────────────────────────────────────────
 
-updatePrices();
-initFY();
+// Check user state and show appropriate guidance or proceed
+(async () => {
+  // Assume normal flow: user has session from magic link
+  // Only show guides if something is wrong
+  
+  const email = (localStorage.getItem('sy_email') || '').trim();
+  const session = (localStorage.getItem('sy_session') || '').trim();
+  
+  // Normal path: both exist, session should be valid
+  if (email && session) {
+    updatePrices();  // Always show pricing
+    const isValid = await checkUserState();
+    if (isValid) {
+      initFY();  // User is ready to subscribe or build
+    }
+    // If session invalid, checkUserState() showed resend guide
+    return;
+  }
+  
+  // Abnormal paths: user took weird route
+  updatePrices();
+  await checkUserState();  // Shows appropriate guide
+})();
 </script>
 </body>
 </html>

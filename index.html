@@ -2023,6 +2023,29 @@ function VisualIdentityPhase({ answers, onComplete }) {
           )}
         </div>
 
+        {/* Skip Button */}
+        <button
+          onClick={() => {
+            localStorage.setItem('sy_visual', JSON.stringify({ photos: [], contentLink: '', skipped: true, collectedAt: new Date().toISOString() }));
+            onComplete({ photos: [], contentLink: '', skipped: true });
+          }}
+          style={{
+            width: '100%',
+            padding: '16px',
+            backgroundColor: 'transparent',
+            color: 'var(--cyan)',
+            border: '1px solid var(--cyan)',
+            borderRadius: '4px',
+            fontSize: '0.95rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            marginBottom: '12px',
+            fontFamily: "'Outfit', sans-serif",
+          }}
+        >
+          Skip for now
+        </button>
+
         {/* Complete Button */}
         <button
           onClick={handleComplete}

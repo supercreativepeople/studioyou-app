@@ -1287,20 +1287,18 @@ function FYForm({ formationLevel, phaseId, isPulsing }) {
 }
 
 // ── BACKEND URL ───────────────────────────────────────────────────────────────
-const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app'; // TODO: replace with your Cloud Run URL
-
-// ── ENTER STUDIO COMPONENT ───────────────────────────────────────────────────
 function EnterStudio({ answers, fyText }) {
   const savedEmail = (() => { try { return localStorage.getItem('sy_email') || ''; } catch(e) { return ''; } })();
   const [email, setEmail] = React.useState(savedEmail);
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
-  const [status, setStatus] = React.useState('idle'); // idle | loading | sent | error | skip
+  const [studioName, setStudioName] = React.useState(localStorage.getItem('sy_studio_name') || answers.studio_name || '');
+  const [status, setStatus] = React.useState('idle'); // idle | loading | sent | error
   const [errorMsg, setErrorMsg] = React.useState('');
 
   function buildFormation() {
     const f = {
-      studioName:     answers.studio_name || null,
+      studioName:     studioName || answers.studio_name || null,
       creatorName:    answers.creator_name || null,
       contentTypes:   answers.p2_1 || [],
       platforms:      answers.p2_2 || [],
@@ -1344,6 +1342,7 @@ function EnterStudio({ answers, fyText }) {
     try {
       localStorage.setItem('sy_formation', JSON.stringify(formation));
       if (email) localStorage.setItem('sy_email', email.trim().toLowerCase());
+      if (studioName) localStorage.setItem('sy_studio_name', studioName);
     } catch(e) {}
   }
 
@@ -1352,47 +1351,43 @@ function EnterStudio({ answers, fyText }) {
     const formation = buildFormation();
     saveLocally(formation);
 
-    console.log('[handleSubmit] email:', JSON.stringify(email), '| firstName:', JSON.stringify(firstName), '| lastName:', JSON.stringify(lastName));
-
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      console.warn('[handleSubmit] validation FAILED — email value:', JSON.stringify(email));
       stopProcessing();
-      setErrorMsg('Please enter a valid email address to save your studio.');
+      setErrorMsg('Please enter a valid email address.');
       setStatus('error');
       return;
     }
 
-    // Save email to localStorage immediately after validation
     try {
       localStorage.setItem('sy_email', cleanEmail);
     } catch(e) {}
 
-    console.log('[handleSubmit] validation PASSED');
-
-    const body = { email: cleanEmail, firstName: firstName.trim(), lastName: lastName.trim(), formation };
-    console.log('[handleSubmit] request body keys:', Object.keys(body), '| email:', body.email, '| firstName:', body.firstName, '| lastName:', body.lastName);
-
     setStatus('loading');
     try {
-      const res = await fetch(`${API_URL}/api/formation`, {
+      const res = await fetch(`${API_URL}/api/formation/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          email: cleanEmail,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          studio_name: studioName,
+          formation: formation
+        }),
       });
       const data = await res.json();
-      console.log('[handleSubmit] fetch SUCCESS — response:', data);
       if (data.success) {
         setStatus('sent');
         stopProcessing();
-        setTimeout(() => { window.location.href = 'subscribe.html'; }, 2000);
+        // Don't redirect — user needs to click email link
       } else {
         setErrorMsg(data.error || 'Something went wrong.');
         setStatus('error');
         stopProcessing();
       }
     } catch(e) {
-      console.error('[handleSubmit] fetch FAILED — error:', e);
+      console.error('[handleSubmit] error:', e);
       stopProcessing();
       setErrorMsg('Connection error — please try again.');
       setStatus('error');
@@ -1403,7 +1398,7 @@ function EnterStudio({ answers, fyText }) {
     return (
       <div>
         <div className="ec-sent">Check your email — your studio link is on its way.</div>
-        <div className="ec-note" style={{marginTop:'8px'}}>We sent a link to {email}. Click it to unlock your studio.</div>
+        <div className="ec-note" style={{marginTop:'8px'}}>We sent a magic link to {email}. Click it to unlock your studio.</div>
       </div>
     );
   }
@@ -1412,7 +1407,8 @@ function EnterStudio({ answers, fyText }) {
     <div>
       {!savedEmail && (
       <div className="email-capture">
-        <div className="ec-label">Save your studio — enter your name and email</div>
+        <div className="ec-label">Save your studio — enter your details</div>
+        
         <div style={{display:'flex', gap:'8px', maxWidth:'400px', marginBottom:'8px'}}>
           <div className="ec-row" style={{flex:1, maxWidth:'none'}}>
             <input
@@ -1435,6 +1431,18 @@ function EnterStudio({ answers, fyText }) {
             />
           </div>
         </div>
+        
+        <div className="ec-row" style={{maxWidth:'400px', marginBottom:'8px'}}>
+          <input
+            className="ec-input"
+            type="text"
+            value={studioName}
+            onChange={e => setStudioName(e.target.value)}
+            placeholder="Your studio name"
+            autoComplete="off"
+          />
+        </div>
+        
         <div className="ec-row">
           <input
             className="ec-input"
@@ -1446,19 +1454,22 @@ function EnterStudio({ answers, fyText }) {
             autoComplete="email"
           />
         </div>
+        
         {status === 'error' && <div className="ec-error">{errorMsg}</div>}
+        
         <div className="ec-note">
-          We'll email you a link so you can return to your studio from any device.
+          We'll email you a magic link to access your studio from any device.
         </div>
       </div>
       )}
+      
       <div style={{display:'flex', gap:'16px', alignItems:'center'}}>
         <button
           className="btn-enter-studio"
-          disabled={status === 'loading'}
+          disabled={status === 'loading' || !email.trim()}
           onClick={handleSubmit}
         >
-          {status === 'loading' ? <img src="assets/shutter1.gif" style={{width:20,height:20,objectFit:'contain',verticalAlign:'middle'}}/> : 'Enter Your Studio'}
+          {status === 'loading' ? '…' : 'Send Magic Link'}
         </button>
         <button
           style={{

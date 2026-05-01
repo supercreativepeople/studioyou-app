@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Your Studio — StudioYou</title>
+    <link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --black: #06091a;
+            --white: #f0f2ff;
+            --dim: rgba(240,242,255,0.65);
+            --mute: rgba(240,242,255,0.3);
+            --cyan: #00c8ff;
+            --grad: linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%);
+        }
+        html, body { height: 100%; }
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo {
+            height: 48px;
+            margin-bottom: 48px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease 0.3s forwards;
+        }
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(36px, 6vw, 72px);
+            line-height: 1;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease 0.6s forwards;
+        }
+        .headline .grad {
+            background: var(--grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subheading {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 18px;
+            color: var(--dim);
+            line-height: 1.6;
+            margin-bottom: 48px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease 0.9s forwards;
+        }
+        .status {
+            padding: 24px;
+            border-radius: 4px;
+            background: rgba(0,200,255,0.06);
+            border: 1px solid rgba(0,200,255,0.2);
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease 1.2s forwards;
+        }
+        .status-label {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--cyan);
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+        .status-text {
+            font-size: 16px;
+            color: var(--white);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(0,200,255,0.2);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 24px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .error-message {
+            color: rgba(255,100,100,0.8);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 14px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+        .btn-primary {
+            background: var(--grad);
+            color: var(--black);
+        }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+        }
+        .btn-secondary:hover { background: rgba(0,200,255,0.06); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="assets/logo.png" alt="StudioYou" class="logo">
+        
+        <h1 class="headline">
+            <span class="grad">Verifying</span> Your Studio
+        </h1>
+        
+        <p class="subheading" id="subtext">
+            One moment while we unlock your formation...
+        </p>
+        
+        <div class="status" id="status">
+            <div class="status-label">STATUS</div>
+            <div class="status-text">
+                <div class="spinner" id="spinner"></div>
+                <div id="message">Validating your magic link...</div>
+            </div>
+        </div>
+        
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://studioyou-api-198959034459.us-east1.run.app";
+        
+        async function verifyToken() {
+            try {
+                // Get token from URL
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get("token");
+                
+                if (!token) {
+                    showError("No verification link found. Check your email and try again.");
+                    return;
+                }
+                
+                // Verify token with backend
+                const response = await fetch(`${API_URL}/api/formation/validate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showError(data.error || "Verification failed. Try requesting a new link.");
+                    return;
+                }
+                
+                // Success — save user data and redirect
+                const user = data.user;
+                localStorage.setItem("sy_email", user.email);
+                localStorage.setItem("sy_first_name", user.first_name);
+                localStorage.setItem("sy_last_name", user.last_name);
+                localStorage.setItem("sy_studio_name", user.studio_name);
+                localStorage.setItem("sy_formation", JSON.stringify(user.formation));
+                
+                showSuccess(user.first_name || "Creator");
+                
+                // Redirect to dashboard after 2 seconds
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 2000);
+                
+            } catch (err) {
+                console.error("Verification error:", err);
+                showError("Something went wrong. Please try again or request a new link.");
+            }
+        }
+        
+        function showError(message) {
+            const spinner = document.getElementById("spinner");
+            const msgEl = document.getElementById("message");
+            const subtext = document.getElementById("subtext");
+            const content = document.getElementById("content");
+            
+            if (spinner) spinner.remove();
+            
+            msgEl.textContent = "Verification Failed";
+            subtext.textContent = message;
+            
+            content.innerHTML = `
+                <div class="error-message">
+                    ${message}
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="location.href='index.html'">
+                        Start Over
+                    </button>
+                    <button class="btn btn-secondary" onclick="requestNewLink()">
+                        Request New Link
+                    </button>
+                </div>
+            `;
+        }
+        
+        function showSuccess(firstName) {
+            const spinner = document.getElementById("spinner");
+            const msgEl = document.getElementById("message");
+            const subtext = document.getElementById("subtext");
+            
+            if (spinner) spinner.remove();
+            
+            msgEl.innerHTML = `
+                <div style="font-size: 36px; margin-bottom: 12px;">✓</div>
+                <div>Your studio is unlocked!</div>
+            `;
+            subtext.textContent = `Welcome ${firstName}. Entering your studio...`;
+        }
+        
+        function requestNewLink() {
+            prompt("Enter your email to request a new magic link:", "");
+            // TODO: Implement resend functionality
+        }
+        
+        // Verify on page load
+        window.addEventListener("load", verifyToken);
+    </script>
+</body>
+</html>

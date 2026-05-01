@@ -2803,27 +2803,11 @@ function App() {
               What does your creative operation call itself? This is where your legend begins.
             </p>
             <div style={{position:'relative', maxWidth:'400px', margin:'0 auto 32px'}}>
-              <input
-                type="text"
-                placeholder="Your studio name"
+              <StudioNameInput
                 value={currentVal}
-                onChange={(e) => setCurrentVal(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && currentVal.trim() && nextPhase()}
-                autoFocus
-                style={{
-                  width:'100%',
-                  padding:'16px',
-                  fontSize:'18px',
-                  fontFamily:"'Outfit', sans-serif",
-                  background:'var(--navy)',
-                  border:'1px solid rgba(0,200,255,0.3)',
-                  borderRadius:'4px',
-                  color:'var(--white)',
-                  outline:'none',
-                }}
+                onChange={(val) => setCurrentVal(val)}
+                onStatusChange={(s) => setStudioNameStatus(s)}
               />
-            </div>
-            <div style={{display:'flex', gap:'16px', justifyContent:'center'}}>
               <button 
                 onClick={() => {
                   const studioName = currentVal.trim();
@@ -2831,7 +2815,7 @@ function App() {
                   localStorage.setItem('sy_studio_name', studioName);
                   nextPhase();
                 }}
-                disabled={!currentVal.trim()}
+                disabled={studioNameStatus !== 'available' && currentVal.trim().length > 0}
                 style={{
                   background:'var(--grad)',
                   border:'none',
@@ -2955,140 +2939,6 @@ function App() {
   );
 }
 
-// ── REACTOR HELPERS ──────────────────────────────────────────────────────────
-
-function studioSeed(name) {
-  if (!name) return 42;
-  let h = 5381;
-  for (let i = 0; i < name.length; i++) {
-    h = ((h << 5) + h) ^ name.charCodeAt(i);
-    h = h >>> 0;
-  }
-  return h || 1;
-}
-
-function buildCinematicPrompts(answers) {
-  const contentTypes = answers.p2_1 || [];
-  const platforms    = answers.p2_2 || [];
-  const studioName   = answers.studio_name || 'Studio';
-  const isFilm   = contentTypes.some(c => ['Film','Documentary','Animation'].includes(c));
-  const isSocial = platforms.some(p => ['TikTok','Instagram'].includes(p));
-  const isYT     = platforms.includes('YouTube');
-  const isPod    = platforms.includes('Podcast platforms');
-  const type = isFilm ? 'film' : isSocial && !isYT ? 'social' : isYT ? 'youtube' : isPod ? 'podcast' : 'multi';
-
-  const scenes = {
-    film: [
-      `A cinematic production lot at golden hour — camera cranes silhouetted against a warm amber sky, a director's chair facing a vast LED volume wall displaying sweeping landscapes. Documentary cameras on fluid heads, cables running across polished concrete floors, monitors glowing in the shadows. Anamorphic wide shot, warm tungsten and natural light mixing, subtle lens flare, fine film grain. The feeling of a serious working creative operation.`,
-      `Inside a documentary archive studio — a creator moves through rows of film canisters, projected archival footage washing over white walls in layered light. A curved editing bay with multiple monitors displaying timelines. The hum of storytelling in progress, deliberate and precise. Warm amber tones, shallow depth of field, cinematic.`,
-      `Exterior of ${studioName} at dusk — the studio name in architectural lettering above a glass entrance, golden light spilling from inside, silhouettes of creators moving purposefully through lit corridors. Wide shot, depth of field pulling to the sign, cinematic fade, a feeling of arrival and permanence.`
-    ],
-    social: [
-      `A sleek modern creator loft — LED ring lights casting warm highlights on a clean white backdrop, multiple screens displaying vertical video analytics and content calendars. A cinema camera on a motorized slider, softboxes and LED panels arranged for production. Wide contemporary shot, warm controlled tones, organized and purposeful.`,
-      `A creator mid-production — geometric backdrops, dynamic lighting rigs cycling through warm colors, a camera on a fluid head capturing from a dynamic angle. Screens display scrolling audience engagement, growth charts, trending content. Energetic, vibrant, moving forward. Medium shot, social-native aesthetic.`,
-      `${studioName} studio exterior at twilight — a converted loft with large windows, soft neon signage glowing, production cases lined up near the entrance. Light from multiple active shooting bays spills out. Wide establishing shot, cinematic dusk, the scale of a working creator operation.`
-    ],
-    youtube: [
-      `A polished content studio set — dramatic backlit shelving with curated objects arranged with editorial precision, acoustic panels on charcoal walls, a cinema camera on a fluid head tripod. Soft golden hour light from high clerestory windows, a well-appointed production desk with dual monitors. Wide shot, editorial depth of field, warm cinematic grade.`,
-      `A content edit bay in session — large monitors displaying timeline sequences, a filmmaker reviewing footage in progress. Reference books and notes cover a producer's desk. The feeling of intentional, considered work. Warm tungsten tones, quiet concentration, cinematic.`,
-      `${studioName} — a studio identity materializing. The name displayed on a broadcast monitor in a darkened room, a single spotlight on a cinema camera and director's chair. Wide shot, high contrast, still and anticipatory, the deliberate beginning of something significant.`
-    ],
-    podcast: [
-      `A broadcast-quality podcast studio — geometric acoustic foam panels in precise patterns on matte walls, a round conversation table with high-end condenser microphones and closed-back headphones. Moody amber and cool blue lighting, a glowing mixing board in the foreground. Multiple widescreen monitors displaying waveforms. Wide shot, intimate and professional.`,
-      `Inside the recording booth — a host in deep conversation, animated and focused, warm window light from the control room glass. Soundproofing everywhere, a sense of contained creative intensity. The controlled environment where ideas become permanent record. Medium shot, warm tones, cinematic.`,
-      `${studioName} audio studio — the name on a plaque beside the studio door, an ON AIR light illuminated above the window. Through the double glass, a show in progress. The culture of long-form conversation, deliberately built. Wide establishing shot, cinematic atmosphere.`
-    ],
-    multi: [
-      `A multi-purpose creator complex — a photography cyclorama wall curving from floor to ceiling, cinema cameras on cranes, a podcast corner with professional microphone arms, a writing desk flooded with natural north-facing light. High ceilings, exposed beams, a space designed for every format of creative output. Wide architectural shot, soft overcast light, warm accent lighting.`,
-      `The studio in simultaneous motion — a camera operator framing a shot on one side, a designer at a large reference monitor on another, an audio engineer adjusting levels in a corner. The organized momentum of a full-service creative operation. Overhead wide angle, dynamic, purposeful.`,
-      `${studioName} — the full studio complex at dusk, multiple production spaces, warm amber light glowing from windows, the scale of what has been built becoming visible from the outside. Drone-style wide establishing shot, cinematic golden hour, architectural permanence.`
-    ],
-  };
-  return scenes[type] || scenes.multi;
-}
-
-// ── REACTOR REVEAL — Phase 7 cinematic background ─────────────────────────────
-
-function ReactorReveal({ answers }) {
-  const videoRef   = React.useRef(null);
-  const reactorRef = React.useRef(null);
-  const [streaming, setStreaming] = React.useState(false);
-  const [sdkReady, setSdkReady]   = React.useState(!!window.ReactorSDKClass);
-
-  React.useEffect(() => {
-    if (sdkReady) return;
-    const handler = () => setSdkReady(true);
-    window.addEventListener('reactor-sdk-ready', handler);
-    return () => window.removeEventListener('reactor-sdk-ready', handler);
-  }, [sdkReady]);
-
-  React.useEffect(() => {
-    if (!sdkReady) return;
-    let cancelled = false;
-    async function init() {
-      try {
-        const res = await fetch(`${API_URL}/api/reactor/token`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-        });
-        if (!res.ok || cancelled) return;
-        const { jwt } = await res.json();
-        if (!jwt || cancelled) return;
-
-        const reactor = new window.ReactorSDKClass({ modelName: 'helios' });
-        reactorRef.current = reactor;
-
-        reactor.on('trackReceived', (name, track, stream) => {
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(() => {});
-          }
-          if (!cancelled) setStreaming(true);
-        });
-
-        await reactor.connect(jwt);
-        await reactor.sendCommand('set_seed', { seed: studioSeed(answers.studio_name) });
-
-        const prompts = buildCinematicPrompts(answers);
-        await reactor.sendCommand('schedule_prompt', { prompt: prompts[0], chunk: 0 });
-        await reactor.sendCommand('schedule_prompt', { prompt: prompts[1], chunk: 5 });
-        await reactor.sendCommand('schedule_prompt', { prompt: prompts[2], chunk: 10 });
-        await reactor.sendCommand('start', {});
-      } catch(e) {
-        console.warn('[ReactorReveal] init failed:', e);
-      }
-    }
-    init();
-    return () => {
-      cancelled = true;
-      if (reactorRef.current) reactorRef.current.sendCommand('pause', {}).catch(() => {});
-    };
-  }, [sdkReady]);
-
-  return (
-    <>
-      <video
-        ref={videoRef}
-        muted playsInline
-        style={{
-          position:'fixed', inset:0, width:'100%', height:'100%',
-          objectFit:'cover', zIndex:1,
-          opacity: streaming ? 1 : 0,
-          transition: 'opacity 2s ease',
-        }}
-      />
-      <div style={{
-        position:'fixed', inset:0, zIndex:2, pointerEvents:'none',
-        background: 'linear-gradient(135deg, rgba(6,9,26,0.75) 0%, rgba(6,9,26,0.55) 100%)',
-        opacity: streaming ? 1 : 0,
-        transition: 'opacity 2s ease',
-      }}/>
-    </>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-
-// Start topbar typewriter after React mounts
 setTimeout(function() {
   var el = document.querySelector('.topbar-label');
   if (el) {
@@ -3097,18 +2947,3 @@ setTimeout(function() {
   }
 }, 500);
 </script>
-<script type="module">
-  (async () => {
-    try {
-      const module = await import('https://esm.sh/@reactor-team/js-sdk@2.9.0');
-      window.ReactorSDKClass = module.Reactor || module.default;
-      window.dispatchEvent(new CustomEvent('reactor-sdk-ready'));
-      console.log('[Reactor] SDK loaded successfully');
-    } catch(e) {
-      console.warn('[Reactor] SDK failed to load:', e);
-      window.dispatchEvent(new CustomEvent('reactor-sdk-ready'));
-    }
-  })();
-</script>
-</body>
-</html>

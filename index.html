@@ -2160,7 +2160,7 @@ function App() {
   const progressPct = (phase === 'home' || phase === 0) ? 0
     : phase === 'fy' ? Math.max(4, Math.round((fyFilledCount / 6) * 75))
     : phase === 'visual' ? 82
-    : phase === 6 ? 90
+    : phase === 'studio_name' ? 90
     : 100;
 
   // Formation level based on phase / fy progress
@@ -2168,7 +2168,7 @@ function App() {
     const target = (phase === 'home' || phase === 0) ? 0
       : phase === 'fy' ? Math.min(1 + fyFilledCount, 6)
       : phase === 'visual' ? 6
-      : phase === 6 ? 6
+      : phase === 'studio_name' ? 6
       : 7;
     setFormationLevel(target);
   }, [phase, fyFilledCount]);
@@ -2849,56 +2849,7 @@ function App() {
       )}
 
       {/* ── PHASE 6: THE LOT */}
-      {phase === 6 && (
-        <div className={`screen ${screenOut ? 'out' : ''}`} style={{overflowY:'auto', justifyContent:'flex-start', paddingTop:'100px', paddingBottom:'60px'}}>
-          <div className="lot-wrap">
-            <div className="lot-header">
-              <div className="lot-name">
-                {localStorage.getItem('sy_studio_name') || answers.studio_name || 'YOUR STUDIO'}
-              </div>
-              <div className={`lot-sub lot-sub-pulse`} style={{color:'#4cff91'}}>
-                {revealedBuildings.length < BUILDINGS.length ? 'Opening your lot...' : 'Formation complete'}
-              </div>
-            </div>
-
-            <div className="buildings-grid">
-              {BUILDINGS.map(b => {
-                const isRevealed = revealedBuildings.includes(b.id);
-                const isUnlocked = unlockedBuildings.includes(b.id);
-                return (
-                  <div key={b.id}
-                    className={`building ${isRevealed ? 'revealed' : ''} ${isUnlocked ? 'unlocked' : 'locked'}`}
-                  >
-                    <div className="b-icon">{b.icon}</div>
-                    <div className="b-name">{b.name}</div>
-                    <div className="b-status">{isUnlocked ? 'Open' : 'Phase 2'}</div>
-                    {!isUnlocked && <div className="b-status" style={{color:'rgba(240,242,255,0.2)'}}>Unlocks later</div>}
-                  </div>
-                );
-              })}
-            </div>
-
-            {lotBuilt && (
-              <div style={{textAlign:'center', marginTop:'16px'}}>
-                <div style={{
-                  fontFamily:"'Playfair Display', serif",
-                  fontStyle:'italic',
-                  fontSize:'16px',
-                  color:'var(--dim)',
-                  marginBottom:'20px',
-                }}>Your studio is ready. Time to enter.</div>
-                <button className="btn-continue" onClick={nextPhase}
-                  style={{fontSize:'16px', padding:'16px 48px'}}>
-                  Enter Your Studio
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── PHASE 7: FY SPEAKS (+ email capture) */}
-      {phase === 7 && (
+      {phase === 'dashboard' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
           <div className="fy-speak-wrap" style={{position:'relative',zIndex:3}}>
             <div className="fy-speak-label">FutureYou</div>
@@ -2914,7 +2865,7 @@ function App() {
       )}
 
       {/* Phase label footer */}
-      <div className={`phase-label ${phase === 0 || phase === 'visual' || phase === 6 || phase === 7 ? 'hidden' : ''}`}>
+      <div className={`phase-label ${phase === 0 || phase === 'visual' || phase === 'studio_name' || phase === 'dashboard' ? 'hidden' : ''}`}>
         {phase === 'fy' && fyFilledCount > 0 && `${fyFilledCount} of 6 — your studio is taking shape`}
       </div>
 
@@ -2938,6 +2889,8 @@ function App() {
     </>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
 setTimeout(function() {
   var el = document.querySelector('.topbar-label');

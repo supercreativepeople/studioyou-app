@@ -2222,7 +2222,7 @@ function App() {
   }, [qIndex, phase]);
 
   // ── PHASE transitions
-  const PHASE_ORDER = ['home', 0, 'fy', 'visual', 6, 7];
+  const PHASE_ORDER = ['home', 0, 'fy', 'visual', 'studio_name', 'dashboard'];
 
   function nextPhase() {
     const idx = PHASE_ORDER.indexOf(phase);
@@ -2231,9 +2231,12 @@ function App() {
       transition(() => {
         setPhase(next);
         setQIndex(0);
-        if (next === 6) buildLot();
-        if (next === 7 && !fyText) startFYSpeech();
-        if (next === 7 && fyText) { setFyTyping(false); setFyDone(true); }
+        if (next === 'dashboard') {
+          const formation = buildFormation();
+          localStorage.setItem('sy_formation', JSON.stringify(formation));
+          localStorage.setItem('sy_session', 'active');
+          window.location.href = 'dashboard.html';
+        }
       });
     }
   }
@@ -2241,8 +2244,7 @@ function App() {
   function handleVisualComplete(visualData) {
     localStorage.setItem('sy_visual', JSON.stringify(visualData));
     transition(() => {
-      setPhase(6);
-      buildLot();
+      setPhase('studio_name');
     });
   }
 
@@ -2789,6 +2791,78 @@ function App() {
             answers={answers}
             onComplete={handleVisualComplete}
           />
+        </div>
+      )}
+
+      {/* ── PHASE: STUDIO NAME */}
+      {phase === 'studio_name' && (
+        <div className={`screen ${screenOut ? 'out' : ''}`} style={{display:'flex', alignItems:'center', justifyContent:'center'}}>
+          <div style={{maxWidth:'500px', textAlign:'center'}}>
+            <h1 style={{fontFamily:"'Playfair Display', serif", fontSize:'3rem', marginBottom:'24px', color:'var(--white)'}}>
+              Name Your Studio
+            </h1>
+            <p style={{color:'var(--dim)', fontSize:'16px', lineHeight:'1.6', marginBottom:'40px'}}>
+              What does your creative operation call itself? This is where your legend begins.
+            </p>
+            <div style={{position:'relative', maxWidth:'400px', margin:'0 auto 32px'}}>
+              <input
+                type="text"
+                placeholder="Your studio name"
+                value={currentVal}
+                onChange={(e) => setCurrentVal(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && currentVal.trim() && nextPhase()}
+                autoFocus
+                style={{
+                  width:'100%',
+                  padding:'16px',
+                  fontSize:'18px',
+                  fontFamily:"'Outfit', sans-serif",
+                  background:'var(--navy)',
+                  border:'1px solid rgba(0,200,255,0.3)',
+                  borderRadius:'4px',
+                  color:'var(--white)',
+                  outline:'none',
+                }}
+              />
+            </div>
+            <div style={{display:'flex', gap:'16px', justifyContent:'center'}}>
+              <button 
+                onClick={() => {
+                  const studioName = currentVal.trim();
+                  setAnswers(prev => ({ ...prev, studio_name: studioName }));
+                  localStorage.setItem('sy_studio_name', studioName);
+                  nextPhase();
+                }}
+                disabled={!currentVal.trim()}
+                style={{
+                  background:'var(--grad)',
+                  border:'none',
+                  color:'var(--black)',
+                  fontFamily:"'Bebas Neue', sans-serif",
+                  fontSize:'16px',
+                  letterSpacing:'0.12em',
+                  padding:'14px 48px',
+                  cursor:currentVal.trim()?'pointer':'default',
+                  opacity:currentVal.trim()?1:0.4,
+                }}>
+                Continue
+              </button>
+              <button 
+                onClick={() => nextPhase()}
+                style={{
+                  background:'transparent',
+                  border:'1px solid var(--cyan)',
+                  color:'var(--cyan)',
+                  fontFamily:"'Bebas Neue', sans-serif",
+                  fontSize:'16px',
+                  letterSpacing:'0.12em',
+                  padding:'14px 32px',
+                  cursor:'pointer',
+                }}>
+                Skip
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

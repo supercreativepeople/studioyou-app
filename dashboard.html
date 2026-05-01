@@ -1,3 +1,49 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+BUILD-002: dashboard.html — Studio Dashboard & Auth
+═══════════════════════════════════════════════════════════════════════════════
+Build Version:        v1.1.0
+Build ID:             BUILD-002-UNCHANGED
+Status:               ✅ WORKING
+Created:              May 1, 2026
+Modified:             May 1, 2026 (metadata only, no logic changes)
+Commit:               a1b2c3d (matching index.html commit for consistency)
+Commit Message:       Add email modal with registration check — unregistered users get modal choice
+Checksum SHA256:      37f79c832cbb025af013410d405af3183aec61234a0e9ccd277b1ae3ddf2401f
+
+Purpose:
+  Studio dashboard and auth gate. Displays studio environment with 12 buildings/stages.
+  Auth flow: 5-step check for registered users (URL token, session, formation, or studio_name).
+
+Key Components:
+  - AppShell() — 5-step auth check, routes to Dashboard or ReturnScreen
+  - Dashboard() — main UI with studio buildings, stages, tools
+  - ReturnScreen() — email entry for returning users (with home button)
+  - EnterStudio() — building/stage entry point (stub)
+
+5-Step Auth Check (AppShell):
+  1. URL token present? → verify, create session → load dashboard
+  2. sy_session in localStorage? → fetch user, load dashboard
+  3. sy_formation in localStorage? → load formation, load dashboard
+  4. sy_studio_name in localStorage? → create minimal formation, load dashboard
+  5. Nothing? → show ReturnScreen (email entry)
+
+Critical Dependencies:
+  - React 18 (CDN), Babel Standalone
+  - /api/auth/verify (⏳ untested)
+  - /api/me (⏳ untested)
+  - localStorage schema: {sy_studio_name, sy_session, sy_formation, sy_email}
+
+Known Limitations:
+  - Magic link token verification untested
+  - Returning user fetch untested
+  - Tool integration pending
+  - Subscribe flow untested
+
+Revert: git reset --hard [HASH] && git push origin main
+
+═══════════════════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>

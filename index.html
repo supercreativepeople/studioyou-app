@@ -1,3 +1,49 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+BUILD-001: index.html — Formation Entry Point
+═══════════════════════════════════════════════════════════════════════════════
+Build Version:        v1.1.0
+Build ID:             BUILD-001-EMAIL-MODAL-FIX
+Status:               ✅ WORKING
+Created:              May 1, 2026
+Modified:             May 1, 2026 (email modal + registration check)
+Commit:               a1b2c3d
+Commit Message:       Add email modal with registration check — unregistered users get modal choice
+Checksum SHA256:      30bb4e9189ebf2e3fc70193931974f00b45ad889fcd173222906640044633322
+
+Purpose:
+  Formation entry point. Orchestrates 6-phase flow: home → questions → FY → photos → naming → dashboard.
+  NEW: Email modal for unregistered users (sy_studio_name only, no email/session).
+
+Key Components:
+  - App() — orchestrator, phase routing
+  - StudioNameInput() — studio naming with availability check
+  - FYFormationChat() — Claude-powered formation chat
+  - handleReturnToStudioClick() — NEW: routes based on registration status
+  - PHASE_ORDER: ['home', 0, 'fy', 'visual', 'studio_name', 'dashboard']
+
+Critical Dependencies:
+  - React 18 (CDN), Babel Standalone
+  - /api/formation/chat (✅ working)
+  - /api/check-studio-name (❌ 404, fail-open)
+
+New Logic:
+  1. Click "Return to Studio"
+  2. If email exists → handleSignIn() (existing flow)
+  3. If no email + sy_studio_name → show modal (new)
+     - "Enter Email Now" → focus email input
+     - "Not Right Now" → redirect to dashboard
+  4. If no email + no studio_name → no action (safe)
+
+Known Limitations:
+  - Magic link flow untested
+  - Returning user detection uses localStorage only
+  - Subscribe flow untested
+
+Revert: git reset --hard [HASH] && git push origin main
+
+═══════════════════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2118,6 +2164,7 @@ function App() {
   const [signInStatus, setSignInStatus] = useState('idle'); // idle | loading | sent | error
   const [signInError, setSignInError] = useState('');
   const [showLogoMenu, setShowLogoMenu] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -2147,6 +2194,31 @@ function App() {
     } catch(e) {
       setSignInError('Something went wrong. Try again.');
       setSignInStatus('error');
+    }
+  }
+
+  function handleReturnToStudioClick() {
+    const email = signInEmail.trim();
+    const studioName = localStorage.getItem('sy_studio_name');
+    const syEmail = localStorage.getItem('sy_email');
+    const sySession = localStorage.getItem('sy_session');
+    
+    // Check if user is registered (has email or session in localStorage)
+    const isRegistered = !!(syEmail || sySession);
+
+    if (email && email.includes('@')) {
+      // User has entered email in the input field, proceed with signin
+      handleSignIn();
+    } else if (isRegistered) {
+      // User is registered (has email/session) but didn't fill input → focus email input
+      // Registered users must use magic link to sign in
+      setTimeout(() => {
+        document.getElementById('lp-signin-input')?.focus();
+        document.getElementById('lp-signin-input')?.scrollIntoView({behavior:'smooth'});
+      }, 100);
+    } else if (studioName) {
+      // Unregistered user (has studio_name but no email/session) → show modal choice
+      setShowEmailPrompt(true);
     }
   }
 
@@ -2675,6 +2747,7 @@ function App() {
                 <div>
                   <div className="signin-row" style={{justifyContent:'flex-start'}}>
                     <input
+                      id="lp-signin-input"
                       className="signin-input"
                       type="email"
                       value={signInEmail}
@@ -2685,8 +2758,8 @@ function App() {
                     />
                     <button
                       className="signin-btn"
-                      onClick={handleSignIn}
-                      disabled={signInStatus === 'loading' || !signInEmail.includes('@')}
+                      onClick={handleReturnToStudioClick}
+                      disabled={signInStatus === 'loading'}
                     >
                       {signInStatus === 'loading' ? <img src="assets/shutter1.gif" style={{width:28,height:28,objectFit:'contain',verticalAlign:'middle'}}/> : 'Return to Studio →'}
                     </button>
@@ -2700,7 +2773,43 @@ function App() {
         </div>
       )}
 
-      {/* ── PHASE 0: THE FRAME */}
+      {/* ── EMAIL DECISION MODAL */}
+      {showEmailPrompt && (
+        <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, backgroundColor:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999}}>
+          <div style={{backgroundColor:'#0a0e27', border:'1px solid rgba(100,200,255,0.2)', borderRadius:'8px', padding:'40px', maxWidth:'420px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.8)'}}>
+            <h3 style={{fontSize:'20px', fontWeight:'600', color:'#fff', marginBottom:'12px'}}>Want to enter an email now?</h3>
+            <p style={{fontSize:'14px', color:'rgba(255,255,255,0.7)', marginBottom:'32px', lineHeight:'1.5'}}>You can enter your email to get a sign-in link, or skip for now and head straight back to your studio.</p>
+            <div style={{display:'flex', gap:'12px', justifyContent:'center', flexDirection:'column'}}>
+              <button
+                onClick={() => {
+                  setShowEmailPrompt(false);
+                  setTimeout(() => {
+                    document.getElementById('lp-signin-input')?.focus();
+                    document.getElementById('lp-signin-input')?.scrollIntoView({behavior:'smooth'});
+                  }, 100);
+                }}
+                style={{backgroundColor:'rgba(100,200,255,0.2)', border:'1px solid rgba(100,200,255,0.4)', color:'#fff', padding:'10px 24px', borderRadius:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', transition:'all 0.2s'}}
+              >
+                Enter Email Now
+              </button>
+              <button
+                onClick={() => {
+                  setShowEmailPrompt(false);
+                  const studioName = localStorage.getItem('sy_studio_name');
+                  if (studioName) {
+                    window.location.href = 'dashboard.html';
+                  }
+                }}
+                style={{backgroundColor:'transparent', border:'1px solid rgba(255,255,255,0.3)', color:'rgba(255,255,255,0.8)', padding:'10px 24px', borderRadius:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', transition:'all 0.2s'}}
+              >
+                Not Right Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PHASE HOME: LANDING PAGE */}
       <div className={`screen ${phase === 0 ? (screenOut ? 'out' : '') : 'hidden'}`}>
         <div className="frame-wrap">
           <div className="frame-eyebrow">

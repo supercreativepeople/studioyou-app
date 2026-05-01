@@ -1566,10 +1566,10 @@ function FormationExplainer({ onClose }) {
 
 const FY_FIELDS = ['contentTypes','platforms','experience','origin','goal1yr','biggestFear'];
 
-function FYFormationChat({ onComplete, onFormationChange }) {
+function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
   const [displayMessages, setDisplayMessages] = React.useState([]);
   const [apiMessages, setApiMessages]         = React.useState([]);
-  const [formation, setFormation]             = React.useState({});
+  const [formation, setFormation]             = React.useState(initialFormation || {});
   const [inputText, setInputText]             = React.useState('');
   const [suggestions, setSuggestions]         = React.useState([]);
   const [isTyping, setIsTyping]               = React.useState(false);
@@ -2776,6 +2776,7 @@ function App() {
       {phase === 'fy' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
           <FYFormationChat
+            initialFormation={answers}
             onComplete={handleFYFormationComplete}
             onFormationChange={newF => { setFyFormation(newF); }}
           />

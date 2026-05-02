@@ -2197,13 +2197,20 @@ function App() {
   }
 
   function handleReturnToStudioClick() {
-    const email = (signInEmail || '').trim();
+    const emailFieldValue = document.getElementById('lp-signin-input')?.value || '';
     const studioName = localStorage.getItem('sy_studio_name');
     
-    if (email.length > 0 && email.includes('@')) {
+    // If email field is empty and user has studio name, go to dashboard
+    if (!emailFieldValue || emailFieldValue.trim().length === 0) {
+      if (studioName && studioName.trim().length > 0) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+    }
+    
+    // Otherwise, attempt signin with email
+    if (emailFieldValue.includes('@')) {
       handleSignIn();
-    } else if (studioName && studioName.length > 0) {
-      window.location.href = 'dashboard.html';
     }
   }
 

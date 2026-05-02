@@ -2197,12 +2197,12 @@ function App() {
   }
 
   function handleReturnToStudioClick() {
-    const email = signInEmail.trim();
+    const email = (signInEmail || '').trim();
     const studioName = localStorage.getItem('sy_studio_name');
     
-    if (email && email.includes('@')) {
+    if (email.length > 0 && email.includes('@')) {
       handleSignIn();
-    } else if (studioName) {
+    } else if (studioName && studioName.length > 0) {
       window.location.href = 'dashboard.html';
     }
   }
@@ -2289,7 +2289,6 @@ function App() {
         setPhase(next);
         setQIndex(0);
         if (next === 'dashboard') {
-          localStorage.setItem('sy_session', 'active');
           window.location.href = 'dashboard.html';
         }
       });

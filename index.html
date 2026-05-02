@@ -1812,10 +1812,13 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
   }
 
   function handleProceedToNaming() {
-    // Clear formation draft and move to naming phase
+    // Clear formation draft and call completion callback
     localStorage.removeItem('sy_formation_draft');
-    localStorage.setItem('sy_visited_dashboard', 'true');
-    nextPhase();
+    localStorage.setItem('sy_formation', JSON.stringify(formation));
+    // Call the onComplete callback which triggers handleFYFormationComplete in parent
+    if (onComplete) {
+      onComplete(formation, displayMessages[displayMessages.length - 1]?.text || '');
+    }
   }
 
   return (

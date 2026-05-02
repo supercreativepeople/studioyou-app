@@ -2164,7 +2164,6 @@ function App() {
   const [signInStatus, setSignInStatus] = useState('idle'); // idle | loading | sent | error
   const [signInError, setSignInError] = useState('');
   const [showLogoMenu, setShowLogoMenu] = useState(false);
-  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -2200,25 +2199,11 @@ function App() {
   function handleReturnToStudioClick() {
     const email = signInEmail.trim();
     const studioName = localStorage.getItem('sy_studio_name');
-    const syEmail = localStorage.getItem('sy_email');
-    const sySession = localStorage.getItem('sy_session');
     
-    // Check if user is registered (has email or session in localStorage)
-    const isRegistered = !!(syEmail || sySession);
-
     if (email && email.includes('@')) {
-      // User has entered email in the input field, proceed with signin
       handleSignIn();
-    } else if (isRegistered) {
-      // User is registered (has email/session) but didn't fill input → focus email input
-      // Registered users must use magic link to sign in
-      setTimeout(() => {
-        document.getElementById('lp-signin-input')?.focus();
-        document.getElementById('lp-signin-input')?.scrollIntoView({behavior:'smooth'});
-      }, 100);
     } else if (studioName) {
-      // Unregistered user (has studio_name but no email/session) → show modal choice
-      setShowEmailPrompt(true);
+      window.location.href = 'dashboard.html';
     }
   }
 
@@ -2769,42 +2754,6 @@ function App() {
               )}
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* ── EMAIL DECISION MODAL */}
-      {showEmailPrompt && (
-        <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, backgroundColor:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999}}>
-          <div style={{backgroundColor:'#0a0e27', border:'1px solid rgba(100,200,255,0.2)', borderRadius:'8px', padding:'40px', maxWidth:'420px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.8)'}}>
-            <h3 style={{fontSize:'20px', fontWeight:'600', color:'#fff', marginBottom:'12px'}}>Want to enter an email now?</h3>
-            <p style={{fontSize:'14px', color:'rgba(255,255,255,0.7)', marginBottom:'32px', lineHeight:'1.5'}}>You can enter your email to get a sign-in link, or skip for now and head straight back to your studio.</p>
-            <div style={{display:'flex', gap:'12px', justifyContent:'center', flexDirection:'column'}}>
-              <button
-                onClick={() => {
-                  setShowEmailPrompt(false);
-                  setTimeout(() => {
-                    document.getElementById('lp-signin-input')?.focus();
-                    document.getElementById('lp-signin-input')?.scrollIntoView({behavior:'smooth'});
-                  }, 100);
-                }}
-                style={{backgroundColor:'rgba(100,200,255,0.2)', border:'1px solid rgba(100,200,255,0.4)', color:'#fff', padding:'10px 24px', borderRadius:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', transition:'all 0.2s'}}
-              >
-                Enter Email Now
-              </button>
-              <button
-                onClick={() => {
-                  setShowEmailPrompt(false);
-                  const studioName = localStorage.getItem('sy_studio_name');
-                  if (studioName) {
-                    window.location.href = 'dashboard.html';
-                  }
-                }}
-                style={{backgroundColor:'transparent', border:'1px solid rgba(255,255,255,0.3)', color:'rgba(255,255,255,0.8)', padding:'10px 24px', borderRadius:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', transition:'all 0.2s'}}
-              >
-                Not Right Now
-              </button>
-            </div>
           </div>
         </div>
       )}

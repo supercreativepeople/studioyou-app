@@ -2202,7 +2202,7 @@ function App() {
     
     // If email field is empty and user has studio name, go to dashboard
     if (!emailFieldValue || emailFieldValue.trim().length === 0) {
-      if (studioName && studioName.trim().length > 0) {
+      if (localStorage.getItem('sy_visited_dashboard') || localStorage.getItem('sy_formation')) {
         window.location.href = '/dashboard.html';
         return;
       }
@@ -2256,6 +2256,19 @@ function App() {
       }
     } catch(e) {}
 
+    // Anon user with formation data but no session/email — send to dashboard
+    try {
+      const formation = localStorage.getItem('sy_formation');
+      const session = localStorage.getItem('sy_session');
+      const email = localStorage.getItem('sy_email');
+      if (formation && !session && !email) {
+        // Anon user with formation — redirect to dashboard
+        localStorage.setItem('sy_visited_dashboard', 'true');
+        window.location.href = '/dashboard.html';
+        return;
+      }
+    } catch(e) {}
+
     try {
       const raw = localStorage.getItem('sy_formation_draft');
       if (raw) {
@@ -2296,6 +2309,7 @@ function App() {
         setPhase(next);
         setQIndex(0);
         if (next === 'dashboard') {
+        localStorage.setItem('sy_visited_dashboard', 'true');
           window.location.href = '/dashboard.html';
         }
       });

@@ -2203,7 +2203,7 @@ function App() {
     // If email field is empty and user has studio name, go to dashboard
     if (!emailFieldValue || emailFieldValue.trim().length === 0) {
       if (studioName && studioName.trim().length > 0) {
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard.html';
         return;
       }
     }

@@ -1097,6 +1097,32 @@ Revert: git reset --hard [HASH] && git push origin main
     opacity: 0.4;
     cursor: not-allowed;
   }
+  .fy-cta-button-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0,200,255,0.1);
+  }
+  .fy-cta-button {
+    background: linear-gradient(135deg, #00c8ff 0%, #a855f7 100%);
+    color: #fff;
+    border: none;
+    padding: 14px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .fy-cta-button:hover {
+    opacity: 0.9;
+  }
+  .fy-cta-button:active {
+    opacity: 0.8;
+  }
 
   @media (max-width: 768px) {
     .fy-container { display: none; }
@@ -1650,6 +1676,7 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
   const [suggestions, setSuggestions] = React.useState([]);
   const [isTyping, setIsTyping] = React.useState(false);
   const [isComplete, setIsComplete] = React.useState(false);
+  const [answeredCount, setAnsweredCount] = React.useState(0);
   const inputRef = React.useRef(null);
   const messagesEnd = React.useRef(null);
 
@@ -1658,19 +1685,16 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
     return v && (Array.isArray(v) ? v.length > 0 : v !== '');
   }).length;
 
-  // Scroll to bottom whenever messages change
   React.useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages]);
 
-  // On mount: restore draft or start fresh
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem('sy_formation_draft');
       if (raw) {
         const draft = JSON.parse(raw);
         if (draft.apiMessages && draft.apiMessages.length > 0) {
-          // Reconstruct display messages from saved API history
           const display = [];
           draft.apiMessages.forEach(m => {
             if (m.role === 'assistant') {
@@ -1687,12 +1711,11 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
             setFormation(draft.formation || {});
             if (onFormationChange) onFormationChange(draft.formation || {});
             setDisplayMessages(display);
-            return; // Resume without calling API — show last state
+            return;
           }
         }
       }
     } catch(e) {}
-    // Fresh start
     callFY([], {});
   }, []);
 
@@ -1715,7 +1738,6 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
       const complete   = data.complete || false;
       const chips      = data.suggestions || [];
 
-      // Store as assistant message in API history (JSON so Claude can read it back)
       const assistantApiMsg = {
         role: 'assistant',
         content: JSON.stringify({ message: fyMsg, formation: newForm, complete, suggestions: chips }),
@@ -1726,12 +1748,10 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
       setApiMessages(updatedApiMsgs);
       if (onFormationChange) onFormationChange(newForm);
 
-      // Persist studio name to localStorage for dynamic reference
       if (newForm.studioName) {
         localStorage.setItem('sy_studio_name', newForm.studioName);
       }
 
-      // Persist draft
       try {
         localStorage.setItem('sy_formation_draft', JSON.stringify({
           apiMessages: updatedApiMsgs,
@@ -1744,13 +1764,20 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
       typewriteFY(fyMsg, () => {
         setIsTyping(false);
         if (complete) {
-          // Formation complete — set flags and transition to dashboard
-          localStorage.setItem('sy_visited_dashboard', 'true');
-          localStorage.setItem('sy_formation', JSON.stringify(newForm));
           setIsComplete(true);
-          setTimeout(() => {
-            window.location.href = '/dashboard.html';
-          }, 1200);
+          // Store formation data
+          localStorage.setItem('sy_formation', JSON.stringify(newForm));
+          // Count answered fields for button logic
+          const answered = FY_FIELDS.filter(f => {
+            const v = newForm[f];
+            return v && (Array.isArray(v) ? v.length > 0 : v !== '');
+          }).length;
+          setAnsweredCount(answered);
+        } else {
+          // Show suggestion chips if available
+          if (chips.length > 0) {
+            setSuggestions(chips);
+          }
         }
       });
     } catch(err) {
@@ -1784,6 +1811,13 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
     }
   }
 
+  function handleProceedToNaming() {
+    // Clear formation draft and move to naming phase
+    localStorage.removeItem('sy_formation_draft');
+    localStorage.setItem('sy_visited_dashboard', 'true');
+    nextPhase();
+  }
+
   return (
     <div className="fy-chat-wrap">
       {/* Progress indicator — 6 dots */}
@@ -1812,7 +1846,7 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
       </div>
 
       {/* Suggestion chips */}
-      {suggestions.length > 0 && !isTyping && (
+      {suggestions.length > 0 && !isTyping && !isComplete && (
         <div className="fy-chat-suggestions">
           {suggestions.map(s => (
             <div key={s} className="chip" onClick={() => sendMessage(s)}>{s}</div>
@@ -1820,7 +1854,7 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
         </div>
       )}
 
-      {/* Input + Skip */}
+      {/* Input + Skip (shown until formation complete) */}
       {!isComplete && (
         <div className="fy-chat-input-row">
           <textarea
@@ -1848,6 +1882,18 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
               title="Skip this question — answer it later"
             >Skip</button>
           </div>
+        </div>
+      )}
+
+      {/* CTA Button (shown when formation complete) */}
+      {isComplete && (
+        <div className="fy-cta-button-wrap">
+          <button
+            className="fy-cta-button"
+            onClick={handleProceedToNaming}
+          >
+            {answeredCount === 0 ? 'TAKE ME TO MY STUDIO' : "LET'S GO!"}
+          </button>
         </div>
       )}
     </div>

@@ -1068,6 +1068,35 @@ Revert: git reset --hard [HASH] && git push origin main
   }
   .fy-chat-send:hover { opacity: 0.85; }
   .fy-chat-send:disabled { opacity: 0.25; cursor: default; }
+  .fy-chat-buttons {
+    display: flex;
+    gap: 8px;
+    margin-left: 8px;
+  }
+  .fy-chat-skip {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: transparent;
+    color: #a0aec0;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-end;
+  }
+  .fy-chat-skip:hover:not(:disabled) {
+    color: #e2e8f0;
+    border-color: #64748b;
+    background: rgba(148, 163, 184, 0.05);
+  }
+  .fy-chat-skip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   @media (max-width: 768px) {
     .fy-container { display: none; }
@@ -1612,16 +1641,17 @@ function FormationExplainer({ onClose }) {
 
 const FY_FIELDS = ['contentTypes','platforms','experience','origin','goal1yr','biggestFear'];
 
+
 function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
   const [displayMessages, setDisplayMessages] = React.useState([]);
-  const [apiMessages, setApiMessages]         = React.useState([]);
-  const [formation, setFormation]             = React.useState(initialFormation || {});
-  const [inputText, setInputText]             = React.useState('');
-  const [suggestions, setSuggestions]         = React.useState([]);
-  const [isTyping, setIsTyping]               = React.useState(false);
-  const [isComplete, setIsComplete]           = React.useState(false);
-  const inputRef      = React.useRef(null);
-  const messagesEnd   = React.useRef(null);
+  const [apiMessages, setApiMessages] = React.useState([]);
+  const [formation, setFormation] = React.useState(initialFormation || {});
+  const [inputText, setInputText] = React.useState('');
+  const [suggestions, setSuggestions] = React.useState([]);
+  const [isTyping, setIsTyping] = React.useState(false);
+  const [isComplete, setIsComplete] = React.useState(false);
+  const inputRef = React.useRef(null);
+  const messagesEnd = React.useRef(null);
 
   const filledCount = FY_FIELDS.filter(f => {
     const v = formation[f];
@@ -1714,39 +1744,30 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
       typewriteFY(fyMsg, () => {
         setIsTyping(false);
         if (complete) {
+          // Formation complete — set flags and transition to dashboard
+          localStorage.setItem('sy_visited_dashboard', 'true');
+          localStorage.setItem('sy_formation', JSON.stringify(newForm));
           setIsComplete(true);
-          setSuggestions([]);
-          setTimeout(() => onComplete(newForm, fyMsg), 1200);
-        } else {
-          setSuggestions(chips);
-          setTimeout(() => inputRef.current?.focus(), 80);
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1200);
         }
       });
-
-    } catch(e) {
+    } catch(err) {
+      console.error('FY API error:', err);
       stopProcessing();
       setIsTyping(false);
-      typewriteFY("Something went wrong reaching FutureYou. Try sending your message again.", () => {});
+      setDisplayMessages(prev => [...prev, { role:'fy', text: 'Something went sideways. Refresh and try again.' }]);
     }
   }
 
   function typewriteFY(text, onDone) {
-    const id = Date.now();
-    setDisplayMessages(prev => [...prev, { role:'fy', text:'', id }]);
-    let i = 0;
-    const iv = setInterval(() => {
-      if (i < text.length) {
-        i++;
-        setDisplayMessages(prev => prev.map(m => m.id === id ? { ...m, text: text.slice(0, i) } : m));
-      } else {
-        clearInterval(iv);
-        if (onDone) onDone();
-      }
-    }, 22);
+    setDisplayMessages(prev => [...prev, { role:'fy', text }]);
+    if (onDone) setTimeout(onDone, 100);
   }
 
-  async function sendMessage(text) {
-    const t = (text || inputText).trim();
+  async function sendMessage(msg) {
+    const t = msg || inputText.trim();
     if (!t || isTyping) return;
     setInputText('');
     setSuggestions([]);
@@ -1755,6 +1776,12 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
     const newApiMsgs = [...apiMessages, userApiMsg];
     setApiMessages(newApiMsgs);
     await callFY(newApiMsgs, formation);
+  }
+
+  function handleSkip() {
+    if (!isTyping) {
+      sendMessage('[User skipped this question]');
+    }
   }
 
   return (
@@ -1793,7 +1820,7 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
         </div>
       )}
 
-      {/* Input */}
+      {/* Input + Skip */}
       {!isComplete && (
         <div className="fy-chat-input-row">
           <textarea
@@ -1808,16 +1835,25 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
             disabled={isTyping}
             rows={2}
           />
-          <button
-            className="fy-chat-send"
-            onClick={() => sendMessage()}
-            disabled={isTyping || !inputText.trim()}
-          >→</button>
+          <div className="fy-chat-buttons">
+            <button
+              className="fy-chat-send"
+              onClick={() => sendMessage()}
+              disabled={isTyping || !inputText.trim()}
+            >→</button>
+            <button
+              className="fy-chat-skip"
+              onClick={handleSkip}
+              disabled={isTyping}
+              title="Skip this question — answer it later"
+            >Skip</button>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
 
 // ── VISUAL IDENTITY PHASE ─────────────────────────────────────────────────────
 

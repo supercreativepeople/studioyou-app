@@ -2250,7 +2250,7 @@ function App() {
         // Save studio name to localStorage for dynamic reference
         if (f.studioName) {
           localStorage.setItem('sy_studio_name', f.studioName);
-          window.location.href = 'dashboard.html';
+          window.location.href = '/dashboard.html';
           return;
         }
       }
@@ -2296,7 +2296,7 @@ function App() {
         setPhase(next);
         setQIndex(0);
         if (next === 'dashboard') {
-          window.location.href = 'dashboard.html';
+          window.location.href = '/dashboard.html';
         }
       });
     }

@@ -2599,7 +2599,6 @@ function App() {
               <div className="studio-menu-section">Account</div>
               <button className="studio-menu-item" onClick={()=>{
                 setShowLogoMenu(false);
-                document.getElementById('lp-signin')?.scrollIntoView({behavior:'smooth'});
                 transition(()=>setPhase('home'));
               }}>
                 ↩ Return to Studio

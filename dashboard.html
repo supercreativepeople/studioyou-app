@@ -2537,8 +2537,6 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [fyInitialPrompt, setFyInitialPrompt] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
   const [showFY, setShowFY] = useState(false);
-  const [showPathModal, setShowPathModal] = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [showFyInfo, setShowFyInfo] = useState(false);
   const [showStudioMenu, setShowStudioMenu] = useState(false);
   useEffect(() => {
@@ -2673,9 +2671,8 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
     // Check if user is authenticated
     const session = localStorage.getItem('sy_session');
     if (!session) {
-      // Anon user — show path choice modal instead of redirecting
-      setSelectedBuilding(b);
-      setShowPathModal(true);
+      // Anon user — redirect to subscribe
+      window.location.href = '/subscribe.html';
       return;
     }
     
@@ -2698,34 +2695,8 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
     else if (target === 'distribute') setActiveModule('distribute');
   }
 
-  function handleBuildWithFY() {
-    setShowPathModal(false);
-    // Go back to 6-question formation
-    localStorage.removeItem('sy_formation_draft');
-    window.location.href = '/index.html?phase=fy';
-  }
-
-  function handleSubscribeChoice() {
-    setShowPathModal(false);
-    window.location.href = '/subscribe.html';
-  }
-
-  function handleDismissPathModal() {
-    setShowPathModal(false);
-    setSelectedBuilding(null);
-  }
-
   return (
     <>
-      {showPathModal && selectedBuilding && (
-        <PathChoiceModal
-          buildingName={selectedBuilding.name}
-          onBuildWithFY={handleBuildWithFY}
-          onSubscribe={handleSubscribeChoice}
-          onDismiss={handleDismissPathModal}
-        />
-      )}
-      
       <div className="ambient amb-1"/>
       <div className="ambient amb-2"/>
 

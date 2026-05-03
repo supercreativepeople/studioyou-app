@@ -2229,7 +2229,223 @@ function AppShell() {
           borderTopColor:'var(--cyan)',
           animation:'spin 0.8s linear infinite',
         }}/>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          
+          /* Path Choice Modal */
+          .path-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 8000;
+            background: rgba(6,9,26,0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+          }
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          
+          .path-modal-box {
+            position: relative;
+            background: var(--navy);
+            border: 1px solid rgba(0,200,255,0.2);
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: slideUp 0.3s ease;
+          }
+          @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+          
+          .path-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            color: var(--mute);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+          }
+          .path-modal-close:hover { color: var(--cyan); }
+          
+          .path-modal-header {
+            margin-bottom: 32px;
+            text-align: center;
+          }
+          .path-modal-header h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 0.06em;
+            color: var(--cyan);
+            margin-bottom: 12px;
+          }
+          .path-modal-header p {
+            font-size: 14px;
+            color: var(--light);
+            line-height: 1.6;
+          }
+          
+          .path-modal-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+          }
+          @media (max-width: 768px) {
+            .path-modal-options { grid-template-columns: 1fr; }
+          }
+          
+          .path-option {
+            padding: 24px;
+            border: 1px solid rgba(0,200,255,0.15);
+            border-radius: 6px;
+            background: rgba(0,200,255,0.03);
+          }
+          
+          .path-option-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+          }
+          .path-option-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--cyan);
+            margin: 0;
+          }
+          .path-tag {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 8px;
+            background: rgba(0,200,255,0.1);
+            border: 1px solid rgba(0,200,255,0.3);
+            border-radius: 3px;
+            color: var(--cyan);
+          }
+          
+          .path-option-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px 0;
+          }
+          .path-option-list li {
+            font-size: 13px;
+            color: var(--light);
+            line-height: 1.6;
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+          }
+          .path-option-list li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+            font-weight: bold;
+          }
+          
+          .path-subscription-tiers {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 16px;
+          }
+          
+          .path-tier {
+            padding: 12px;
+            background: rgba(6,9,26,0.5);
+            border-radius: 4px;
+          }
+          .path-tier h4 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--cyan);
+            margin: 0 0 6px 0;
+          }
+          .path-tier-desc {
+            font-size: 12px;
+            color: var(--mute);
+            margin: 0 0 8px 0;
+            line-height: 1.5;
+          }
+          .path-tier-pricing {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--light);
+          }
+          .path-tier-pricing span {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .path-tier-pricing span span {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--mute);
+          }
+          
+          .path-option-note {
+            font-size: 11px;
+            color: var(--mute);
+            font-style: italic;
+            margin: 12px 0;
+          }
+          
+          .path-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .path-btn-primary {
+            background: linear-gradient(135deg, #00c8ff 0%, #a855f7 100%);
+            color: #fff;
+          }
+          .path-btn-primary:hover { opacity: 0.9; }
+          
+          .path-btn-secondary {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+          }
+          .path-btn-secondary:hover {
+            background: rgba(0,200,255,0.1);
+          }
+          
+          .path-modal-dismiss {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: var(--mute);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: color 0.2s;
+          }
+          .path-modal-dismiss:hover { color: var(--cyan); }
+        `}</style>
       </div>
     );
   }
@@ -2243,6 +2459,74 @@ function AppShell() {
 
 // ── MAIN DASHBOARD ────────────────────────────────────────────────────────────
 
+
+  // ── PATH CHOICE MODAL COMPONENT ──────────────────────────────────────────
+  function PathChoiceModal({ buildingName, onBuildWithFY, onSubscribe, onDismiss }) {
+    return (
+      <div className="path-modal-overlay" onClick={onDismiss}>
+        <div className="path-modal-box" onClick={e => e.stopPropagation()}>
+          <button className="path-modal-close" onClick={onDismiss}>×</button>
+          
+          <div className="path-modal-header">
+            <h2>Before you build — know your path</h2>
+            <p>You're about to use <strong>{buildingName}</strong>. We have two ways to work with StudioYou:</p>
+          </div>
+
+          <div className="path-modal-options">
+            <div className="path-option">
+              <div className="path-option-header">
+                <h3>Build With FutureYou</h3>
+                <span className="path-tag">Guided</span>
+              </div>
+              <ul className="path-option-list">
+                <li>Complete your formation (6 questions)</li>
+                <li>FutureYou curates tools & guidance for your stage</li>
+                <li>Full studio customization based on who you are</li>
+              </ul>
+              <p className="path-option-note">Best for: Creators building their first studio infrastructure</p>
+              <button className="path-btn path-btn-primary" onClick={onBuildWithFY}>
+                Start Formation →
+              </button>
+            </div>
+
+            <div className="path-option">
+              <div className="path-option-header">
+                <h3>Independent or Pro</h3>
+                <span className="path-tag">Subscription</span>
+              </div>
+              <div className="path-subscription-tiers">
+                <div className="path-tier">
+                  <h4>INDEPENDENT</h4>
+                  <p className="path-tier-desc">Full tool access, you navigate. We guide the process.</p>
+                  <div className="path-tier-pricing">
+                    <span>$199<span>/mo</span></span>
+                    <span>$129<span>/mo (yearly)</span></span>
+                  </div>
+                </div>
+                <div className="path-tier">
+                  <h4>PRO</h4>
+                  <p className="path-tier-desc">Full tool access + bespoke studio powerhouse. You know what you want; we build it.</p>
+                  <div className="path-tier-pricing">
+                    <span>$149<span>/mo</span></span>
+                    <span>$99<span>/mo (yearly)</span></span>
+                  </div>
+                </div>
+              </div>
+              <p className="path-option-note">Best for: Experienced creators building their exact vision</p>
+              <button className="path-btn path-btn-secondary" onClick={onSubscribe}>
+                Choose a Plan →
+              </button>
+            </div>
+          </div>
+
+          <button className="path-modal-dismiss" onClick={onDismiss}>
+            Maybe later
+          </button>
+        </div>
+      </div>
+    );
+  }
+
 function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [formation] = useState(formationOverride || loadFormation);
   const [priorities, setPriorities] = useState(null);
@@ -2253,6 +2537,8 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [fyInitialPrompt, setFyInitialPrompt] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
   const [showFY, setShowFY] = useState(false);
+  const [showPathModal, setShowPathModal] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [showFyInfo, setShowFyInfo] = useState(false);
   const [showStudioMenu, setShowStudioMenu] = useState(false);
   useEffect(() => {
@@ -2384,14 +2670,16 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [flashingBuilding, setFlashingBuilding] = React.useState(null);
 
   function handleBuildingClick(b) {
-    // Check if user is authenticated before allowing tool/module access
+    // Check if user is authenticated
     const session = localStorage.getItem('sy_session');
     if (!session) {
-      // Anon user without subscription — redirect to subscribe
-      window.location.href = '/subscribe.html';
+      // Anon user — show path choice modal instead of redirecting
+      setSelectedBuilding(b);
+      setShowPathModal(true);
       return;
     }
     
+    // Authenticated user — proceed normally
     setShowWelcome(false);
     setFlashingBuilding(b.id);
     setTimeout(() => {
@@ -2410,8 +2698,34 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
     else if (target === 'distribute') setActiveModule('distribute');
   }
 
+  function handleBuildWithFY() {
+    setShowPathModal(false);
+    // Go back to 6-question formation
+    localStorage.removeItem('sy_formation_draft');
+    window.location.href = '/index.html?phase=fy';
+  }
+
+  function handleSubscribeChoice() {
+    setShowPathModal(false);
+    window.location.href = '/subscribe.html';
+  }
+
+  function handleDismissPathModal() {
+    setShowPathModal(false);
+    setSelectedBuilding(null);
+  }
+
   return (
     <>
+      {showPathModal && selectedBuilding && (
+        <PathChoiceModal
+          buildingName={selectedBuilding.name}
+          onBuildWithFY={handleBuildWithFY}
+          onSubscribe={handleSubscribeChoice}
+          onDismiss={handleDismissPathModal}
+        />
+      )}
+      
       <div className="ambient amb-1"/>
       <div className="ambient amb-2"/>
 

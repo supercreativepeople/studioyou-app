@@ -844,11 +844,11 @@
   <div class="fy-panel">
 
     <div class="fy-header">
-      <a href="index.html" style="display:inline-block; margin-bottom:16px; opacity:0.6; transition:opacity 0.2s ease;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+      <a href='/' onmouseout='this.style.opacity=\'0.6\'' onmouseover='this.style.opacity=\'1'' style='display:inline-block; margin-bottom:16px; opacity:0.6; transition:opacity 0.2s ease;'>
         <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" style="height:40px; width:auto;">
       </a>
-      <div class="fy-title" id="fyTitle">Your Studio Is Ready.</div>
-      <div class="fy-subtitle" id="fySubtitle">Let's talk about what you're building before we set it up.</div>
+      <div class="fy-title" id="fyTitle">Before you build — know your path</div>
+      <div class="fy-subtitle" id="fySubtitle">You clicked a tool. Here's what you need to know: FutureYou is the core of StudioYou, whether you're just starting or already a pro. Choose your path — guided formation or independent subscription.</div>
       <div class="fy-status">
         <div class="fy-dot" id="fyDot"></div>
         <div class="fy-status-text" id="fyStatusText">FutureYou is reading your formation</div>
@@ -891,7 +891,7 @@
         <div class="recommended-badge">FutureYou Recommended</div>
         <div class="card-tier-label">Tier 01</div>
         <div class="card-tier-name">Independent</div>
-        <div class="card-descriptor">The guided creator. FutureYou in directive mode.</div>
+        <div class="card-descriptor">We build your fully-configured studio. You tell FutureYou what you want to create. No learning curve. Just creation.</div>
         <div class="card-price">
           <div class="price-amount" id="ind-price">$129</div>
           <div class="price-period">/ mo</div>
@@ -927,8 +927,8 @@
       <!-- OPERATOR -->
       <div class="tier-card" id="card-operator" onclick="selectTier('operator')">
         <div class="card-tier-label">Tier 02</div>
-        <div class="card-tier-name">Operator</div>
-        <div class="card-descriptor">The working creator. FutureYou in peer mode.</div>
+        <div class="card-tier-name">PRO</div>
+        <div class="card-descriptor">You choose the tools. Build your bespoke studio powerhouse.</div>
         <div class="card-price">
           <div class="price-amount" id="op-price">$99</div>
           <div class="price-period">/ mo</div>
@@ -948,7 +948,7 @@
     </div>
 
     <div class="rights-link">
-      <a href="bill-of-rights.html" style="color:#c9a84c; animation: lotPulse 2.5s ease-in-out infinite; display:inline-block;">Read the Creator Bill of Rights →</a>
+      <a href='/bill-of-rights' style='color:#c9a84c; animation: lotPulse 2.5s ease-in-out infinite; display:inline-block;'>Read the Creator Bill of Rights →</a>
     </div>
 
     <div id="subResendRow" style="display:none; margin-top:12px; font-size:10px; letter-spacing:0.12em; color:rgba(240,242,255,0.3); text-align:center;">
@@ -1064,12 +1064,12 @@ const PRICES = {
 const TIER_META = {
   independent: {
     name: 'Independent',
-    desc: 'The guided creator. FutureYou in directive mode.',
+    desc: 'We build your fully-configured studio. You tell FutureYou what you want to create. No learning curve. Just creation.',
     hasOnboard: true
   },
   operator: {
     name: 'Operator',
-    desc: 'The working creator. FutureYou in peer mode.',
+    desc: 'You choose the tools. Build your bespoke studio powerhouse.',
     hasOnboard: false
   }
 };

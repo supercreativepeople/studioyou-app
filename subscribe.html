@@ -1439,8 +1439,13 @@ async function streamFYResponse(systemPrompt, messages, targetBubble, msgEl) {
 
     const data = await res.json();
 
-    if (data.content && data.content[0]) {
-      const text = data.content[0].text || '';
+    if (!res.ok) {
+      throw new Error(data.error || 'API error');
+    }
+
+    const text = data.message || (data.content && data.content[0] && data.content[0].text) || '';
+    
+    if (text) {
       targetBubble.textContent = '';
 
       // Insert GIF cursor after bubble while typing

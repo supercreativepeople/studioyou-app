@@ -2751,6 +2751,9 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
                 </button>
                 <div className="studio-menu-divider"/>
                 <div className="studio-menu-section">Account</div>
+                <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); window.location.href='/subscribe.html'; }}>
+                  ⭐ Subscribe Now
+                </button>
                 <button className="studio-menu-item" onClick={()=>{ setShowStudioMenu(false); window.location.href='index.html'; }}>
                   🏠 StudioYou Home
                 </button>

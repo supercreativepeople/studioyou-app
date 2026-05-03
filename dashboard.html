@@ -1128,6 +1128,15 @@ const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
 // ── FORMATION DATA READER ─────────────────────────────────────────────────────
 
+// Normalize formation arrays—handle case where backend saved as string
+function normalizeFormation(f) {
+  if (!f) return f;
+  if (typeof f.contentTypes === 'string') f.contentTypes = [f.contentTypes];
+  if (typeof f.platforms === 'string') f.platforms = [f.platforms];
+  if (typeof f.voiceStyle === 'string') f.voiceStyle = [f.voiceStyle];
+  return f;
+}
+
 function loadFormation() {
   try {
     const raw = localStorage.getItem('sy_formation');
@@ -1136,7 +1145,7 @@ function loadFormation() {
       // Migrate: if formation has answers keyed as p2_1/p2_2 instead of contentTypes/platforms
       if (!f.contentTypes && f.p2_1) f.contentTypes = f.p2_1;
       if (!f.platforms && f.p2_2) f.platforms = f.p2_2;
-      return f;
+      return normalizeFormation(f);
     }
   } catch(e) {}
   return {
@@ -2156,7 +2165,7 @@ function AppShell() {
             localStorage.setItem('sy_email', data.email);
             if (data.formation && Object.keys(data.formation).length > 0) {
               localStorage.setItem('sy_formation', JSON.stringify(data.formation));
-              setFormation(data.formation);
+              setFormation(normalizeFormation(data.formation));
             }
             // Clean URL
             window.history.replaceState({}, '', window.location.pathname);
@@ -2192,7 +2201,7 @@ function AppShell() {
       const localFormation = localStorage.getItem('sy_formation');
       if (localFormation) {
         try {
-          setFormation(JSON.parse(localFormation));
+          setFormation(normalizeFormation(JSON.parse(localFormation)));
           setNeedsLink(true); // prompt user to get their sign-in link
           setAuthState('authenticated');
           return;

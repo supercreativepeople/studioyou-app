@@ -1773,6 +1773,14 @@ function FYFormationChat({ onComplete, onFormationChange, initialFormation }) {
             return v && (Array.isArray(v) ? v.length > 0 : v !== '');
           }).length;
           setAnsweredCount(answered);
+          
+          // Auto-call onComplete callback after closing message displays
+          // This triggers transition to summary page
+          setTimeout(() => {
+            if (onComplete) {
+              onComplete(newForm, fyMsg);
+            }
+          }, 1500);
         } else {
           // Show suggestion chips if available
           if (chips.length > 0) {
@@ -2493,17 +2501,13 @@ function App() {
     const extractedFirstName = extractedFormation.firstName || extractedFormation.creatorName?.split(' ')[0] || null;
     setAnswers(newAnswers);
     setFyFormation({...extractedFormation, firstName: extractedFirstName});
-    // Store fyFirstWords in state but don't display yet
-    setFyText('');
+    // Store fyFirstWords (closing message) for summary page display
+    setFyText(fyFirstWords);
     setFyTyping(false);
     setFyDone(true);
+    // Transition to summary page (not dashboard)
     transition(() => {
-      setPhase('dashboard');
-      // Trigger typewriter AFTER dashboard is visible
-      setTimeout(() => {
-        setFyTyping(true);
-        typewriterEffect(fyFirstWords);
-      }, 500);
+      setPhase('summary');
     });
   }
 

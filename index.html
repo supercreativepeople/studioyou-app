@@ -2424,11 +2424,17 @@ function App() {
     const extractedFirstName = extractedFormation.firstName || extractedFormation.creatorName?.split(' ')[0] || null;
     setAnswers(newAnswers);
     setFyFormation({...extractedFormation, firstName: extractedFirstName});
-    setFyText(fyFirstWords);
+    // Store fyFirstWords in state but don't display yet
+    setFyText('');
     setFyTyping(false);
     setFyDone(true);
     transition(() => {
-      setPhase('visual');
+      setPhase('dashboard');
+      // Trigger typewriter AFTER dashboard is visible
+      setTimeout(() => {
+        setFyTyping(true);
+        typewriterEffect(fyFirstWords);
+      }, 500);
     });
   }
 

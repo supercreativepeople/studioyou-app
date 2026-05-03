@@ -847,11 +847,10 @@
       <a href='/' onmouseout='this.style.opacity=\'0.6\'' onmouseover='this.style.opacity=\'1'' style='display:inline-block; margin-bottom:16px; opacity:0.6; transition:opacity 0.2s ease;'>
         <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" style="height:40px; width:auto;">
       </a>
-      <div class="fy-title" id="fyTitle">Before you build — know your path</div>
-      <div class="fy-subtitle" id="fySubtitle">You clicked a tool. Here's what you need to know: FutureYou is the core of StudioYou, whether you're just starting or already a pro. Choose your path — guided formation or independent subscription.</div>
+      <div class="fy-title" id="fyTitle">Meet Your Future Self</div>
       <div class="fy-status">
         <div class="fy-dot" id="fyDot"></div>
-        <div class="fy-status-text" id="fyStatusText">FutureYou is reading your formation</div>
+        <div class="fy-status-text" id="fyStatusText">FutureYou is standing by to meet TodayYou</div>
       </div>
     </div>
 
@@ -1389,11 +1388,13 @@ function showGuide(type, email) {
   if (type === 'formation') {
     // User hasn't done formation yet
     html = `
-      <div style="padding:32px; text-align:center; color:rgba(240,242,255,0.6); font-size:14px; line-height:1.8;">
-        <div style="font-size:16px; font-weight:500; margin-bottom:16px;">Build Your Studio First</div>
-        <p style="margin-bottom:16px;">Every tool, every feature starts with your formation — a 20-minute conversation with FutureYou about who you are and where you're going.</p>
-        <p style="margin-bottom:24px; font-size:13px; color:rgba(240,242,255,0.4);">You move at your pace. Nothing is mandatory. You can explore and come back anytime.</p>
-        <a href="index.html" style="display:inline-block; padding:12px 28px; background:rgba(0,200,255,0.8); color:var(--black); text-decoration:none; font-weight:500; border-radius:2px; cursor:pointer;">Start Your Formation</a>
+      <div style="padding:48px; text-align:center; color:rgba(240,242,255,0.7); font-size:15px; line-height:1.8; max-width:560px; margin:0 auto;">
+        <div style="font-size:19px; font-weight:500; margin-bottom:28px; color:rgba(240,242,255,0.95);">Here's the thing about building out your custom studio:</div>
+        <p style="margin-bottom:20px;">FutureYou is the builder. Why? Because FutureYou is you—years from now. Imagine meeting yourself after you've succeeded, failed, learned, made mistakes, knocked it out of the park. Made great deals and made some bad ones too. But now YOU are on top. Running your own studio. Creating the work you dreamed about.</p>
+        <p style="margin-bottom:20px;">FutureYou has traveled back in time. Here NOW to guide YOU to build the studio and the creative products you have in your head TODAY.</p>
+        <p style="margin-bottom:20px;">This formation process is the first time FutureYou meets TodayYou. Dive in. Have fun with it. Answer what you're comfortable with. Skip what you're not. Building your empire is a process. Only now you're not going it alone. You've got you.</p>
+        <p style="margin-bottom:32px; font-size:14px; color:rgba(240,242,255,0.7);">Check out the subscription options to the right. Choose one (we recommend Independent) and let's go! Ready?</p>
+        <a href="index.html" style="display:inline-block; padding:12px 32px; background:rgba(0,200,255,0.8); color:var(--black); text-decoration:none; font-weight:500; border-radius:2px; cursor:pointer; font-size:14px;">Return to Formation</a>
       </div>
     `;
   } else if (type === 'verify') {

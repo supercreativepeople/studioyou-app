@@ -2384,6 +2384,14 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [flashingBuilding, setFlashingBuilding] = React.useState(null);
 
   function handleBuildingClick(b) {
+    // Check if user is authenticated before allowing tool/module access
+    const session = localStorage.getItem('sy_session');
+    if (!session) {
+      // Anon user without subscription — redirect to subscribe
+      window.location.href = '/subscribe.html';
+      return;
+    }
+    
     setShowWelcome(false);
     setFlashingBuilding(b.id);
     setTimeout(() => {

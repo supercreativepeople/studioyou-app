@@ -2381,6 +2381,7 @@ function LobbySequence({ onComplete }) {
 
   function handleDashboardClick() {
     localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
+    localStorage.setItem('sy_fresh_formation', 'true');
     window.location.href = '/dashboard.html';
   }
 

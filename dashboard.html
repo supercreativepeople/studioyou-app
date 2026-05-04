@@ -2274,6 +2274,17 @@ function AppShell() {
         return;
       }
 
+      // 3c. NEW USERS: Check for fresh formation (just completed lobby)
+      const freshFormation = localStorage.getItem('sy_fresh_formation');
+      if (freshFormation) {
+        localStorage.removeItem('sy_fresh_formation');
+        const lobbyResponses = localStorage.getItem('sy_lobby_responses');
+        const minimalFormation = { lobbyResponses: lobbyResponses || '' };
+        setFormation(minimalFormation);
+        setAuthState('authenticated');
+        return;
+      }
+
       // 4. No session, no localStorage — show return screen
       setAuthState('unauthenticated');
     }

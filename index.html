@@ -1267,7 +1267,7 @@ var _tbHandle = null;
 function runTopbarTypewriter() {
   var el = document.querySelector('.topbar-label');
   if (!el) return;
-  var msg = el.dataset.msg || el.textContent || 'Building your studio';
+  var msg = el.dataset.msg || el.textContent || 'Build your studio now';
   el.textContent = '';
   var i = 0;
   function tick() {
@@ -3344,7 +3344,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 setTimeout(function() {
   var el = document.querySelector('.topbar-label');
   if (el) {
-    el.dataset.msg = el.textContent.trim() || 'Building your studio';
+    el.dataset.msg = el.textContent.trim() || 'Build your studio now';
     runTopbarTypewriter();
   }
 }, 500);

@@ -1752,15 +1752,63 @@ function FYChat({ formation, initialPrompt, onClose, formationProgress, setForma
   const FORMATION_QUESTIONS = [
     {
       id: 'q1',
+      phase: 'IDEATE',
       prompt: 'What\'s the one format or medium you keep coming back to?'
     },
     {
       id: 'q2',
+      phase: 'DEVELOP',
       prompt: 'Describe your creative process from idea to draft—what does that look like for you?'
     },
     {
       id: 'q3',
+      phase: 'FUND',
       prompt: 'How are you currently funding your creative work, and what\'s the bottleneck?'
+    },
+    {
+      id: 'q4',
+      phase: 'PRODUCE',
+      prompt: 'What\'s the biggest friction point between starting and shipping?'
+    },
+    {
+      id: 'q5',
+      phase: 'POST',
+      prompt: 'How do you currently handle post-production, editing, and finishing?'
+    },
+    {
+      id: 'q6',
+      phase: 'DISTRIBUTE',
+      prompt: 'Where does your work live right now, and where do you want it to reach?'
+    },
+    {
+      id: 'q7',
+      phase: 'BRAND',
+      prompt: 'Who are 3 creators you admire, and what specifically inspires you about them?'
+    },
+    {
+      id: 'q8',
+      phase: 'MONETIZE',
+      prompt: 'What\'s your vision for making money from your creative work?'
+    },
+    {
+      id: 'q9',
+      phase: 'GROW',
+      prompt: 'How do you measure progress or success in your creative work?'
+    },
+    {
+      id: 'q10',
+      phase: 'SUSTAIN',
+      prompt: 'What would make you stop creating, and what would keep you going?'
+    },
+    {
+      id: 'q11',
+      phase: 'EVOLVE',
+      prompt: 'What\'s the biggest creative evolution you want to make in the next 2 years?'
+    },
+    {
+      id: 'q12',
+      phase: 'LEGACY',
+      prompt: 'What do you want to be remembered for in 10 years?'
     }
   ];
 
@@ -1771,10 +1819,11 @@ function FYChat({ formation, initialPrompt, onClose, formationProgress, setForma
   const [loading, setLoading] = useState(false);
   const [openerReady, setOpenerReady] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const [formationQ1, setFormationQ1] = useState('');
-  const [formationQ2, setFormationQ2] = useState('');
-  const [formationQ3, setFormationQ3] = useState('');
-  const [isFormationActive, setIsFormationActive] = useState(true); // Formation phase active until Q3
+  const [formationAnswers, setFormationAnswers] = useState({
+    q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
+    q7: '', q8: '', q9: '', q10: '', q11: '', q12: ''
+  });
+  const [isFormationActive, setIsFormationActive] = useState(true); // Formation phase active until Q12
   const [mergedFormation, setMergedFormation] = useState(formation);
   const endRef = useRef(null);
 
@@ -1888,23 +1937,26 @@ Return ONLY a JSON object like:
   async function sendText(txt) {
     // Store formation response if in formation phase
     if (isFormationActive && txt) {
-      if (formationProgress === 0) {
-        setFormationQ1(txt);
-        setFormationProgress(1);
-      } else if (formationProgress === 1) {
-        setFormationQ2(txt);
-        setFormationProgress(2);
-      } else if (formationProgress === 2) {
-        setFormationQ3(txt);
-        setFormationProgress(3);
+      const questionId = `q${formationProgress + 1}`;
+      setFormationAnswers(prev => ({
+        ...prev,
+        [questionId]: txt
+      }));
+      
+      if (formationProgress < 11) {
+        // More questions ahead
+        setFormationProgress(prev => prev + 1);
+      } else {
+        // All 12 questions complete
+        setFormationProgress(12);
         setIsFormationActive(false);
-        // Formation complete — save to localStorage
-        localStorage.setItem('sy_formation_phase2', JSON.stringify({
-          q1: formationQ1,
-          q2: formationQ2,
-          q3: txt,
+        // Formation complete — save all 12 answers to localStorage
+        const completedAnswers = {
+          ...formationAnswers,
+          [questionId]: txt,
           completedAt: new Date().toISOString()
-        }));
+        };
+        localStorage.setItem('sy_formation_phase2', JSON.stringify(completedAnswers));
       }
     }
 
@@ -1977,14 +2029,14 @@ HOW YOU SPEAK:
       setMsgs(prev=>[...prev,{role:'fy',text:'Having trouble connecting right now. Try again in a moment.'}]);
     } finally { setLoading(false); stopProcessing(); }
     // Show next formation question or completion message
-    if (formationProgress < 3) {
+    if (formationProgress < 12) {
       setTimeout(() => {
         const nextQ = FORMATION_QUESTIONS[formationProgress];
         setMsgs(prev => [...prev, {role:'fy', text: nextQ.prompt}]);
       }, 500);
-    } else if (formationProgress === 3 && !isFormationActive) {
+    } else if (formationProgress === 12 && !isFormationActive) {
       setTimeout(() => {
-        setMsgs(prev => [...prev, {role:'fy', text: 'Formation complete. Let\'s get to work.'}]);
+        setMsgs(prev => [...prev, {role:'fy', text: 'Formation complete. I know you now. Let\'s build.'}]);
       }, 500);
     }
 

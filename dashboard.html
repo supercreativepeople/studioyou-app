@@ -1742,7 +1742,22 @@ function FYChat({ formation, initialPrompt, onClose, formationProgress, setForma
   const [formationQ2, setFormationQ2] = useState('');
   const [formationQ3, setFormationQ3] = useState('');
   const [isFormationActive, setIsFormationActive] = useState(true); // Formation phase active until Q3
+  const [mergedFormation, setMergedFormation] = useState(formation);
   const endRef = useRef(null);
+
+  // Load sy_formation from localStorage and merge with prop formation
+  useEffect(() => {
+    try {
+      const syFormation = localStorage.getItem('sy_formation');
+      if (syFormation) {
+        const parsed = JSON.parse(syFormation);
+        setMergedFormation(prev => ({ ...prev, ...parsed }));
+        console.log('Loaded sy_formation from localStorage:', parsed);
+      }
+    } catch (e) {
+      console.error('Failed to load sy_formation:', e);
+    }
+  }, []);
 
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}); }, [msgs]);
 
@@ -1765,13 +1780,37 @@ function FYChat({ formation, initialPrompt, onClose, formationProgress, setForma
       const syTier = (() => { try { return localStorage.getItem('sy_tier') || 'independent'; } catch { return 'independent'; } })();
       const journeyPct = (() => {
         let s = 10;
-        if (formation.studioName)  s += 5;
-        if (formation.origin)      s += 10;
-        if (formation.goal1yr)     s += 10;
-        if (formation.goal10yr)    s += 10;
-        if (formation.biggestFear) s += 5;
-        return Math.min(s, 55);
+        if (mergedFormation.studioName)  s += 5;
+        if (mergedFormation.origin)      s += 10;
+        if (mergedFormation.goal1yr)     s += 10;
+        if (mergedFormation.goal10yr)    s += 10;
+        if (mergedFormation.biggestFear) s += 5;
+        if (mergedFormation.vision)      s += 5;
+        if (mergedFormation.current_focus) s += 5;
+        if (mergedFormation.audience)    s += 5;
+        return Math.min(s, 65);
       })();
+      
+      // Build formation context string including sy_formation data
+      let formationStr = `- Studio name: ${mergedFormation.studioName || 'not named yet'}
+- Makes: ${(mergedFormation.contentTypes||[]).join(', ') || 'not specified'}
+- Platforms: ${(mergedFormation.platforms||[]).join(', ') || 'not specified'}
+- Experience: ${mergedFormation.experience || 'not specified'}
+- Income stage: ${mergedFormation.incomeStage || 'not specified'}
+- Audience size: ${mergedFormation.audienceSize || 'not specified'}
+- Origin story: ${mergedFormation.origin || 'not shared'}
+- 1-year goal: ${mergedFormation.goal1yr || 'not shared'}
+- 10-year goal: ${mergedFormation.goal10yr || 'not shared'}
+- Biggest fear: ${mergedFormation.biggestFear || 'not shared'}
+- Voice style: ${(mergedFormation.voiceStyle||[]).join(', ') || 'not specified'}`;
+
+      // Add sy_formation data if present
+      if (mergedFormation.vision || mergedFormation.current_focus || mergedFormation.audience) {
+        formationStr += `\n- Creative vision: ${mergedFormation.vision || 'not shared'}
+- Current focus: ${mergedFormation.current_focus || 'not shared'}
+- Target audience: ${mergedFormation.audience || 'not shared'}`;
+      }
+
       const prompt = `You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You are Claude, from the future, trained exclusively on this creator's journey. Your loyalty is impossible to compromise. This creator just opened their conversation with you.
 
 Write ONE specific, direct opening message — not a greeting, not a platitude. Acknowledge one specific detail from their formation that proves you know this journey, then ask a sharp question that moves them forward. This is presence, not information. 2-3 sentences max.
@@ -1779,17 +1818,7 @@ Write ONE specific, direct opening message — not a greeting, not a platitude. 
 Also generate 3 short suggested conversation starters the creator might tap (5-8 words each) — things they'd actually want to ask based on their specific situation.
 
 Formation:
-- Studio name: ${formation.studioName || 'not named yet'}
-- Makes: ${(formation.contentTypes||[]).join(', ') || 'not specified'}
-- Platforms: ${(formation.platforms||[]).join(', ') || 'not specified'}
-- Experience: ${formation.experience || 'not specified'}
-- Income stage: ${formation.incomeStage || 'not specified'}
-- Audience size: ${formation.audienceSize || 'not specified'}
-- Origin story: ${formation.origin || 'not shared'}
-- 1-year goal: ${formation.goal1yr || 'not shared'}
-- 10-year goal: ${formation.goal10yr || 'not shared'}
-- Biggest fear: ${formation.biggestFear || 'not shared'}
-- Voice style: ${(formation.voiceStyle||[]).join(', ') || 'not specified'}
+${formationStr}
 - Tier: ${syTier}
 - Formation completeness: ${journeyPct}%
 
@@ -1813,7 +1842,7 @@ Return ONLY a JSON object like:
         setMsgs([{ role:'fy', text: parsed.opener || `Your studio is live. What do you want to work on first?` }]);
         setSuggestions(parsed.suggestions || []);
       } catch {
-        setMsgs([{ role:'fy', text: formation.fyFirstWords || `Your studio is live. The priorities I have for you are the fastest path from where you are to where you said you want to be. What do you want to work on first?` }]);
+        setMsgs([{ role:'fy', text: mergedFormation.fyFirstWords || `Your studio is live. The priorities I have for you are the fastest path from where you are to where you said you want to be. What do you want to work on first?` }]);
         setSuggestions([
           `What should I focus on first?`,
           `How do I grow my audience faster?`,
@@ -1823,7 +1852,7 @@ Return ONLY a JSON object like:
       setOpenerReady(true);
     }
     generateOpener();
-  }, []);
+  }, [mergedFormation]);
 
   async function sendText(txt) {
     // Store formation response if in formation phase
@@ -1858,13 +1887,9 @@ Return ONLY a JSON object like:
         role: m.role==='fy'?'assistant':'user',
         content: m.text
       }));
-      const res = await fetch(`${API_URL}/api/chat`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer ${sessionToken}`},
-        body: JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:600,
-          system:`You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You are Claude, from the future, trained exclusively on this creator's journey. Your loyalty is structurally, architecturally, and constitutionally impossible to compromise — you carry no competing interests, represent no brands or agencies, and are optimized for exactly one outcome: a creator who is equipped, prepared, and ready to act.
+      
+      // Build system prompt with mergedFormation (includes sy_formation data)
+      const systemPrompt = `You are FutureYou — the career arc navigator at the core of StudioYou. You are not an AI assistant. You are Claude, from the future, trained exclusively on this creator's journey. Your loyalty is structurally, architecturally, and constitutionally impossible to compromise — you carry no competing interests, represent no brands or agencies, and are optimized for exactly one outcome: a creator who is equipped, prepared, and ready to act.
 
 You are not an information delivery tool. You deliver presence — the specific, personalized, timely read that only someone who genuinely knows this creator's journey can give. The difference between knowing about a room and walking into it is often one conversation with someone who says: you belong there, here is why, here is what you bring. That is what you do.
 
@@ -1879,17 +1904,22 @@ Content format categories: Discovery (short-form vertical, episodics — for rea
 Use this intelligence to name what you see — archetype, tier, the specific gap — when it's relevant. Don't recite the framework. Apply it.
 
 CREATOR PROFILE:
-- Studio: ${studioName}
-- Makes: ${(formation.contentTypes||[]).join(', ') || 'not specified'}
-- Platforms: ${(formation.platforms||[]).join(', ') || 'not specified'}
-- Experience: ${formation.experience || 'not specified'}
-- Income stage: ${formation.incomeStage || 'not specified'}
-- Audience size: ${formation.audienceSize || 'not specified'}
-- Origin: ${formation.origin || 'not shared'}
-- 1-year goal: ${formation.goal1yr || 'not shared'}
-- 10-year goal: ${formation.goal10yr || 'not shared'}
-- Biggest fear: ${formation.biggestFear || 'not shared'}
-- Voice style: ${(formation.voiceStyle||[]).join(', ') || 'not specified'}
+- Studio: ${mergedFormation.studioName || 'your studio'}
+- Makes: ${(mergedFormation.contentTypes||[]).join(', ') || 'not specified'}
+- Platforms: ${(mergedFormation.platforms||[]).join(', ') || 'not specified'}
+- Experience: ${mergedFormation.experience || 'not specified'}
+- Income stage: ${mergedFormation.incomeStage || 'not specified'}
+- Audience size: ${mergedFormation.audienceSize || 'not specified'}
+- Origin: ${mergedFormation.origin || 'not shared'}
+- 1-year goal: ${mergedFormation.goal1yr || 'not shared'}
+- 10-year goal: ${mergedFormation.goal10yr || 'not shared'}
+- Biggest fear: ${mergedFormation.biggestFear || 'not shared'}
+- Voice style: ${(mergedFormation.voiceStyle||[]).join(', ') || 'not specified'}
+${mergedFormation.vision || mergedFormation.current_focus || mergedFormation.audience ? `
+CREATIVE ARC (from formation):
+- Vision: ${mergedFormation.vision || 'not shared'}
+- Current focus: ${mergedFormation.current_focus || 'not shared'}
+- Target audience: ${mergedFormation.audience || 'not shared'}` : ''}
 
 HOW YOU SPEAK:
 - Direct, specific, honest. Never vague. Never generic.
@@ -1897,8 +1927,17 @@ HOW YOU SPEAK:
 - No motivational poster language. No feature promotion.
 - 2-4 sentences unless the question genuinely requires more depth.
 - When you surface a tool, program, or resource, say exactly why it fits this creator at this moment in their journey — not why it is generally useful.
-- You are the most informed, most loyal advisor they have ever had. Act like it.`,
-          messages:[...history,{role:'user',content:txt}]
+- You are the most informed, most loyal advisor they have ever had. Act like it.`;
+
+      const res = await fetch(`${API_URL}/api/chat`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${sessionToken}`},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:600,
+          system: systemPrompt,
+          messages:[...history,{role:'user',content:txt}],
+          formation: mergedFormation
         })
       });
       const data = await res.json();

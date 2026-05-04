@@ -1644,25 +1644,6 @@ function FYDataCard({ onDismiss, onSaved }) {
   );
 }
 
-// ── FORMATION EXPLAINER MODAL ────────────────────────────────────────────────
-
-function FormationExplainer({ onClose }) {
-  return (
-    <div className="formation-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="formation-modal">
-        <div className="formation-modal-label">StudioYou &nbsp;|&nbsp; The Ultimate Creator Platform</div>
-        <div className="formation-modal-title">This is how FutureYou learns TodayYou.</div>
-        <div className="formation-modal-body">
-          <p>Formation is the interview that builds your ultimate guide; YOU, thirty years from now, back to enrich you with all that knowledge and experience. FutureYou is not an AI guide. It's your personal time machine that will guide you every step of the way.</p>
-          <p>Every answer shapes FutureYou: the intelligence at the core of your studio. The more honest you are, the more useful FutureYou becomes. Pass anything you're not ready for — no answer is wrong, and you can always come back.</p>
-          <p>Set aside 20–30 minutes. At the end, your studio opens and FutureYou speaks to you directly — for the first time.</p>
-        </div>
-        <button className="formation-modal-close" onClick={onClose}>Got it — let's go</button>
-      </div>
-    </div>
-  );
-}
-
 // ── FY FORMATION CHAT ────────────────────────────────────────────────────────
 
 const FY_FIELDS = ['contentTypes','platforms','experience','origin','goal1yr','biggestFear'];
@@ -2314,7 +2295,6 @@ function App() {
   const [screenOut, setScreenOut] = useState(false);
   const [showDataCard, setShowDataCard] = useState(false);
   const [dataCardDismissed, setDataCardDismissed] = useState(false);
-  const [showFormationExplainer, setShowFormationExplainer] = useState(false);
   const [studioNameStatus, setStudioNameStatus] = useState('empty');
   const [signInEmail, setSignInEmail] = useState('');
   const [signInStatus, setSignInStatus] = useState('idle'); // idle | loading | sent | error
@@ -2831,17 +2811,10 @@ function App() {
             {/* CTAs */}
             <div className="lp-ctas">
               <button className="btn-begin" onClick={() => {
-                localStorage.removeItem('sy_formation_draft');
-                transition(() => setPhase(0));
+                window.location.href = '/lobby.html';
               }}>
-                Begin Formation
+                I'm Ready
               </button>
-              <button
-                className="formation-q-btn"
-                onClick={() => setShowFormationExplainer(true)}
-                title="What is Formation?"
-                style={{marginRight:'24px'}}
-              >?</button>
               <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em'}}
                 onClick={() => document.getElementById('lp-signin').scrollIntoView({behavior:'smooth'})}
               >
@@ -2864,9 +2837,7 @@ function App() {
                 <div className="lp-pillar-icon">💬</div>
                 <div className="lp-pillar-title">Formation</div>
                 <div className="lp-pillar-body">
-                  A 20-minute conversation that builds your AI guide.
-                  Not a profile. Not onboarding. The interview that tells FutureYou
-                  who you are, where you've been, and where you're going.
+                  Formation is the interview that builds your ultimate guide: you, thirty years from now, back to enrich you with all that knowledge and experience. Not a profile. Not onboarding. Every answer shapes FutureYou—the intelligence at the core of your studio. Set aside 20–30 minutes. At the end, your studio opens and FutureYou speaks to you directly for the first time.
                 </div>
               </div>
               <div className="lp-pillar">
@@ -2946,12 +2917,6 @@ function App() {
         <div className="frame-wrap">
           <div className="frame-eyebrow">
             StudioYou &nbsp;/&nbsp; Formation
-            <button
-              className="formation-q-btn"
-              onClick={() => setShowFormationExplainer(true)}
-              title="What is Formation?"
-              style={{marginLeft:'6px'}}
-            >?</button>
           </div>
           <h1 className="frame-headline">
             <span className="grad">The first time</span><br/>
@@ -2974,11 +2939,6 @@ function App() {
             }}>
               Begin Formation
             </button>
-            <button
-              className="formation-q-btn"
-              onClick={() => setShowFormationExplainer(true)}
-              title="What is Formation?"
-            >?</button>
           </div>
 
           {/* Resume banner — shown if FY chat draft exists */}
@@ -3124,11 +3084,6 @@ function App() {
           onDismiss={() => { setShowDataCard(false); setDataCardDismissed(true); }}
           onSaved={(email) => { setShowDataCard(false); setDataCardDismissed(true); }}
         />
-      )}
-
-      {/* Formation explainer modal */}
-      {showFormationExplainer && (
-        <FormationExplainer onClose={() => setShowFormationExplainer(false)}/>
       )}
 
       {/* Pass toast */}

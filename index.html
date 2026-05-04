@@ -2283,7 +2283,7 @@ const LOBBY_PROMPTS = [
   "What if building your creative empire didn't require you to become a business manager first?"
 ];
 
-const LOBBY_TIMER_SECONDS = 9;
+const LOBBY_TIMER_SECONDS = 18;
 
 function LobbySequence({ onComplete }) {
   const [currentPrompt, setCurrentPrompt] = React.useState(0);
@@ -3035,14 +3035,14 @@ function App() {
             </p>
 
             {/* CTAs */}
-            <div className="lp-ctas">
+            <div className="lp-ctas" style={{flexDirection: 'column', alignItems: 'flex-start', gap: '24px'}}>
               <button className="btn-begin" onClick={() => {
                 localStorage.removeItem('sy_formation_draft');
                 transition(() => setPhase('lobby'));
               }}>
                 I'm Ready
               </button>
-              <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em', marginTop: '16px', display: 'block'}}
+              <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em'}}
                 onClick={() => document.getElementById('lp-signin').scrollIntoView({behavior:'smooth'})}
               >
                 Already have a studio? Sign in →
@@ -3142,7 +3142,10 @@ function App() {
       {/* ── LOBBY PHASE: 6 POSSIBILITY PROMPTS ── */}
       {phase === 'lobby' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
-          <LobbySequence onComplete={() => transition(() => setPhase(0))} />
+          <LobbySequence onComplete={() => {
+            localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
+            window.location.href = '/dashboard.html';
+          }} />
         </div>
       )}
 

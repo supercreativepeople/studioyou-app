@@ -2283,7 +2283,7 @@ const LOBBY_PROMPTS = [
   "What if building your creative empire didn't require you to become a business manager first?"
 ];
 
-const LOBBY_TIMER_SECONDS = 18;
+const LOBBY_TIMER_SECONDS = 30;
 
 function LobbySequence({ onComplete }) {
   const [currentPrompt, setCurrentPrompt] = React.useState(0);
@@ -2380,7 +2380,8 @@ function LobbySequence({ onComplete }) {
   }
 
   function handleDashboardClick() {
-    onComplete();
+    localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
+    window.location.href = '/dashboard.html';
   }
 
   if (!isComplete) {

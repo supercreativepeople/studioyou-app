@@ -2811,11 +2811,12 @@ function App() {
             {/* CTAs */}
             <div className="lp-ctas">
               <button className="btn-begin" onClick={() => {
-                window.location.href = '/lobby.html';
+                localStorage.removeItem('sy_formation_draft');
+                transition(() => setPhase(0));
               }}>
                 I'm Ready
               </button>
-              <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em'}}
+              <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em', marginTop: '16px', display: 'block'}}
                 onClick={() => document.getElementById('lp-signin').scrollIntoView({behavior:'smooth'})}
               >
                 Already have a studio? Sign in →

@@ -1794,16 +1794,14 @@ function FYChat({ formation, initialPrompt, onClose, formationProgress, setForma
 
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}); }, [msgs]);
 
-  // If opened with an initial prompt, skip opener and auto-send
+  // If opened with an initial prompt, skip opener and show Q1
   useEffect(()=>{
     if (!initialPrompt) return;
     setOpenerReady(true);
-    // Auto-show Q1 after opener
+    // Show Q1 without sending initialPrompt as answer
     setTimeout(() => {
       setMsgs(prev => [...prev, {role:'fy', text: FORMATION_QUESTIONS[0].prompt}]);
-    }, 800);
-
-    sendText(initialPrompt);
+    }, 500);
   }, []);
 
   // Generate dynamic opener and suggested prompts from formation data

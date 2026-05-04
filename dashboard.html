@@ -1714,7 +1714,7 @@ function IdeationBrief({ formation, onBack }) {
 
 // ── FY CHAT ───────────────────────────────────────────────────────────────────
 
-function FYChat({ formation, initialPrompt, onClose }) {
+function FYChat({ formation, initialPrompt, onClose, formationProgress, setFormationProgress }) {
 
   const FORMATION_QUESTIONS = [
     {
@@ -1738,7 +1738,6 @@ function FYChat({ formation, initialPrompt, onClose }) {
   const [loading, setLoading] = useState(false);
   const [openerReady, setOpenerReady] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const [formationProgress, setFormationProgress] = useState(0); // Track Q1-Q3 progress
   const [formationQ1, setFormationQ1] = useState('');
   const [formationQ2, setFormationQ2] = useState('');
   const [formationQ3, setFormationQ3] = useState('');
@@ -2609,6 +2608,7 @@ function AppShell() {
 
 function Dashboard({ formationOverride, isReturning, needsLink }) {
   const [formation] = useState(formationOverride || loadFormation);
+  const [formationProgress, setFormationProgress] = useState(0); // Shared with FYChat
   const [priorities, setPriorities] = useState(null);
   const [showArrival, setShowArrival] = useState(true);
   const [arrivedText, setArrivedText] = useState('');
@@ -3095,7 +3095,7 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
       </div>
 
       {/* FY Chat */}
-      {showFY && <FYChat formation={formation} initialPrompt={fyInitialPrompt} onClose={()=>{ setShowFY(false); setFyInitialPrompt(null); }}/>}
+      {showFY && <FYChat formation={formation} initialPrompt={fyInitialPrompt} onClose={()=>{ setShowFY(false); setFyInitialPrompt(null); }} formationProgress={formationProgress} setFormationProgress={setFormationProgress}/>}
     </>
   );
 }

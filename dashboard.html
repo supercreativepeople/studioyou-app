@@ -1738,6 +1738,11 @@ function FYChat({ formation, initialPrompt, onClose }) {
   const [loading, setLoading] = useState(false);
   const [openerReady, setOpenerReady] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [formationProgress, setFormationProgress] = useState(0); // Track Q1-Q3 progress
+  const [formationQ1, setFormationQ1] = useState('');
+  const [formationQ2, setFormationQ2] = useState('');
+  const [formationQ3, setFormationQ3] = useState('');
+  const [isFormationActive, setIsFormationActive] = useState(true); // Formation phase active until Q3
   const endRef = useRef(null);
 
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}); }, [msgs]);

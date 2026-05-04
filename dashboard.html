@@ -1238,6 +1238,39 @@ Example format:
   }
 }
 
+// ── GENERATE FY FIRST WORDS ───────────────────────────────────────────────
+async function generateFYFirstWords(formation, sessionToken) {
+  const prompt = `You are FutureYou greeting a creator who just arrived at their dashboard. This is their first moment in StudioYou. Write a warm, direct greeting that:
+1. Welcomes them by their studio name
+2. Acknowledges what they make (one specific detail from their formation)
+3. Sets up the formation journey ahead (you're about to ask 3 key questions)
+4. Creates anticipation for the journey
+
+Keep it to 2-3 sentences max. Real presence, not platitudes. This will be typed out character-by-character, so make it feel like they're hearing from Future You in real time.
+
+Creator:
+- Studio: ${formation.studioName || 'Your Studio'}
+- Makes: ${(formation.contentTypes||[]).join(', ') || 'unknown'}
+- Experience: ${formation.experience || 'not provided'}
+- 1-year goal: ${formation.goal1yr || 'not provided'}`;
+
+  try {
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 200,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || null;
+  } catch {
+    return `Welcome to ${formation.studioName || 'your studio'}. I'm FutureYou. I need to understand your journey before we can build anything. Let's start with three questions — they'll take just a few minutes, and everything we do next depends on what you tell me here.`;
+  }
+}
+
 // ── FY FIRST ACTION — Independent tier ───────────────────────────────────────
 
 function FYFirstAction({ formation, onDismiss, onOpenModule }) {
@@ -2646,7 +2679,7 @@ function AppShell() {
   }
 
 function Dashboard({ formationOverride, isReturning, needsLink }) {
-  const [formation] = useState(formationOverride || loadFormation);
+  const [formation, setFormation] = useState(formationOverride || loadFormation);
   const [formationProgress, setFormationProgress] = useState(0); // Shared with FYChat
   const [priorities, setPriorities] = useState(null);
   const [showArrival, setShowArrival] = useState(true);
@@ -2680,6 +2713,17 @@ function Dashboard({ formationOverride, isReturning, needsLink }) {
   const unlocked    = getUnlocked(formation);
   const journeyPct  = getJourneyProgress(formation);
   const openCount   = ALL_BUILDINGS.filter(b=>unlocked.includes(b.id)).length;
+
+  // Generate FY first words greeting on dashboard load
+  useEffect(() => {
+    if (!formation || formation.fyFirstWords) return; // Skip if already generated
+    const tok = (() => { try { return localStorage.getItem('sy_session') || ''; } catch { return ''; } })();
+    generateFYFirstWords(formation, tok).then(firstWords => {
+      if (firstWords) {
+        setFormation(prev => ({ ...prev, fyFirstWords: firstWords }));
+      }
+    });
+  }, []);
 
   // Generate FY priorities from real formation data
   useEffect(()=>{

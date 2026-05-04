@@ -2357,11 +2357,18 @@ function LobbySequence({ onComplete }) {
   async function callClaudeWelcome(finalResponses) {
     setIsLoading(true);
     try {
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch('https://studioyou-api-198959034459.us-east1.run.app/api/formation/welcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ responses: finalResponses })
+        body: JSON.stringify({ responses: finalResponses }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error('Failed to generate welcome message');
 
@@ -2371,6 +2378,7 @@ function LobbySequence({ onComplete }) {
       localStorage.setItem('sy_lobby_responses', JSON.stringify(finalResponses));
     } catch (err) {
       console.error('Welcome API error:', err);
+      // Use fallback message if API fails or times out
       setWelcomeMessage("Welcome to your studio. You're done managing the chaos. From here on, it's all creation. Let's build.");
       setIsComplete(true);
       localStorage.setItem('sy_lobby_responses', JSON.stringify(finalResponses));
@@ -2382,7 +2390,12 @@ function LobbySequence({ onComplete }) {
   function handleDashboardClick() {
     localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
     localStorage.setItem('sy_fresh_formation', 'true');
-    window.location.href = '/dashboard.html';
+    // Call the parent onComplete callback instead of direct redirect
+    if (onComplete) {
+      onComplete();
+    } else {
+      window.location.href = '/dashboard.html';
+    }
   }
 
   if (!isComplete) {

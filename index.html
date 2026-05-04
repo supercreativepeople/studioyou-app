@@ -2390,12 +2390,8 @@ function LobbySequence({ onComplete }) {
   function handleDashboardClick() {
     localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
     localStorage.setItem('sy_fresh_formation', 'true');
-    // Call the parent onComplete callback instead of direct redirect
-    if (onComplete) {
-      onComplete();
-    } else {
-      window.location.href = '/dashboard.html';
-    }
+    // Redirect directly to dashboard
+    window.location.href = '/dashboard.html';
   }
 
   if (!isComplete) {
@@ -3157,10 +3153,7 @@ function App() {
       {/* ── LOBBY PHASE: 6 POSSIBILITY PROMPTS ── */}
       {phase === 'lobby' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
-          <LobbySequence onComplete={() => {
-            localStorage.setItem('sy_lobby_responses', JSON.stringify(responses));
-            window.location.href = '/dashboard.html';
-          }} />
+          <LobbySequence onComplete={() => {}} />
         </div>
       )}
 

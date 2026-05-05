@@ -3019,13 +3019,7 @@ function App() {
       </div>
 
       {/* FY Form — visible from FY chat phase onward */}
-      {phase !== 0 && (
-        <FYForm
-          formationLevel={formationLevel}
-          phaseId={phase}
-          isPulsing={isPulsing}
-        />
-      )}
+      {/* FYForm removed — functionality moved to ready/building state displays in home and phase 0 */}
 
       {/* ── HOME: LANDING PAGE */}
       {phase === 'home' && (

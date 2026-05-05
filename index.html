@@ -3191,7 +3191,9 @@ function App() {
             </div>
           </div>
 
-          <LobbySequence onComplete={() => {}} />
+          <LobbySequence onComplete={() => {
+            transition(() => setPhase(0));
+          }} />
         </div>
       )}
 

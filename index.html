@@ -3169,6 +3169,28 @@ function App() {
       {/* ── LOBBY PHASE: 6 POSSIBILITY PROMPTS ── */}
       {phase === 'lobby' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
+          {/* Ready State Display — Shutter gif + ready text (right side) */}
+          <div className="fy-container" style={{ opacity: 1 }}>
+            <div className="fy-form">
+              <img
+                src="assets/shutter1.gif"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  mixBlendMode: 'lighten',
+                }}
+              />
+              <div className="formation-status lot-sub-pulse" style={{
+                opacity: 0.8,
+                color: 'var(--mute)',
+              }}>
+                Ready to add tools to your studio
+              </div>
+            </div>
+          </div>
+
           <LobbySequence onComplete={() => {}} />
         </div>
       )}

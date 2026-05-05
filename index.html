@@ -3018,8 +3018,8 @@ function App() {
         </div>
       </div>
 
-      {/* FY Form — visible during lobby (ready state) and after */}
-      {(phase === 'lobby' || phase !== 0) && (
+      {/* FY Form — visible from FY chat phase onward */}
+      {phase !== 0 && (
         <FYForm
           formationLevel={formationLevel}
           phaseId={phase}

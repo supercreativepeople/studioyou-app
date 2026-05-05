@@ -1363,7 +1363,7 @@ function FYForm({ formationLevel, phaseId, isPulsing }) {
   const glowIntensity = formationLevel / 7;
 
   return (
-    <div className="fy-container" style={{ opacity }}>
+    <div className="fy-container" style={{ opacity: 1 }}>
       <div className="fy-form">
         <img
           src={phaseId === 'fy' || phaseId < 6 ? "assets/shutter1.gif" : "assets/process-management1.gif"}
@@ -1378,7 +1378,7 @@ function FYForm({ formationLevel, phaseId, isPulsing }) {
           }}
         />
         <div className="formation-status lot-sub-pulse" style={{
-          opacity: formationLevel > 0 && formationLevel < 7 ? 0.5 : 0,
+          opacity: 0.8,
           color: phaseId >= 6 ? '#e8c97a' : 'var(--mute)',
           transition: 'opacity 1s ease'
         }}>

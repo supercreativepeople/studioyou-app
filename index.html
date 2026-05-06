@@ -1644,6 +1644,351 @@ function FYDataCard({ onDismiss, onSaved }) {
   );
 }
 
+// ── PHASE 10 COMPONENTS ──────────────────────────────────────────────────────
+
+// BriefingPills: 3-step pill UI
+function BriefingPills({ onComplete, onBack }) {
+  const [step, setStep] = React.useState(0);
+  const [selections, setSelections] = React.useState({
+    arsenal: localStorage.getItem('arsenal') || null,
+    roadblock: localStorage.getItem('roadblock') || null,
+    horizon: localStorage.getItem('horizon') || null,
+  });
+
+  const screens = [
+    {
+      title: "Let's power you up.",
+      key: 'arsenal',
+      options: [
+        { value: 'concept', label: 'A Raw Concept' },
+        { value: 'ip', label: 'Existing IP' },
+        { value: 'footage', label: 'Raw Footage' },
+        { value: 'audience', label: 'An Audience' },
+      ],
+    },
+    {
+      title: "What's preventing you from shipping?",
+      key: 'roadblock',
+      options: [
+        { value: 'assets', label: 'Asset Generation' },
+        { value: 'post', label: 'Post & Edit' },
+        { value: 'distribution', label: 'Distribution' },
+        { value: 'capital', label: 'Capital' },
+      ],
+    },
+    {
+      title: "Time to scale your empire.",
+      key: 'horizon',
+      options: [
+        { value: 'single', label: 'One Project, One Shot' },
+        { value: 'channel', label: 'Launch Your Channel' },
+        { value: 'studio', label: 'Scale Your Channel' },
+        { value: 'empire', label: 'A Creative Empire' },
+      ],
+    },
+  ];
+
+  const current = screens[step];
+  const selected = selections[current.key];
+
+  const handleSelect = (value) => {
+    const updated = { ...selections, [current.key]: value };
+    setSelections(updated);
+    localStorage.setItem(current.key, value);
+    if (step < 2) {
+      setStep(step + 1);
+    } else {
+      onComplete({ arsenal: updated.arsenal, roadblock: updated.roadblock, horizon: updated.horizon });
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
+    else onBack?.();
+  };
+
+  const progressPercent = ((step + 1) / 3) * 100;
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:'32px', padding:'48px 32px', maxWidth:'800px', margin:'0 auto', minHeight:'100vh', background:'var(--black)', color:'var(--white)', fontFamily:"'Outfit',sans-serif"}}>
+      <div style={{height:'4px', background:'var(--ghost)', borderRadius:'2px', overflow:'hidden'}}>
+        <div style={{height:'100%', background:'var(--grad)', transition:'width 0.4s ease', width:`${progressPercent}%`}}/>
+      </div>
+      <h2 style={{fontSize:'32px', fontWeight:400, lineHeight:1.2, margin:0, letterSpacing:'-0.5px'}}>{current.title}</h2>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px'}}>
+        {current.options.map((option) => (
+          <button key={option.value} onClick={() => handleSelect(option.value)} style={{padding:'20px 24px', border:`1px solid ${selected === option.value ? 'var(--cyan)' : 'var(--mute)'}`, background:selected === option.value ? 'rgba(0,200,255,0.1)' : 'transparent', color:'var(--white)', fontSize:'16px', fontFamily:"'Outfit',sans-serif", fontWeight:400, borderRadius:'8px', cursor:'pointer', transition:'all 0.3s ease', textAlign:'left', boxShadow:selected === option.value ? '0 0 16px rgba(0,200,255,0.2)' : 'none'}}>{option.label}</button>
+        ))}
+      </div>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'32px'}}>
+        <button onClick={handleBack} style={{padding:'12px 20px', border:'1px solid var(--mute)', background:'transparent', color:'var(--dim)', fontSize:'14px', fontFamily:"'Outfit',sans-serif", cursor:'pointer', borderRadius:'4px', transition:'all 0.3s ease'}}>← Back</button>
+        <span style={{fontSize:'14px', color:'var(--mute)', fontWeight:300}}>{step + 1} of 3</span>
+      </div>
+    </div>
+  );
+}
+
+// FYFormationChat12Q: 12-question chat
+function FYFormationChat12Q({ onComplete, onBack }) {
+  const [messages, setMessages] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [currentAnswers, setCurrentAnswers] = React.useState(() => {
+    const saved = localStorage.getItem('briefing_answers');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [userInput, setUserInput] = React.useState('');
+  const messagesEndRef = React.useRef(null);
+
+  const questions = [
+    "What's your creative focus?",
+    "How do you reach your audience/following?",
+    "How long have you been at it?",
+    "What's your biggest win so far?",
+    "Any project you'd like another crack at? What would you do differently?",
+    "Who's making stuff that influences you?",
+    "A year from now what are you creating?",
+    "Five years — what are you building?",
+    "Ten years and beyond — what are you known for?",
+    "When it's truth time, what style resonates?",
+    "When you're stuck, what helps you break through?",
+    "What are 3 things about you FutureYou should always know?"
+  ];
+
+  const questionCount = Object.keys(currentAnswers).length;
+  const currentQuestion = questions[questionCount];
+  const isComplete = questionCount === 12;
+
+  React.useEffect(() => {
+    if (messages.length === 0 && !isComplete) {
+      setMessages([{ role: 'assistant', content: currentQuestion }]);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  React.useEffect(() => {
+    localStorage.setItem('briefing_answers', JSON.stringify(currentAnswers));
+  }, [currentAnswers]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!userInput.trim() || loading || isComplete) return;
+
+    const userMessage = userInput.trim();
+    setUserInput('');
+
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
+
+    const qKey = `q${questionCount + 1}`;
+    const updatedAnswers = { ...currentAnswers, [qKey]: userMessage };
+    setCurrentAnswers(updatedAnswers);
+
+    if (questionCount === 11) {
+      setMessages([...newMessages, { role: 'assistant', content: 'Perfect. Your briefing is complete. Let\'s name your studio.' }]);
+      setTimeout(() => onComplete(updatedAnswers), 1000);
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      const nextQuestion = questions[questionCount + 1];
+      setMessages([...newMessages, { role: 'assistant', content: nextQuestion }]);
+      setLoading(false);
+    }, 300);
+  };
+
+  const progressPercent = (questionCount / 12) * 100;
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', height:'100vh', background:'var(--black)', color:'var(--white)', fontFamily:"'Outfit',sans-serif"}}>
+      <div style={{padding:'24px 32px', borderBottom:'1px solid var(--ghost)'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+          <h2 style={{margin:0, fontSize:'24px', fontWeight:400}}>Your Briefing</h2>
+          <button onClick={onBack} style={{background:'none', border:'none', color:'var(--mute)', fontSize:'20px', cursor:'pointer', padding:0}}>✕</button>
+        </div>
+        <div style={{height:'3px', background:'var(--ghost)', borderRadius:'2px', overflow:'hidden', marginBottom:'12px'}}>
+          <div style={{height:'100%', background:'var(--grad)', transition:'width 0.4s ease', width:`${progressPercent}%`}}/>
+        </div>
+        <p style={{fontSize:'12px', color:'var(--mute)', margin:0, fontWeight:300}}>{questionCount} of 12</p>
+      </div>
+
+      <div style={{flex:1, overflowY:'auto', padding:'24px 32px', display:'flex', flexDirection:'column', gap:'16px'}}>
+        {messages.map((msg, idx) => (
+          <div key={idx} style={{padding:'12px 16px', borderRadius:'6px', lineHeight:1.5, fontSize:'15px', maxWidth:'70%', background:msg.role === 'user' ? 'var(--purple)' : 'var(--ghost)', color:msg.role === 'user' ? 'var(--white)' : 'var(--dim)', alignSelf:msg.role === 'user' ? 'flex-end' : 'flex-start'}}>{msg.content}</div>
+        ))}
+        {loading && <div style={{display:'flex', gap:'4px', padding:'12px 16px'}}><span style={{animation:'pulse 1.4s infinite'}}>•</span><span style={{animation:'pulse 1.4s infinite', animationDelay:'0.2s'}}>•</span><span style={{animation:'pulse 1.4s infinite', animationDelay:'0.4s'}}>•</span></div>}
+        <div ref={messagesEndRef}/>
+      </div>
+
+      {!isComplete && (
+        <form onSubmit={handleSubmit} style={{display:'flex', gap:'12px', padding:'24px 32px', borderTop:'1px solid var(--ghost)', background:'var(--navy)'}}>
+          <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="Your answer..." disabled={loading} autoFocus style={{flex:1, padding:'12px 16px', background:'var(--ghost)', border:'1px solid var(--mute)', color:'var(--white)', fontFamily:"'Outfit',sans-serif", fontSize:'14px', borderRadius:'4px', outline:'none'}}/>
+          <button type="submit" disabled={!userInput.trim() || loading} style={{padding:'12px 24px', background:userInput.trim() && !loading ? 'var(--cyan)' : 'var(--ghost)', border:`1px solid ${userInput.trim() && !loading ? 'var(--cyan)' : 'var(--mute)'}`, color:userInput.trim() && !loading ? 'var(--black)' : 'var(--mute)', fontFamily:"'Outfit',sans-serif", fontSize:'14px', borderRadius:'4px', cursor:userInput.trim() && !loading ? 'pointer' : 'not-allowed', transition:'all 0.3s ease'}}>{loading ? '...' : 'Next'}</button>
+        </form>
+      )}
+
+      {isComplete && (
+        <div style={{padding:'24px 32px', textAlign:'center', color:'var(--cyan)', fontSize:'14px'}}>✓ Briefing complete</div>
+      )}
+    </div>
+  );
+}
+
+// BriefingSummary: Recap screen
+function BriefingSummary({ arsenal, roadblock, horizon, onContinue }) {
+  const labels = {
+    arsenal: { concept: 'A Raw Concept', ip: 'Existing IP', footage: 'Raw Footage', audience: 'An Audience' },
+    roadblock: { assets: 'Asset Generation', post: 'Post & Edit', distribution: 'Distribution', capital: 'Capital' },
+    horizon: { single: 'One Project, One Shot', channel: 'Launch Your Channel', studio: 'Scale Your Channel', empire: 'A Creative Empire' },
+  };
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'32px', padding:'64px 32px', maxWidth:'900px', margin:'0 auto', minHeight:'100vh', background:'var(--black)', color:'var(--white)', fontFamily:"'Outfit',sans-serif", justifyContent:'center'}}>
+      <h2 style={{fontSize:'40px', fontWeight:300, margin:0, textAlign:'center', maxWidth:'600px'}}>Your briefing is complete.</h2>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:'24px', width:'100%', maxWidth:'800px'}}>
+        <div style={{padding:'24px', border:'1px solid var(--ghost)', background:'rgba(255,255,255,0.02)', borderRadius:'8px'}}>
+          <p style={{fontSize:'12px', color:'var(--mute)', fontWeight:400, textTransform:'uppercase', letterSpacing:'0.5px', margin:'0 0 8px 0'}}>What we're weaponizing</p>
+          <p style={{fontSize:'18px', color:'var(--white)', fontWeight:400, margin:0, lineHeight:1.4}}>{labels.arsenal[arsenal]}</p>
+        </div>
+        <div style={{padding:'24px', border:'1px solid var(--ghost)', background:'rgba(255,255,255,0.02)', borderRadius:'8px'}}>
+          <p style={{fontSize:'12px', color:'var(--mute)', fontWeight:400, textTransform:'uppercase', letterSpacing:'0.5px', margin:'0 0 8px 0'}}>Your biggest roadblock</p>
+          <p style={{fontSize:'18px', color:'var(--white)', fontWeight:400, margin:0, lineHeight:1.4}}>{labels.roadblock[roadblock]}</p>
+        </div>
+        <div style={{padding:'24px', border:'1px solid var(--ghost)', background:'rgba(255,255,255,0.02)', borderRadius:'8px'}}>
+          <p style={{fontSize:'12px', color:'var(--mute)', fontWeight:400, textTransform:'uppercase', letterSpacing:'0.5px', margin:'0 0 8px 0'}}>Your empire timeline</p>
+          <p style={{fontSize:'18px', color:'var(--white)', fontWeight:400, margin:0, lineHeight:1.4}}>{labels.horizon[horizon]}</p>
+        </div>
+      </div>
+      <p style={{fontSize:'16px', color:'var(--dim)', margin:'0', fontWeight:300}}>Let's name your studio.</p>
+      <button onClick={onContinue} style={{padding:'14px 40px', background:'var(--grad)', border:'none', color:'var(--black)', fontSize:'14px', fontFamily:"'Outfit',sans-serif", fontWeight:500, borderRadius:'4px', cursor:'pointer', transition:'all 0.3s ease'}}>Continue</button>
+    </div>
+  );
+}
+
+// FormationFlow: Orchestrates entire Phase 10 flow
+function FormationFlow({ onFormationComplete }) {
+  const [phase, setPhase] = React.useState('pills');
+  const [pillData, setPillData] = React.useState({});
+  const [briefingAnswers, setBriefingAnswers] = React.useState({});
+  const [studioName, setStudioName] = React.useState('');
+  const [initializationInProgress, setInitializationInProgress] = React.useState(false);
+  const [initError, setInitError] = React.useState(null);
+
+  React.useEffect(() => {
+    const saved = {
+      arsenal: localStorage.getItem('arsenal'),
+      roadblock: localStorage.getItem('roadblock'),
+      horizon: localStorage.getItem('horizon'),
+      studio_name: localStorage.getItem('studio_name'),
+      briefing: localStorage.getItem('briefing_answers'),
+    };
+    if (saved.arsenal && saved.roadblock && saved.horizon) {
+      setPillData({ arsenal: saved.arsenal, roadblock: saved.roadblock, horizon: saved.horizon });
+      setPhase('chat');
+    }
+    if (saved.briefing) setBriefingAnswers(JSON.parse(saved.briefing));
+    if (saved.studio_name) setStudioName(saved.studio_name);
+  }, []);
+
+  const handlePillsComplete = (data) => {
+    setPillData(data);
+    localStorage.setItem('arsenal', data.arsenal);
+    localStorage.setItem('roadblock', data.roadblock);
+    localStorage.setItem('horizon', data.horizon);
+    setPhase('chat');
+  };
+
+  const handleChatComplete = (answers) => {
+    setBriefingAnswers(answers);
+    localStorage.setItem('briefing_answers', JSON.stringify(answers));
+    setPhase('summary');
+  };
+
+  const handleSummaryComplete = () => {
+    setPhase('naming');
+  };
+
+  const handleStudioNameSubmit = (name) => {
+    setStudioName(name);
+    localStorage.setItem('studio_name', name);
+    setPhase('email');
+  };
+
+  const handleEmailSubmit = async (data) => {
+    setInitializationInProgress(true);
+    setInitError(null);
+
+    try {
+      const payload = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        studio_name: studioName,
+        email: data.email,
+        arsenal: pillData.arsenal,
+        roadblock: pillData.roadblock,
+        horizon: pillData.horizon,
+        briefing_answers: briefingAnswers,
+      };
+
+      console.log('[FormationFlow] Calling /api/formation/initialize', payload);
+
+      const response = await fetch('/api/formation/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+      const result = await response.json();
+      console.log('[FormationFlow] Initialize response:', result);
+
+      localStorage.setItem('first_words', result.first_words);
+      localStorage.setItem('archetype', result.archetype);
+      localStorage.setItem('phase', result.phase);
+
+      localStorage.removeItem('arsenal');
+      localStorage.removeItem('roadblock');
+      localStorage.removeItem('horizon');
+      localStorage.removeItem('briefing_answers');
+      localStorage.removeItem('studio_name');
+
+      onFormationComplete?.({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        studio_name: studioName,
+        first_words: result.first_words,
+        archetype: result.archetype,
+        phase: result.phase,
+      });
+    } catch (error) {
+      console.error('[FormationFlow] Initialization error:', error);
+      setInitError(error.message);
+      setInitializationInProgress(false);
+    }
+  };
+
+  const handleBack = () => {
+    const phaseOrder = ['pills', 'chat', 'summary', 'naming', 'email'];
+    const currentIndex = phaseOrder.indexOf(phase);
+    if (currentIndex > 0) setPhase(phaseOrder[currentIndex - 1]);
+  };
+
+  return (
+    <>
+      {phase === 'pills' && <BriefingPills onComplete={handlePillsComplete} onBack={handleBack}/>}
+      {phase === 'chat' && <FYFormationChat12Q onComplete={handleChatComplete} onBack={handleBack}/>}
+      {phase === 'summary' && <BriefingSummary arsenal={pillData.arsenal} roadblock={pillData.roadblock} horizon={pillData.horizon} onContinue={handleSummaryComplete}/>}
+      {phase === 'naming' && <StudioNameInput onSubmit={handleStudioNameSubmit} onBack={handleBack}/>}
+      {phase === 'email' && <EnterStudio onSubmit={handleEmailSubmit} onBack={handleBack} loading={initializationInProgress} error={initError}/>}
+    </>
+  );
+}
+
 // ── FY FORMATION CHAT ────────────────────────────────────────────────────────
 
 const FY_FIELDS = ['contentTypes','platforms','experience','origin','goal1yr','biggestFear'];
@@ -3157,66 +3502,23 @@ function App() {
         </div>
       )}
 
-      {/* ── PHASE HOME: LANDING PAGE */}
-      <div className={`screen ${phase === 0 ? (screenOut ? 'out' : '') : 'hidden'}`}>
-        <div className="frame-wrap">
-          <div className="frame-eyebrow">
-            StudioYou &nbsp;/&nbsp; Formation
-          </div>
-          <h1 className="frame-headline">
-            <span className="grad">The first time</span><br/>
-            YOU meet YOU.
-          </h1>
-          <p className="frame-body">
-            What follows isn't a profile setup. It isn't onboarding.<br/>
-            You're about to build something that already knows where you're going —<br/>
-            because it's made entirely from you.
-          </p>
-          <p className="frame-body" style={{fontSize:'14px', opacity:0.6, marginBottom:'40px'}}>
-            Set aside 20–30 minutes. Answer as honestly as you can.<br/>
-            Pass anything you're not ready for. No answer is wrong.
-          </p>
-          {/* New user CTA */}
-          <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'0'}}>
-            <button className="btn-begin" onClick={() => {
-              localStorage.removeItem('sy_formation_draft');
-              transition(() => setPhase('fy'));
-            }}>
-              Begin Formation
-            </button>
-          </div>
-
-          {/* Resume banner — shown if FY chat draft exists */}
-          {typeof window !== 'undefined' && (() => {
-            try {
-              const raw = localStorage.getItem('sy_formation_draft');
-              if (!raw) return null;
-              const draft = JSON.parse(raw);
-              const hasChat = draft.apiMessages && draft.apiMessages.length > 1;
-              if (!hasChat) return null;
-              const filledFields = FY_FIELDS.filter(f => {
-                const v = (draft.formation || {})[f];
-                return v && (Array.isArray(v) ? v.length > 0 : v !== '');
-              }).length;
-              if (filledFields < 1) return null;
-              return (
-                <div className="resume-banner">
-                  <div className="resume-text">
-                    You started a formation conversation with FutureYou — {filledFields} of 6 context points captured. Pick up where you left off.
-                  </div>
-                  <button className="resume-btn" onClick={() => {
-                    transition(() => setPhase('fy'));
-                  }}>Resume</button>
-                  <button className="resume-fresh" onClick={() => {
-                    localStorage.removeItem('sy_formation_draft');
-                    transition(() => setPhase('fy'));
-                  }}>Start fresh</button>
-                </div>
-              );
-            } catch(e) { return null; }
-          })()}
+      {/* ── PHASE 0: FORMATION FLOW (PILLS → CHAT → SUMMARY → NAMING → EMAIL) */}
+      {phase === 0 && (
+        <div className={`screen ${screenOut ? 'out' : ''}`}>
+          <FormationFlow onFormationComplete={(data) => {
+            localStorage.setItem('sy_formation', JSON.stringify({
+              studioName: data.studio_name,
+              firstName: data.first_name,
+              lastName: data.last_name,
+            }));
+            localStorage.setItem('sy_email', data.email);
+            localStorage.setItem('sy_first_words', data.first_words);
+            localStorage.setItem('sy_archetype', data.archetype);
+            localStorage.setItem('sy_phase', data.phase);
+            window.location.href = '/dashboard.html';
+          }} />
         </div>
-      </div>
+      )}
 
       {/* ── FY FORMATION CHAT */}
       {phase === 'fy' && (

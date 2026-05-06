@@ -1132,6 +1132,144 @@ Revert: git reset --hard [HASH] && git push origin main
     .topbar { padding: 16px 24px; }
   }
 </style>
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* BRIEFING COMPONENT STYLES */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.briefing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 60px 24px;
+  gap: 40px;
+}
+
+.briefing-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  animation: briefingFadeIn 0.3s ease-out;
+}
+
+@keyframes briefingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.briefing-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--text-primary, #000);
+  letter-spacing: -0.5px;
+}
+
+.briefing-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.briefing-pill {
+  padding: 16px 24px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 28px;
+  background: var(--bg-secondary, #f9f9f9);
+  color: var(--text-primary, #000);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  text-align: left;
+}
+
+.briefing-pill:hover {
+  border-color: var(--accent, #000);
+  background: var(--bg-hover, #f0f0f0);
+  transform: translateX(2px);
+}
+
+.briefing-pill:active {
+  transform: scale(0.98);
+}
+
+.briefing-naming {
+  gap: 24px;
+}
+
+.briefing-input {
+  width: 100%;
+  padding: 16px 24px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-secondary, #f9f9f9);
+  color: var(--text-primary, #000);
+  transition: border-color 0.2s;
+}
+
+.briefing-input:focus {
+  outline: none;
+  border-color: var(--accent, #000);
+}
+
+.btn-initialize {
+  padding: 16px 32px;
+  background: var(--accent, #000);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+.btn-initialize:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+}
+
+.btn-initialize:active {
+  transform: translateY(0);
+}
+
+.btn-initialize:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .briefing-container {
+    padding: 40px 20px;
+  }
+  .briefing-title {
+    font-size: 20px;
+  }
+  .briefing-pill {
+    padding: 14px 20px;
+    font-size: 13px;
+  }
+}
+
 </head>
 <body>
 <div id="root"></div>
@@ -2512,6 +2650,137 @@ function TypewriterEffect({ text }) {
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 
 function App() {
+const TheBriefing = ({ onComplete }) => {
+  const [step, setStep] = React.useState(1);
+  const [studioName, setStudioName] = React.useState('');
+  const [briefing, setBriefing] = React.useState({
+    arsenal: null,
+    roadblock: null,
+    horizon: null
+  });
+
+  const arsenalOptions = [
+    { id: 'concept', label: 'A Raw Concept' },
+    { id: 'ip', label: 'Existing IP' },
+    { id: 'footage', label: 'Raw Footage' },
+    { id: 'audience', label: 'An Audience' }
+  ];
+
+  const roadblockOptions = [
+    { id: 'assets', label: 'Asset Generation' },
+    { id: 'post', label: 'Post & Edit' },
+    { id: 'distribution', label: 'Distribution' },
+    { id: 'capital', label: 'Capital' }
+  ];
+
+  const horizonOptions = [
+    { id: 'single', label: 'Single Project Launch' },
+    { id: 'channel', label: 'Channel Growth' },
+    { id: 'studio', label: 'Multi-Vertical Studio' }
+  ];
+
+  const handleArsenalSelect = (id) => {
+    setBriefing({ ...briefing, arsenal: id });
+    setStep(2);
+  };
+
+  const handleRoadblockSelect = (id) => {
+    setBriefing({ ...briefing, roadblock: id });
+    setStep(3);
+  };
+
+  const handleHorizonSelect = (id) => {
+    setBriefing({ ...briefing, horizon: id });
+    setStep(4);
+  };
+
+  const handleInitialize = async () => {
+    if (!studioName.trim() || !briefing.arsenal || !briefing.roadblock || !briefing.horizon) {
+      alert('Complete the briefing to initialize your studio.');
+      return;
+    }
+
+    localStorage.setItem('sy_briefing', JSON.stringify(briefing));
+    localStorage.setItem('sy_studio_name', studioName);
+
+    try {
+      const payload = {
+        studioName,
+        arsenal: briefing.arsenal,
+        roadblock: briefing.roadblock,
+        horizon: briefing.horizon
+      };
+
+      const response = await fetch('https://studioyou-api-198959034459.us-east1.run.app/api/formation/briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (data.firstWords) {
+        localStorage.setItem('sy_first_words', data.firstWords);
+      }
+
+      if (onComplete) onComplete();
+    } catch (error) {
+      console.error('Briefing initialization failed:', error);
+      if (onComplete) onComplete();
+    }
+  };
+
+  return (
+    <div className="briefing-container">
+      {step === 1 && (
+        <div className="briefing-screen briefing-arsenal">
+          <h2 className="briefing-title">What are we weaponizing today?</h2>
+          <div className="briefing-options">
+            {arsenalOptions.map(option => (
+              <button key={option.id} className="briefing-pill" onClick={() => handleArsenalSelect(option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="briefing-screen briefing-roadblock">
+          <h2 className="briefing-title">What is the biggest roadblock between your brain and the screen?</h2>
+          <div className="briefing-options">
+            {roadblockOptions.map(option => (
+              <button key={option.id} className="briefing-pill" onClick={() => handleRoadblockSelect(option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="briefing-screen briefing-horizon">
+          <h2 className="briefing-title">What is the scale of this empire?</h2>
+          <div className="briefing-options">
+            {horizonOptions.map(option => (
+              <button key={option.id} className="briefing-pill" onClick={() => handleHorizonSelect(option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="briefing-screen briefing-naming">
+          <h2 className="briefing-title">Name your studio.</h2>
+          <input type="text" className="briefing-input" value={studioName} onChange={e => setStudioName(e.target.value)} placeholder="Your studio name" onKeyDown={e => e.key === 'Enter' && handleInitialize()} />
+          <button className="btn-initialize" onClick={handleInitialize}>INITIALIZE OS</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
   const [phase, setPhase] = useState('home');     // 'home','lobby',0,'fy',6,7
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -3051,10 +3320,9 @@ function App() {
             {/* Hero */}
             <div className="lp-eyebrow">StudioYou &nbsp;|&nbsp; Creator Platform</div>
             <h1 className="lp-headline">
-              <span className="grad">Build your studio.</span><br/>
-              Build yourself.
+              <span className="grad">THE DISTANCE BETWEEN "I HAVE AN IDEA" AND "I MADE THIS" IS NOW ZERO.</span>
             </h1>
-            <div className="lp-tagline">One price.&nbsp; All the top tools.&nbsp; Guided by the ultimate partner — you.</div>
+            <div className="lp-tagline">No gatekeepers. No permission. They give you a tool. We give you the entire studio.</div>
             <p className="lp-body">
               StudioYou is the first creator platform built entirely around your journey —
               not the algorithm, not the brand deal, not someone else's path.
@@ -3065,9 +3333,10 @@ function App() {
             <div className="lp-ctas" style={{flexDirection: 'column', alignItems: 'flex-start', gap: '24px'}}>
               <button className="btn-begin" onClick={() => {
                 localStorage.removeItem('sy_formation_draft');
-                transition(() => setPhase('lobby'));
-              }}>
-                I'm Ready
+                transition(() => setPhase('briefing'));
+              }}
+              >
+                CLAIM YOUR STUDIO
               </button>
               <button className="btn-pass" style={{fontSize:'12px', letterSpacing:'0.14em'}}
                 onClick={() => document.getElementById('lp-signin').scrollIntoView({behavior:'smooth'})}
@@ -3082,25 +3351,21 @@ function App() {
                 <div className="lp-pillar-icon">🏗️</div>
                 <div className="lp-pillar-title">The Studio</div>
                 <div className="lp-pillar-body">
-                  Twelve open buildings covering every stage of the creative arc —
-                  Ideate, Develop, Fund, Produce, Post, Distribute, Brand, Monetize, and more.
-                  Your full production pipeline, open on day one.
+                  Twelve active buildings covering every stage from brain to screen. A sovereign environment to build your empire without asking the 1% for a key.
                 </div>
               </div>
               <div className="lp-pillar">
-                <div className="lp-pillar-icon">💬</div>
-                <div className="lp-pillar-title">Formation</div>
+                <div className="lp-pillar-icon">💭</div>
+                <div className="lp-pillar-title">The Briefing</div>
                 <div className="lp-pillar-body">
-                  Formation is the interview that builds your ultimate guide: you, thirty years from now, back to enrich you with all that knowledge and experience. Not a profile. Not onboarding. Every answer shapes FutureYou—the intelligence at the core of your studio. Set aside 20–30 minutes. At the end, your studio opens and FutureYou speaks to you directly for the first time.
+                  A 3-step initialization sequence to calibrate your command center and weaponize your ideas.
                 </div>
               </div>
               <div className="lp-pillar">
                 <div className="lp-pillar-icon">⚡</div>
-                <div className="lp-pillar-title">FutureYou</div>
+                <div className="lp-pillar-title">ZERO ANXIETY</div>
                 <div className="lp-pillar-body">
-                  Not an AI assistant. Your career arc navigator — trained exclusively
-                  on your journey. It already knows the road ahead,
-                  because it's made entirely from you.
+                  No token anxiety. No platforms. No learning curve. No multiple subscriptions. Just YOU and building.
                 </div>
               </div>
             </div>
@@ -3117,14 +3382,7 @@ function App() {
             </div>
 
             {/* FY quote */}
-            <div className="lp-quote">
-              <div className="lp-quote-text">
-                "Other platforms deliver information. FutureYou delivers presence —
-                the specific, personalized, timely presence of someone who knows your
-                journey and knows what you need to hear right now. <em>StudioYou isn't for the Creator that wants to work for the big name studios; StudioYou is for the Creator that wants to BE them.</em>"
-              </div>
-              <div className="lp-quote-attr">FutureYou &nbsp;/&nbsp; StudioYou Platform</div>
-            </div>
+            
 
             {/* Sign in for returning users */}
             <div id="lp-signin" style={{display:'flex', alignItems:'center', gap:'28px', flexWrap:'wrap', marginBottom:'56px'}}>
@@ -3167,7 +3425,7 @@ function App() {
       )}
 
       {/* ── LOBBY PHASE: 6 POSSIBILITY PROMPTS ── */}
-      {phase === 'lobby' && (
+      {phase === 'briefing' && (
         <div className={`screen ${screenOut ? 'out' : ''}`}>
           {/* Ready State Display — Shutter gif + ready text (right side) */}
           <div className="fy-container" style={{ opacity: 1 }}>
@@ -3186,19 +3444,17 @@ function App() {
                 opacity: 0.8,
                 color: 'var(--mute)',
               }}>
-                Ready to add tools to your studio
+                Ready to initialize your command center
               </div>
             </div>
           </div>
 
-          <LobbySequence onComplete={() => {
-            transition(() => setPhase(0));
+          <TheBriefing onComplete={() => {
+            transition(() => setPhase('dashboard'));
           }} />
         </div>
       )}
 
-      {/* ── PHASE HOME: LANDING PAGE */}
-      <div className={`screen ${phase === 0 ? (screenOut ? 'out' : '') : 'hidden'}`}>
         {/* Building State Display — Process gif + adding tools text (right side) */}
         <div className="fy-container" style={{ opacity: 1 }}>
           <div className="fy-form">

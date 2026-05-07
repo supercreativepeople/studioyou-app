@@ -1,0 +1,8 @@
+.DS_Store
+.claude/
+.netlify/state.json
+.env
+.env.local
+node_modules/
+dist/
+*.log

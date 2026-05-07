@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Your Studio</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  /* ── PROCESS INDICATOR — center screen ── */
+  #processOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(6,9,26,0.55);
+    animation: procFadeIn 0.2s ease;
+  }
+  @keyframes procFadeIn { from { opacity:0; } to { opacity:1; } }
+  #processOverlay.active { display: flex; }
+  #processBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 40px;
+    background: var(--navy);
+    border: 1px solid rgba(0,200,255,0.18);
+    box-shadow: 0 0 40px rgba(0,200,255,0.08);
+    min-width: 220px;
+    animation: procSlideUp 0.25s ease;
+  }
+  @keyframes procSlideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  #processSpinner {
+    width: 44px; height: 44px;
+    object-fit: contain;
+  }
+  #processStatus {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan); opacity: 0.8;
+    text-align: center;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  /* Kill caret on display elements */
+  .studio-name, .lot-title, .lot-sub, .lot-stat-v, .lot-stat-l,
+  .b-name, .b-desc, .nav-item, .fy-panel-name, .fy-p-t,
+  .mod-h, .mod-sub {
+    user-select: none;
+    caret-color: transparent;
+    cursor: default;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black:   #06091a;
+    --navy:    #0b0d1a;
+    --navy-2:  #0f1228;
+    --navy-3:  #141830;
+    --white:   #f0f2ff;
+    --dim:     rgba(240,242,255,0.65);
+    --mute:    rgba(240,242,255,0.32);
+    --ghost:   rgba(240,242,255,0.05);
+    --cyan:    #00c8ff;
+    --purple:  #7b35d4;
+    --grad:    linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%);
+    --gradT:   linear-gradient(135deg, #00c8ff 0%, #a06be8 100%);
+    --border:  rgba(0,200,255,0.08);
+    --border-h:rgba(0,200,255,0.22);
+    --sidebar: 280px;
+  }
+</style>
+</head>
+<body></body></html>

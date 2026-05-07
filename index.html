@@ -1935,7 +1935,7 @@ function FormationFlow({ onFormationComplete }) {
 
       console.log('[FormationFlow] Calling /api/formation/initialize', payload);
 
-      const response = await fetch('/api/formation/initialize', {
+      const response = await fetch(`${API_URL}/api/formation/initialize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

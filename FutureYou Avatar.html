@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — FutureYou Avatar</title>
+<link rel="icon" type="image/gif" href="assets/SY_SHUTTER_FAVICON.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #06091a; --navy: #0b0d1a; --navy-2: #0f1228; --white: #f0f2ff;
+    --cyan: #00c8ff; --purple: #7b35d4; --green: #4cff91; --gold: #e8c97a; --red: #ff6b6b;
+    --grad: linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+    --gradT: linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+    --border: rgba(0,200,255,0.08); --border-mid: rgba(0,200,255,0.14);
+    --ghost: rgba(240,242,255,0.06); --fg2: #c8cadc; --fg3: #7a7c94;
+    --sidebar-w: 248px;
+  }
+  html, body, #root { height: 100%; }
+  body { background: var(--black); color: var(--white); font-family: 'Outfit',sans-serif; font-weight: 300; overflow: hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E"); background-size:256px; pointer-events:none; z-index:9999; }
+
+  /* ── DASHBOARD SHELL ── */
+  .dashboard { display:flex; height:100vh; position:relative; z-index:10; }
+  .sidebar { width:var(--sidebar-w); flex-shrink:0; background:rgba(11,13,26,0.88); backdrop-filter:blur(14px); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .sb-logo { padding:18px 18px 14px; border-bottom:1px solid var(--border); }
+  .sb-logo img { height:26px; width:auto; }
+  .sb-section { padding:14px 0 8px; }
+  .sb-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); padding:0 16px 8px; }
+  .sb-item { display:flex; align-items:center; gap:9px; padding:7px 16px; font-size:12px; color:var(--fg2); cursor:pointer; transition:all 0.15s; border-left:2px solid transparent; }
+  .sb-item:hover { color:var(--white); background:var(--ghost); }
+  .sb-item.active { color:var(--cyan); border-left-color:var(--cyan); background:rgba(0,200,255,0.05); }
+  .sb-dot { width:4px; height:4px; border-radius:50%; background:var(--fg3); transition:background 0.15s; }
+  .sb-item.active .sb-dot { background:var(--cyan); box-shadow:0 0 6px rgba(0,200,255,0.5); }
+
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { height:54px; flex-shrink:0; background:rgba(11,13,26,0.88); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); padding:0 28px; display:flex; align-items:center; justify-content:space-between; }
+  .studio-name { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.05em; background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .topbar-sep { width:1px; height:14px; background:var(--border-mid); }
+  .topbar-stage { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); }
+  .topbar-l { display:flex; align-items:center; gap:12px; }
+  .topbar-r { display:flex; align-items:center; gap:14px; }
+  .fy-live { display:flex; align-items:center; gap:6px; font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--green); }
+  .fy-dot { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pg 2s infinite; }
+  @keyframes pg { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,255,145,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(76,255,145,0)} }
+
+  .main-body { flex:1; display:flex; overflow:hidden; }
+  .main-canvas { flex:1; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.12) transparent; }
+  .main-canvas::-webkit-scrollbar { width:3px; }
+  .main-canvas::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+
+  /* ── FY RAIL ── */
+  .fy-rail { width:320px; flex-shrink:0; background:rgba(11,13,26,0.85); backdrop-filter:blur(14px); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .fy-rail-header { padding:11px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .fy-rail-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--green); font-weight:500; }
+  .fy-rail-body { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ── AVATAR MODE IN FY RAIL ── */
+  .avatar-video-zone { flex-shrink:0; position:relative; background:#000; overflow:hidden; }
+  .avatar-video-bg { width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar-video-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#06091a 0%,#0e1228 50%,#0a0d1a 100%); }
+  .avatar-scan-line { position:absolute; left:0; right:0; height:2px; background:linear-gradient(to right,transparent,rgba(0,200,255,0.4),transparent); animation:scanLine 3s ease-in-out infinite; pointer-events:none; }
+  @keyframes scanLine { 0%{top:0%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0} }
+  .avatar-face-ring { width:80px; height:80px; border-radius:50%; border:1px solid rgba(0,200,255,0.2); display:flex; align-items:center; justify-content:center; position:relative; }
+  .avatar-face-ring::before { content:''; position:absolute; inset:4px; border-radius:50%; border:1px solid rgba(0,200,255,0.1); }
+  .avatar-face-ring::after { content:''; position:absolute; inset:-4px; border-radius:50%; border:1px dashed rgba(0,200,255,0.08); animation:spin 12s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .avatar-face-icon { font-size:28px; opacity:0.4; }
+  .avatar-status-bar { position:absolute; bottom:0; left:0; right:0; padding:8px 12px; background:linear-gradient(to top,rgba(6,9,26,0.95),transparent); display:flex; align-items:center; gap:8px; }
+  .avatar-live-badge { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:var(--green); display:flex; align-items:center; gap:5px; }
+  .avatar-live-dot { width:4px; height:4px; border-radius:50%; background:var(--green); animation:pg 2s infinite; }
+  .avatar-age-label { font-size:9px; color:var(--fg3); letter-spacing:0.1em; margin-left:auto; }
+  .avatar-controls { display:flex; align-items:center; gap:6px; padding:10px 12px; border-top:1px solid var(--border); flex-shrink:0; }
+  .avatar-ctrl-btn { background:var(--ghost); border:1px solid var(--border); color:var(--fg2); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; padding:5px 10px; cursor:pointer; flex:1; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .avatar-ctrl-btn:hover { border-color:var(--border-mid); color:var(--white); }
+  .avatar-ctrl-btn.active { border-color:rgba(76,255,145,0.3); color:var(--green); background:rgba(76,255,145,0.04); }
+  .avatar-thread { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; scrollbar-width:none; }
+  .avatar-thread::-webkit-scrollbar { display:none; }
+  .msg-fy { font-family:'Playfair Display',serif; font-style:italic; font-size:13px; line-height:1.75; color:var(--white); }
+  .msg-user { font-size:11px; color:var(--fg2); text-align:right; padding-left:40px; line-height:1.6; }
+  .fy-input-row { display:flex; margin:10px 14px 14px; border:1px solid var(--border-mid); background:rgba(0,200,255,0.02); transition:border-color 0.2s; flex-shrink:0; }
+  .fy-input-row:focus-within { border-color:rgba(76,255,145,0.3); }
+  .fy-input { flex:1; background:transparent; border:none; color:var(--white); font-family:'Outfit',sans-serif; font-size:13px; font-weight:300; padding:10px 12px; outline:none; resize:none; min-height:40px; max-height:80px; caret-color:var(--green) !important; line-height:1.5; }
+  .fy-input::placeholder { color:var(--fg3); }
+  .fy-send { background:transparent; border:none; border-left:1px solid var(--border); color:var(--green); font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.08em; padding:0 14px; cursor:pointer; transition:background 0.15s; align-self:flex-end; height:40px; flex-shrink:0; }
+  .fy-send:hover { background:rgba(76,255,145,0.06); }
+
+  /* ── MAIN CANVAS CONTENT ── */
+  .content { padding:24px; }
+  .buildings-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); }
+  .building-card { background:rgba(14,16,32,0.72); backdrop-filter:blur(8px); padding:22px 22px 18px; cursor:pointer; position:relative; min-height:160px; display:flex; flex-direction:column; transition:background 0.2s; overflow:hidden; }
+  .building-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--grad); opacity:0; transition:opacity 0.2s; }
+  .building-card:hover { background:rgba(11,13,26,0.88); }
+  .building-card:hover::before { opacity:1; }
+  .card-icon { font-size:18px; margin-bottom:10px; opacity:0.7; }
+  .card-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.06em; margin-bottom:6px; }
+  .card-desc { font-size:10px; color:var(--fg3); line-height:1.6; flex:1; }
+
+  /* ── PHOTO CAPTURE OVERLAY ── */
+  .photo-overlay { position:fixed; inset:0; z-index:800; background:var(--black); display:flex; flex-direction:column; overflow:hidden; }
+  .photo-bg { position:absolute; inset:0; background-image:url('assets/SY_WATER_TOWER_MCU.jpg'); background-size:120%; background-position:center 35%; animation:phKb 20s ease-out forwards; filter:brightness(0.35) saturate(0.7); }
+  @keyframes phKb { from{background-size:120%;background-position:center 35%} to{background-size:130%;background-position:center 40%} }
+  .photo-grad { position:absolute; inset:0; background:linear-gradient(to bottom,rgba(6,9,26,0.6) 0%,rgba(6,9,26,0.4) 30%,rgba(6,9,26,0.85) 70%,rgba(6,9,26,0.98) 100%); }
+  .photo-content { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:48px 40px; text-align:center; }
+  .photo-eyebrow { font-size:9px; letter-spacing:0.32em; text-transform:uppercase; color:var(--green); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+  .photo-eyebrow::before, .photo-eyebrow::after { content:''; flex:1; height:1px; background:var(--green); opacity:0.3; max-width:60px; }
+  .photo-headline { font-family:'Bebas Neue',sans-serif; font-size:clamp(52px,7vw,96px); letter-spacing:0.04em; line-height:1; background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:16px; }
+  .photo-sub { font-family:'Playfair Display',serif; font-style:italic; font-size:clamp(16px,1.8vw,22px); color:rgba(240,242,255,0.7); line-height:1.7; max-width:520px; margin-bottom:48px; }
+  .photo-upload-zone { width:100%; max-width:480px; border:1px dashed rgba(0,200,255,0.3); padding:40px 32px; display:flex; flex-direction:column; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s; background:rgba(0,200,255,0.02); margin-bottom:28px; position:relative; }
+  .photo-upload-zone:hover { border-color:rgba(0,200,255,0.6); background:rgba(0,200,255,0.05); }
+  .photo-upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .photo-upload-icon { font-size:32px; opacity:0.5; }
+  .photo-upload-label { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.1em; color:var(--cyan); }
+  .photo-upload-sub { font-size:11px; color:var(--fg3); }
+  .photo-preview { width:120px; height:120px; border-radius:50%; object-fit:cover; border:2px solid rgba(0,200,255,0.4); box-shadow:0 0 40px rgba(0,200,255,0.2); }
+  .photo-actions { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:480px; }
+  .syb { font-family:'Bebas Neue',sans-serif; letter-spacing:0.12em; text-transform:uppercase; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:15px; padding:12px 32px; transition:all 0.18s ease; }
+  .syb-grad { background:transparent; color:var(--cyan); border:1px solid rgba(0,200,255,0.8); text-shadow:0 0 12px rgba(0,200,255,0.5); box-shadow:inset 0 0 16px rgba(0,200,255,0.04),0 6px 0 #004a64,0 8px 0 #002c3d,0 0 20px rgba(0,200,255,0.14),0 14px 28px rgba(0,0,0,0.55); }
+  .syb-grad:hover { transform:translateY(-2px); text-shadow:0 0 22px rgba(0,200,255,0.9); }
+  .syb-ghost { background:transparent; color:var(--fg3); border:1px solid rgba(240,242,255,0.12); font-size:11px; letter-spacing:0.08em; padding:8px 20px; }
+  .syb-ghost:hover { color:var(--white); border-color:rgba(240,242,255,0.25); }
+  .photo-skip { font-size:10px; color:var(--fg3); letter-spacing:0.1em; cursor:pointer; transition:color 0.15s; text-transform:uppercase; }
+  .photo-skip:hover { color:var(--white); }
+
+  /* ── GENERATING STATE ── */
+  .generating-overlay { position:fixed; inset:0; z-index:800; background:var(--black); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; }
+  .gen-bg { position:absolute; inset:0; background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(0,200,255,0.04) 0%,transparent 70%); }
+  .gen-eyebrow { font-size:9px; letter-spacing:0.32em; text-transform:uppercase; color:var(--green); margin-bottom:24px; position:relative; }
+  .gen-headline { font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,5vw,64px); letter-spacing:0.04em; line-height:1.05; text-align:center; color:var(--white); margin-bottom:8px; position:relative; }
+  .gen-sub { font-family:'Playfair Display',serif; font-style:italic; font-size:16px; color:rgba(240,242,255,0.5); margin-bottom:52px; position:relative; }
+  .gen-steps { display:flex; flex-direction:column; gap:0; width:100%; max-width:400px; position:relative; }
+  .gen-step { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); }
+  .gen-step:last-child { border-bottom:none; }
+  .gen-step-icon { width:28px; height:28px; border-radius:50%; border:1px solid; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; transition:all 0.4s; }
+  .gen-step.done .gen-step-icon { border-color:var(--green); color:var(--green); background:rgba(76,255,145,0.08); }
+  .gen-step.active .gen-step-icon { border-color:var(--cyan); color:var(--cyan); animation:gPulse 1.4s ease-in-out infinite; }
+  .gen-step.pending .gen-step-icon { border-color:var(--border-mid); color:var(--fg3); }
+  @keyframes gPulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,200,255,0.3)} 50%{box-shadow:0 0 0 6px rgba(0,200,255,0)} }
+  .gen-step-text { flex:1; }
+  .gen-step-label { font-size:12px; color:var(--white); font-weight:400; letter-spacing:0.04em; }
+  .gen-step.pending .gen-step-label { color:var(--fg3); }
+  .gen-step-detail { font-size:10px; color:var(--fg3); margin-top:2px; letter-spacing:0.04em; }
+  .gen-step.active .gen-step-detail { color:var(--cyan); }
+
+  /* ── FLOW NAV ── */
+  .flow-nav { position:fixed; bottom:0; left:0; right:0; z-index:900; background:rgba(6,9,26,0.95); border-top:1px solid var(--border); padding:10px 28px; display:flex; align-items:center; gap:0; }
+  .flow-nav-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); margin-right:20px; white-space:nowrap; }
+  .flow-btns { display:flex; gap:1px; flex:1; }
+  .flow-btn { flex:1; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; padding:8px 12px; border:1px solid var(--border); background:transparent; color:var(--fg3); cursor:pointer; transition:all 0.15s; text-align:center; }
+  .flow-btn:hover { color:var(--white); border-color:var(--border-mid); }
+  .flow-btn.active { color:var(--cyan); border-color:rgba(0,200,255,0.4); background:rgba(0,200,255,0.06); }
+  .flow-btn:first-child { border-right:none; }
+  .flow-btn:last-child { border-left:none; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation:fadeUp 0.5s ease both; }
+  .d1{animation-delay:0.1s} .d2{animation-delay:0.2s} .d3{animation-delay:0.3s} .d4{animation-delay:0.4s}
+  * { caret-color:transparent !important; }
+  textarea { caret-color:var(--green) !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── DEMO DATA — reads real localStorage if available ──
+const DEMO = {
+  studioName: (localStorage.getItem('sy_studio_name') || 'APEX STUDIOS').trim() || 'APEX STUDIOS',
+  firstName: localStorage.getItem('sy_first_name') || 'Lee',
+  email: localStorage.getItem('sy_email') || 'lee@studioyou.studio',
+};
+
+// ── TAVUS + LIVEKIT API FLOW STEPS ──
+const GEN_STEPS = [
+  { id:'upload',  label:'Photo uploaded', detail:'Sending to Tavus Phoenix' },
+  { id:'analyze', label:'Analyzing biometric features', detail:'Facial mapping · 128 reference points' },
+  { id:'age',     label:'Age-progressing 25 years', detail:'Phoenix model — diffusion pass 1/3' },
+  { id:'replica', label:'Building FutureYou replica', detail:'Training voice + motion model' },
+  { id:'livekit', label:'Joining LiveKit room', detail:'FutureYou conversation room ready' },
+];
+
+// ── AVATAR THREAD (demo conversation) ──
+const AVATAR_THREAD = [
+  { role:'fy', content:"I know what it took to get here. The briefing you gave me — it's exactly what I needed to understand where we're going. You're closer than you think." },
+  { role:'user', content:'How do you know what I need right now?' },
+  { role:'fy', content:"Because I built it. Your question about distribution — the answer is in the FUND building, not DISTRIBUTE. You're still thinking like a creator. You need to think like a studio operator."},
+];
+
+// ── WATER TOWER LOGO ──
+function WaterTowerLogo({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="12" r="8" stroke="#00c8ff" strokeWidth="1" strokeOpacity="0.5" />
+      <line x1="12" y1="20" x2="10" y2="30" stroke="#00c8ff" strokeWidth="1" strokeOpacity="0.3" />
+      <line x1="16" y1="20" x2="16" y2="30" stroke="#00c8ff" strokeWidth="1" strokeOpacity="0.3" />
+      <line x1="20" y1="20" x2="22" y2="30" stroke="#00c8ff" strokeWidth="1" strokeOpacity="0.3" />
+      <text x="16" y="14" fontFamily="'Bebas Neue',sans-serif" fontSize="5" fill="#00c8ff" textAnchor="middle" dominantBaseline="middle" opacity="0.8">SY</text>
+    </svg>
+  );
+}
+
+// ── STEP 1: PHOTO CAPTURE ──
+function PhotoCaptureStep({ onCapture, onSkip }) {
+  const [photo, setPhoto] = useState(null);
+  const [dragging, setDragging] = useState(false);
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    setPhoto(url);
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  }
+
+  return (
+    <div className="photo-overlay">
+      <div className="photo-bg" />
+      <div className="photo-grad" />
+      <div className="photo-content">
+        <div className="photo-eyebrow fade-up">FUTUREYOU — AVATAR INITIALIZATION</div>
+        <div className="photo-headline fade-up d1">FUTUREYOU<br/>IS WAITING.</div>
+        <div className="photo-sub fade-up d2">
+          Upload a recent photo and Tavus Phoenix will age-progress<br/>
+          your image 20–30 years. Your FutureYou will speak to you live.
+        </div>
+
+        {!photo ? (
+          <div
+            className="photo-upload-zone fade-up d3"
+            style={dragging ? {borderColor:'rgba(0,200,255,0.8)',background:'rgba(0,200,255,0.08)'} : {}}
+            onDragOver={e=>{e.preventDefault();setDragging(true);}}
+            onDragLeave={()=>setDragging(false)}
+            onDrop={onDrop}
+          >
+            <input type="file" accept="image/*" onChange={e=>handleFile(e.target.files[0])} />
+            <div className="photo-upload-icon">⬆</div>
+            <div className="photo-upload-label">Drop your photo here</div>
+            <div className="photo-upload-sub">JPG, PNG · Headshot recommended · Used only for your avatar</div>
+          </div>
+        ) : (
+          <div className="fade-up d3" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,marginBottom:28}}>
+            <img src={photo} alt="Your photo" className="photo-preview" />
+            <div style={{fontSize:11,color:'var(--fg3)',letterSpacing:'0.1em'}}>PHOTO READY</div>
+          </div>
+        )}
+
+        <div className="photo-actions fade-up d4">
+          <button
+            className="syb syb-grad"
+            style={{width:'100%',maxWidth:480,fontSize:16,padding:'14px 32px',opacity:photo?1:0.5,cursor:photo?'pointer':'default'}}
+            onClick={photo ? onCapture : undefined}
+          >
+            BUILD FUTUREYOU →
+          </button>
+          <div className="photo-skip" onClick={onSkip}>Skip — I'll do this later</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 2: GENERATING / TAVUS PIPELINE ──
+function GeneratingState({ onComplete }) {
+  const [stepIdx, setStepIdx] = useState(0);
+  const delays = [1000, 2200, 3800, 5600, 7200];
+
+  useEffect(() => {
+    const timers = delays.map((d, i) => setTimeout(() => setStepIdx(i + 1), d));
+    const done = setTimeout(onComplete, 8800);
+    return () => { timers.forEach(clearTimeout); clearTimeout(done); };
+  }, []);
+
+  return (
+    <div className="generating-overlay">
+      <div className="gen-bg" />
+      <div className="gen-eyebrow">FUTUREYOU — TAVUS PHOENIX PIPELINE</div>
+      <div className="gen-headline">FUTUREYOU IS<br/>TAKING SHAPE.</div>
+      <div className="gen-sub">Aging 25 years. Building your replica.</div>
+      <div className="gen-steps">
+        {GEN_STEPS.map((s, i) => {
+          const state = i < stepIdx ? 'done' : i === stepIdx ? 'active' : 'pending';
+          return (
+            <div key={s.id} className={`gen-step ${state}`}>
+              <div className="gen-step-icon">
+                {state === 'done' ? '✓' : state === 'active' ? '◌' : '○'}
+              </div>
+              <div className="gen-step-text">
+                <div className="gen-step-label">{s.label}</div>
+                {state !== 'pending' && <div className="gen-step-detail">{s.detail}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── FY RAIL: AVATAR MODE ──
+function AvatarRail({ studioName }) {
+  const [messages, setMessages] = useState(AVATAR_THREAD);
+  const [input, setInput] = useState('');
+  const [muted, setMuted] = useState(false);
+  const [videoOn, setVideoOn] = useState(true);
+  const threadRef = useRef(null);
+
+  useEffect(() => {
+    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+  }, [messages]);
+
+  function send() {
+    if (!input.trim()) return;
+    const msg = input.trim();
+    setInput('');
+    setMessages(p => [...p, { role:'user', content:msg }]);
+    setTimeout(() => {
+      setMessages(p => [...p, { role:'fy', content:"Hold that thought. Look at your formation answers again — specifically what you said about your roadblock. That's the real question here." }]);
+    }, 1800);
+  }
+
+  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+
+  return (
+    <div className="fy-rail">
+      <div className="fy-rail-header">
+        <span className="fy-dot" />
+        <span className="fy-rail-label">FUTUREYOU — AVATAR LIVE</span>
+      </div>
+
+      {/* Avatar video zone */}
+      <div className="avatar-video-zone" style={{height:190}}>
+        <div className="avatar-video-placeholder">
+          {videoOn ? (
+            <>
+              {/* Simulated avatar feed */}
+              <div style={{position:'relative',width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
+                <div style={{position:'absolute',inset:0,background:'linear-gradient(160deg,#06091a,#0a1020,#06091a)'}} />
+                <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse 60% 80% at 50% 70%,rgba(0,200,255,0.06),transparent)'}} />
+                <div className="avatar-face-ring" style={{position:'relative',zIndex:2}}>
+                  <div className="avatar-face-icon">🧍</div>
+                </div>
+                <div style={{fontSize:9,letterSpacing:'0.2em',textTransform:'uppercase',color:'rgba(0,200,255,0.4)',position:'relative',zIndex:2}}>
+                  LIVEKIT · TAVUS PHOENIX
+                </div>
+                <div style={{fontSize:9,color:'rgba(240,242,255,0.25)',position:'relative',zIndex:2,letterSpacing:'0.06em'}}>
+                  conversation_url → active
+                </div>
+                <div style={{position:'absolute',inset:0,background:'repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,200,255,0.015) 3px,rgba(0,200,255,0.015) 4px)',pointerEvents:'none'}} />
+              </div>
+              <div className="avatar-scan-line" />
+            </>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,color:'var(--fg3)'}}>
+              <div style={{fontSize:28,opacity:0.3}}>⬜</div>
+              <div style={{fontSize:10,letterSpacing:'0.18em',textTransform:'uppercase'}}>Video Paused</div>
+            </div>
+          )}
+        </div>
+        <div className="avatar-status-bar">
+          <div className="avatar-live-badge">
+            <span className="avatar-live-dot" />LIVE
+          </div>
+          <div className="avatar-age-label">+25 YRS</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="avatar-controls">
+        <button className={`avatar-ctrl-btn ${!muted?'active':''}`} onClick={()=>setMuted(p=>!p)}>
+          {muted ? '🔇' : '🔊'} {muted ? 'UNMUTE' : 'AUDIO'}
+        </button>
+        <button className={`avatar-ctrl-btn ${videoOn?'active':''}`} onClick={()=>setVideoOn(p=>!p)}>
+          {videoOn ? '📹' : '🚫'} VIDEO
+        </button>
+        <button className="avatar-ctrl-btn">⬡ TEXT</button>
+      </div>
+
+      {/* Thread */}
+      <div className="avatar-thread" ref={threadRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={m.role === 'fy' ? 'msg-fy' : 'msg-user'}>{m.content}</div>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="fy-input-row">
+        <textarea
+          className="fy-input"
+          rows={1}
+          placeholder="Speak to FutureYou..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={onKey}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button className="fy-send" onClick={send}>SEND</button>
+      </div>
+    </div>
+  );
+}
+
+// ── SIMPLIFIED SIDEBAR ──
+function Sidebar() {
+  const NAV = ['THE LOT','IDEATE','DEVELOP','FUND','CAST','PLAN','PRODUCE','POST'];
+  return (
+    <div className="sidebar">
+      <div className="sb-logo"><img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" /></div>
+      <div className="sb-section">
+        <div className="sb-label">STUDIO</div>
+        {NAV.map((n,i) => (
+          <div key={n} className={`sb-item ${i===0?'active':''}`}>
+            <div className="sb-dot" />{n}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── DASHBOARD: LIVE AVATAR MODE ──
+function LiveAvatarDashboard({ studioName }) {
+  const BUILDINGS_SAMPLE = [
+    {icon:'💡',title:'IDEATE',desc:'Content strategy and concept development.'},
+    {icon:'🎬',title:'DEVELOP',desc:'Scripting, storyboarding, pitch prep.'},
+    {icon:'💰',title:'FUND',desc:'Capital raise, budgeting, pitch materials.'},
+  ];
+  return (
+    <div className="dashboard">
+      <Sidebar />
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-l">
+            <div className="studio-name">{studioName.toUpperCase()}</div>
+            <div className="topbar-sep" /><div className="topbar-stage">The Lot</div>
+            <div className="topbar-sep" /><div className="topbar-stage">Phase 1</div>
+          </div>
+          <div className="topbar-r">
+            <div className="fy-live"><span className="fy-dot" />FutureYou Avatar Live</div>
+          </div>
+        </div>
+        <div className="main-body">
+          <div className="main-canvas">
+            <div className="content">
+              <div style={{marginBottom:16,display:'flex',alignItems:'center',gap:10}}>
+                <div style={{fontSize:9,letterSpacing:'0.22em',textTransform:'uppercase',color:'var(--fg3)'}}>12 BUILDINGS</div>
+                <div style={{height:1,flex:1,background:'var(--border)'}} />
+              </div>
+              <div className="buildings-grid">
+                {BUILDINGS_SAMPLE.map(b => (
+                  <div key={b.title} className="building-card">
+                    <div className="card-icon">{b.icon}</div>
+                    <div className="card-title">{b.title}</div>
+                    <div className="card-desc">{b.desc}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:1,display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:1,background:'var(--border)',border:'1px solid var(--border)'}}>
+                {['CAST','PLAN','PRODUCE','POST','LICENSING','DISTRIBUTE','BRAND','MARKET','MONETIZE'].map(t => (
+                  <div key={t} className="building-card" style={{minHeight:80,justifyContent:'center'}}>
+                    <div className="card-title" style={{fontSize:14,color:'var(--fg3)'}}>{t}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <AvatarRail studioName={studioName} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FLOW ORCHESTRATOR ──
+function FutureYouAvatarFlow() {
+  // photo_step | generating | live
+  const [step, setStep] = useState('photo_step');
+  const [demoStep, setDemoStep] = useState('photo_step'); // for flow nav
+
+  function goToStep(s) {
+    setStep(s);
+    setDemoStep(s);
+  }
+
+  return (
+    <>
+      {step === 'photo_step' && (
+        <div style={{position:'fixed',inset:0,zIndex:100}}>
+          <PhotoCaptureStep
+            onCapture={() => setStep('generating')}
+            onSkip={() => setStep('live')}
+          />
+        </div>
+      )}
+
+      {step === 'generating' && (
+        <div style={{position:'fixed',inset:0,zIndex:100}}>
+          <GeneratingState onComplete={() => setStep('live')} />
+        </div>
+      )}
+
+      {step === 'live' && (
+        <LiveAvatarDashboard studioName={DEMO.studioName} />
+      )}
+
+      {/* Flow nav — prototype navigation */}
+      <div className="flow-nav" style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
+        <div className="flow-nav-label">PROTOTYPE FLOW</div>
+        <div className="flow-btns">
+          {[
+            {id:'photo_step', label:'01 · PHOTO CAPTURE'},
+            {id:'generating',  label:'02 · TAVUS PIPELINE'},
+            {id:'live',        label:'03 · AVATAR LIVE'},
+          ].map(f => (
+            <button
+              key={f.id}
+              className={`flow-btn ${demoStep === f.id ? 'active' : ''}`}
+              onClick={() => goToStep(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<FutureYouAvatarFlow />);
+</script>
+</body>
+</html>

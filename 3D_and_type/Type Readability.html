@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudioYou — Type Readability Alternatives</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  #root { height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ── Font stacks ──────────────────────────────────────── */
+const F = {
+  display: '"Bebas Neue", Impact, "Oswald", sans-serif',
+  body:    '"Outfit", -apple-system, BlinkMacSystemFont, sans-serif',
+  mono:    'ui-monospace, "Menlo", "Monaco", monospace',
+  serif:   '"Playfair Display", Georgia, serif',
+};
+
+/* ── The six type treatments ─────────────────────────── */
+const TREATMENTS = [
+  {
+    id: 'A',
+    name: 'Current — Baseline',
+    problem: true,
+    tokens: '--sy-fg-3 (0.32) · --sy-fg-2 (0.65)',
+    tagline: 'fg-3 at 32% opacity almost disappears on the dark background.',
+    eyebrow:    'rgba(0,200,255,0.55)',
+    headline:   '#f0f2ff',
+    subtitle:   'rgba(240,242,255,0.32)',   /* ← fg-3: the hard-to-read one */
+    secLabel:   'rgba(240,242,255,0.32)',   /* ← fg-3 */
+    body:       'rgba(240,242,255,0.65)',   /* ← fg-2: borderline */
+    noteLine:   'rgba(240,242,255,0.26)',   /* ← even below fg-3 */
+    bodyFont:   F.body,
+    bodyStyle:  'normal',
+    bodyWeight: 300,
+  },
+  {
+    id: 'B',
+    name: 'Opacity Lift',
+    problem: false,
+    tokens: 'descriptor 0.60 · label 0.52 · body 0.82 · note 0.50',
+    tagline: 'Same hues, same system — the floor simply rises. Lowest-effort fix.',
+    eyebrow:    'rgba(0,200,255,0.70)',
+    headline:   '#f0f2ff',
+    subtitle:   'rgba(240,242,255,0.60)',
+    secLabel:   'rgba(240,242,255,0.52)',
+    body:       'rgba(240,242,255,0.82)',
+    noteLine:   'rgba(240,242,255,0.50)',
+    bodyFont:   F.body,
+    bodyStyle:  'normal',
+    bodyWeight: 300,
+  },
+  {
+    id: 'C',
+    name: 'Warm Ivory',
+    problem: false,
+    tokens: 'descriptor #c2beb2 · body #dedad0 · note #8e8a82',
+    tagline: 'Cool blue-white shifts to warm cream. Reads like a printed magazine.',
+    eyebrow:    'rgba(0,200,255,0.70)',
+    headline:   '#f2f0ec',
+    subtitle:   '#c2beb2',
+    secLabel:   '#9a9690',
+    body:       '#dedad0',
+    noteLine:   '#8e8a82',
+    bodyFont:   F.body,
+    bodyStyle:  'normal',
+    bodyWeight: 300,
+  },
+  {
+    id: 'D',
+    name: 'Cyan Grades',
+    problem: false,
+    tokens: 'descriptor cyan 0.58 · label cyan 0.44 · body white 0.82',
+    tagline: 'Descriptors and labels step down through the brand cyan. Type hierarchy becomes color hierarchy.',
+    eyebrow:    '#00c8ff',
+    headline:   '#f0f2ff',
+    subtitle:   'rgba(0,200,255,0.62)',
+    secLabel:   'rgba(0,200,255,0.46)',
+    body:       'rgba(240,242,255,0.84)',
+    noteLine:   'rgba(0,200,255,0.38)',
+    bodyFont:   F.body,
+    bodyStyle:  'normal',
+    bodyWeight: 300,
+  },
+  {
+    id: 'E',
+    name: 'Fixed Hex Steps',
+    problem: false,
+    tokens: 'subtitle #b0b2c6 · label #7a7c94 · body #c8cadc · note #60627a',
+    tagline: 'No rgba — hardcoded hex. Fully consistent on black, navy, and card surfaces alike.',
+    eyebrow:    '#00c8ff',
+    headline:   '#f0f2ff',
+    subtitle:   '#b0b2c6',
+    secLabel:   '#7a7c94',
+    body:       '#c8cadc',
+    noteLine:   '#60627a',
+    bodyFont:   F.body,
+    bodyStyle:  'normal',
+    bodyWeight: 300,
+  },
+  {
+    id: 'F',
+    name: 'Italic Editorial Body',
+    problem: false,
+    tokens: 'body → Playfair Display italic · lifted opacity throughout',
+    tagline: 'Body paragraphs move to Playfair italic. Hierarchy from typeface, not color alone.',
+    eyebrow:    'rgba(0,200,255,0.70)',
+    headline:   '#f0f2ff',
+    subtitle:   'rgba(240,242,255,0.60)',
+    secLabel:   'rgba(240,242,255,0.52)',
+    body:       '#e0dcd4',
+    noteLine:   'rgba(240,242,255,0.50)',
+    bodyFont:   F.serif,
+    bodyStyle:  'italic',
+    bodyWeight: 400,
+  },
+];
+
+/* ── Colour swatch helper ────────────────────────────── */
+function Swatch({ color, label }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+      <div style={{
+        width: '28px', height: '10px',
+        background: color,
+        borderRadius: '2px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        flexShrink: 0,
+      }}/>
+      <span style={{ fontSize:'9px', fontFamily:F.mono, color:'rgba(240,242,255,0.4)', letterSpacing:'0.06em' }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ── Single artboard content ─────────────────────────── */
+function ArtboardContent({ t }) {
+  return (
+    <div style={{
+      width:'100%', height:'100%', boxSizing:'border-box',
+      background: '#06091a',
+      display:'flex', flexDirection:'column',
+      position:'relative', overflow:'hidden',
+    }}>
+
+      {/* Gradient top rule */}
+      <div style={{position:'absolute',top:0,left:0,right:0,height:'1px',
+        background:'linear-gradient(90deg,#00c8ff,#7b35d4)'}}/>
+
+      {/* Problem indicator */}
+      {t.problem && (
+        <div style={{
+          position:'absolute', top:'10px', right:'10px',
+          background:'rgba(255,107,107,0.12)', border:'1px solid rgba(255,107,107,0.3)',
+          padding:'3px 8px', fontSize:'9px', fontFamily:F.mono,
+          color:'#ff8888', letterSpacing:'0.14em',
+        }}>
+          CURRENT
+        </div>
+      )}
+
+      {/* Content area */}
+      <div style={{ padding:'28px 28px 0', display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
+
+        {/* Eyebrow */}
+        <div style={{
+          fontFamily:F.body, fontSize:'9px', letterSpacing:'0.32em',
+          textTransform:'uppercase', color:t.eyebrow, marginBottom:'10px', fontWeight:400,
+        }}>
+          01 / Mechanical Extrude
+        </div>
+
+        {/* Headline — always readable */}
+        <div style={{
+          fontFamily:F.display, fontSize:'50px', lineHeight:'0.9',
+          letterSpacing:'0.02em', color:t.headline, marginBottom:'14px',
+        }}>
+          DEPTH<br/>SYSTEM
+        </div>
+
+        {/* Subtitle / descriptor line ← the main variable */}
+        <div style={{
+          fontFamily:F.body, fontSize:'12px', fontWeight:300,
+          color:t.subtitle, marginBottom:'18px', lineHeight:'1.5',
+        }}>
+          Alternative 3D component language &nbsp;·&nbsp; Physical depth &amp; form
+        </div>
+
+        {/* Divider */}
+        <div style={{height:'1px',background:'rgba(240,242,255,0.06)',marginBottom:'16px',flexShrink:0}}/>
+
+        {/* Section label ← fg-3 territory */}
+        <div style={{
+          fontFamily:F.mono, fontSize:'10px', letterSpacing:'0.2em',
+          textTransform:'uppercase', color:t.secLabel, marginBottom:'13px',
+        }}>
+          Primary hierarchy — three tiers
+        </div>
+
+        {/* Body paragraph ← fg-2 territory */}
+        <p style={{
+          fontFamily:t.bodyFont, fontWeight:t.bodyWeight, fontStyle:t.bodyStyle,
+          fontSize:'12.5px', lineHeight:'1.88', color:t.body,
+          margin:'0 0 16px',
+        }}>
+          Each button is physically extruded — side walls built from layered
+          box-shadows. Click to feel the press. The face translates down as
+          the wall collapses, bottoming out at 0px depth.
+        </p>
+
+        {/* Metadata note ← dimmest text */}
+        <div style={{
+          fontFamily:F.mono, fontSize:'10px', color:t.noteLine,
+          letterSpacing:'0.1em', lineHeight:'1.6',
+        }}>
+          01-buttons.html &nbsp;·&nbsp; FY 2024 &nbsp;·&nbsp; SY-DS-0001
+        </div>
+
+      </div>
+
+      {/* Treatment strip */}
+      <div style={{
+        padding:'14px 28px 20px',
+        borderTop:'1px solid rgba(240,242,255,0.05)',
+        marginTop:'16px', flexShrink:0,
+        display:'flex', flexDirection:'column', gap:'10px',
+      }}>
+        <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+          <Swatch color={t.subtitle}  label="descriptor" />
+          <Swatch color={t.secLabel}  label="label" />
+          <Swatch color={t.body}      label="body" />
+          <Swatch color={t.noteLine}  label="note" />
+        </div>
+        <p style={{
+          fontFamily:F.body, fontSize:'11px', fontWeight:300,
+          color:'rgba(240,242,255,0.42)', margin:0, lineHeight:'1.7',
+        }}>
+          {t.tagline}
+        </p>
+      </div>
+
+    </div>
+  );
+}
+
+/* ── Before/After pair ───────────────────────────────── */
+function BeforeAfterContent({ before, after }) {
+  return (
+    <div style={{
+      width:'100%', height:'100%', boxSizing:'border-box',
+      background:'#06091a', display:'flex', flexDirection:'column',
+      position:'relative', overflow:'hidden',
+    }}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:'1px',
+        background:'linear-gradient(90deg,#00c8ff,#7b35d4)'}}/>
+
+      {/* Column header */}
+      <div style={{
+        display:'grid', gridTemplateColumns:'1fr 1px 1fr',
+        padding:'16px 24px 10px', flexShrink:0,
+      }}>
+        <div style={{fontFamily:F.mono,fontSize:'9px',letterSpacing:'0.22em',
+          textTransform:'uppercase',color:'rgba(255,107,107,0.7)'}}>Before</div>
+        <div style={{background:'rgba(240,242,255,0.06)'}}/>
+        <div style={{fontFamily:F.mono,fontSize:'9px',letterSpacing:'0.22em',
+          textTransform:'uppercase',color:'rgba(0,200,255,0.65)',paddingLeft:'16px'}}>After — {after.name}</div>
+      </div>
+
+      {/* Split columns */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1px 1fr',flex:1,overflow:'hidden',padding:'4px 0'}}>
+
+        {/* Before column */}
+        <div style={{padding:'8px 24px 20px',display:'flex',flexDirection:'column',gap:'0'}}>
+          <div style={{fontFamily:F.body,fontSize:'9px',letterSpacing:'0.32em',
+            textTransform:'uppercase',color:before.eyebrow,marginBottom:'8px',fontWeight:400}}>
+            01 / Mechanical Extrude
+          </div>
+          <div style={{fontFamily:F.display,fontSize:'40px',lineHeight:'0.9',
+            letterSpacing:'0.02em',color:before.headline,marginBottom:'10px'}}>
+            DEPTH<br/>SYSTEM
+          </div>
+          <div style={{fontFamily:F.body,fontSize:'11px',fontWeight:300,
+            color:before.subtitle,marginBottom:'14px',lineHeight:'1.5'}}>
+            Alternative 3D component language · Physical depth
+          </div>
+          <div style={{height:'1px',background:'rgba(240,242,255,0.06)',marginBottom:'12px'}}/>
+          <div style={{fontFamily:F.mono,fontSize:'9px',letterSpacing:'0.18em',
+            textTransform:'uppercase',color:before.secLabel,marginBottom:'11px'}}>
+            Primary hierarchy
+          </div>
+          <p style={{fontFamily:before.bodyFont,fontWeight:before.bodyWeight,
+            fontSize:'11.5px',lineHeight:'1.85',color:before.body,margin:0}}>
+            Each button is physically extruded — side walls built from layered
+            box-shadows. Click to feel the press. The face translates down as
+            the wall collapses.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div style={{background:'rgba(240,242,255,0.06)'}}/>
+
+        {/* After column */}
+        <div style={{padding:'8px 24px 20px',paddingLeft:'24px',display:'flex',flexDirection:'column'}}>
+          <div style={{fontFamily:F.body,fontSize:'9px',letterSpacing:'0.32em',
+            textTransform:'uppercase',color:after.eyebrow,marginBottom:'8px',fontWeight:400}}>
+            01 / Mechanical Extrude
+          </div>
+          <div style={{fontFamily:F.display,fontSize:'40px',lineHeight:'0.9',
+            letterSpacing:'0.02em',color:after.headline,marginBottom:'10px'}}>
+            DEPTH<br/>SYSTEM
+          </div>
+          <div style={{fontFamily:F.body,fontSize:'11px',fontWeight:300,
+            color:after.subtitle,marginBottom:'14px',lineHeight:'1.5'}}>
+            Alternative 3D component language · Physical depth
+          </div>
+          <div style={{height:'1px',background:'rgba(240,242,255,0.06)',marginBottom:'12px'}}/>
+          <div style={{fontFamily:F.mono,fontSize:'9px',letterSpacing:'0.18em',
+            textTransform:'uppercase',color:after.secLabel,marginBottom:'11px'}}>
+            Primary hierarchy
+          </div>
+          <p style={{fontFamily:after.bodyFont,fontWeight:after.bodyWeight,
+            fontStyle:after.bodyStyle,fontSize:'11.5px',lineHeight:'1.85',
+            color:after.body,margin:0}}>
+            Each button is physically extruded — side walls built from layered
+            box-shadows. Click to feel the press. The face translates down as
+            the wall collapses.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ── App ─────────────────────────────────────────────── */
+function App() {
+  const [A, B, C, D, E, Ftr] = TREATMENTS;
+  return (
+    <DesignCanvas>
+
+      {/* Section 1: Six treatments side by side */}
+      <DCSection
+        id="six"
+        title="Supporting Text — Six Treatments"
+        subtitle="Same content, same headlines. Only descriptor lines, section labels, body copy, and metadata change."
+      >
+        {TREATMENTS.map(t => (
+          <DCArtboard key={t.id} id={t.id} label={`${t.id} · ${t.name}`} width={440} height={490}>
+            <ArtboardContent t={t} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      {/* Section 2: Before / After pairs */}
+      <DCSection
+        id="ba"
+        title="Before / After"
+        subtitle="The same section split down the middle. Left: current. Right: proposed treatment."
+      >
+        <DCArtboard id="ba-b" label="B · Opacity Lift — least invasive" width={700} height={430}>
+          <BeforeAfterContent before={A} after={B} />
+        </DCArtboard>
+        <DCArtboard id="ba-e" label="E · Fixed Hex — most consistent" width={700} height={430}>
+          <BeforeAfterContent before={A} after={E} />
+        </DCArtboard>
+        <DCArtboard id="ba-d" label="D · Cyan Grades — on-brand differentiation" width={700} height={430}>
+          <BeforeAfterContent before={A} after={D} />
+        </DCArtboard>
+        <DCArtboard id="ba-f" label="F · Italic Body — typographic hierarchy" width={700} height={430}>
+          <BeforeAfterContent before={A} after={Ftr} />
+        </DCArtboard>
+      </DCSection>
+
+      {/* Section 3: Token reference */}
+      <DCSection
+        id="tokens"
+        title="Token Reference"
+        subtitle="CSS changes needed for each treatment — drop into the :root block."
+      >
+        {[B, C, D, E, Ftr].map(t => (
+          <DCArtboard key={`tok-${t.id}`} id={`tok-${t.id}`} label={`${t.id} · ${t.name}`} width={380} height={310}>
+            <div style={{
+              width:'100%',height:'100%',boxSizing:'border-box',
+              background:'#0b0d1a',padding:'24px 24px 20px',
+              display:'flex',flexDirection:'column',gap:'0',
+              position:'relative',overflow:'hidden',
+              fontFamily:F.mono, fontSize:'11px',
+            }}>
+              <div style={{position:'absolute',top:0,left:0,right:0,height:'1px',
+                background:'linear-gradient(90deg,#00c8ff,#7b35d4)'}}/>
+              <div style={{
+                fontFamily:F.body,fontSize:'9px',letterSpacing:'0.28em',
+                textTransform:'uppercase',color:'rgba(0,200,255,0.6)',marginBottom:'14px',
+              }}>
+                Treatment {t.id} · {t.name}
+              </div>
+              {[
+                ['--sy-fg-3 →', t.subtitle, 'descriptor / section labels'],
+                ['--sy-fg-2 →', t.body,     'body paragraphs'],
+                ['note     →', t.noteLine,  'metadata / timestamps'],
+                t.bodyFont !== F.body ? ['body-font→', '"Playfair Display"', 'editorial italic'] : null,
+              ].filter(Boolean).map(([prop, val, desc]) => (
+                <div key={prop} style={{
+                  display:'grid', gridTemplateColumns:'110px 1fr',
+                  gap:'8px', marginBottom:'11px', alignItems:'start',
+                }}>
+                  <div style={{color:'rgba(0,200,255,0.55)',fontSize:'10px',letterSpacing:'0.06em',paddingTop:'1px'}}>
+                    {prop}
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'3px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
+                      <div style={{
+                        width:'14px',height:'14px',
+                        background:val, borderRadius:'2px',
+                        border:'1px solid rgba(255,255,255,0.1)',flexShrink:0,
+                      }}/>
+                      <span style={{color:'rgba(240,242,255,0.75)',fontSize:'10.5px'}}>{val}</span>
+                    </div>
+                    <span style={{color:'rgba(240,242,255,0.32)',fontSize:'9px',letterSpacing:'0.08em'}}>{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

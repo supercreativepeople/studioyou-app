@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudioYou — 3D Depth Components</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+
+/* ── PAGE SHELL ──────────────────────────────────────── */
+html, body {
+  margin: 0;
+  background: var(--sy-black);
+  color: var(--sy-fg-1);
+  font-family: var(--sy-font-body);
+  min-height: 100vh;
+}
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 56px 160px;
+}
+
+/* ── PAGE HEADER ─────────────────────────────────────── */
+.page-head {
+  margin-bottom: 96px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--sy-fg-4);
+}
+.page-head .eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--sy-cyan);
+  opacity: 0.6;
+  font-family: var(--sy-font-body);
+  margin-bottom: 16px;
+}
+.page-head h1 {
+  font-family: var(--sy-font-display);
+  font-size: clamp(72px, 11vw, 136px);
+  line-height: 0.88;
+  letter-spacing: 0.02em;
+  margin: 0 0 28px;
+}
+.page-head h1 .grad {
+  background: var(--sy-grad-t);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.page-head p {
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--sy-fg-2);
+  max-width: 52ch;
+  margin: 0;
+}
+
+/* ── SECTION HEADER ──────────────────────────────────── */
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.sec-head .n {
+  font-family: var(--sy-font-mono);
+  font-size: 10px;
+  color: var(--sy-fg-3);
+}
+.sec-head .t {
+  font-family: var(--sy-font-display);
+  font-size: 17px;
+  letter-spacing: 0.18em;
+  color: var(--sy-white);
+}
+.sec-head .s {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sy-fg-3);
+  font-weight: 300;
+}
+.sec-head .rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--sy-border-h), transparent);
+}
+.section { margin-bottom: 72px; }
+
+/* ── STAGE ───────────────────────────────────────────── */
+.stage {
+  background: var(--sy-navy);
+  border: 1px solid var(--sy-fg-4);
+  padding: 44px 40px;
+  position: relative;
+  margin-bottom: 2px;
+}
+.stage::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: var(--sy-grad);
+}
+.stage.dark { background: var(--sy-black); }
+.stg-lbl {
+  font-family: var(--sy-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sy-fg-3);
+  margin-bottom: 36px;
+}
+.stg-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stg-note {
+  font-weight: 300;
+  font-size: 11px;
+  color: var(--sy-fg-3);
+  margin-top: 28px;
+  line-height: 1.75;
+  max-width: 72ch;
+}
+
+/* ── BASE BUTTON ─────────────────────────────────────── */
+.btn {
+  font-family: var(--sy-font-display);
+  font-size: 14px;
+  letter-spacing: var(--sy-track-button);
+  padding: 14px 26px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.btn-lg { padding: 18px 34px; font-size: 16px; }
+.btn-sm { padding: 9px 18px; font-size: 11px; letter-spacing: 0.22em; }
+.btn svg {
+  width: 15px; height: 15px;
+  stroke: currentColor; fill: none; stroke-width: 1.5;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   01  MECHANICAL EXTRUDE
+   Physical press: face + side wall + ambient shadow.
+   Click — the face translates down as the wall collapses.
+   ═══════════════════════════════════════════════════════ */
+
+.btn-mech {
+  transition: transform 90ms ease, box-shadow 90ms ease, background 90ms ease;
+}
+
+/* Cyan */
+.btn-mech-cyan {
+  background: linear-gradient(178deg, #3df0ff 0%, #00c8ff 28%, #009ec8 72%, #0084b0 100%);
+  color: #030c10;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -2px 0 rgba(0,0,0,0.2),
+    0 8px 0 #005878,
+    0 10px 0 #003d55,
+    0 12px 0 #002438,
+    0 16px 40px rgba(0,200,255,0.28),
+    0 24px 60px rgba(0,0,0,0.5);
+}
+.btn-mech-cyan:hover {
+  background: linear-gradient(178deg, #55f4ff 0%, #12d8ff 28%, #00aad4 72%, #0094bc 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    inset 0 -2px 0 rgba(0,0,0,0.2),
+    0 8px 0 #005878,
+    0 10px 0 #003d55,
+    0 12px 0 #002438,
+    0 18px 50px rgba(0,200,255,0.38),
+    0 28px 70px rgba(0,0,0,0.5);
+}
+.btn-mech-cyan:active {
+  background: linear-gradient(178deg, #00c8ff 0%, #0098c4 60%, #007aaa 100%);
+  transform: translateY(10px);
+  transition-duration: 40ms;
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 2px 0 #003d55,
+    0 3px 0 #002438,
+    0 6px 18px rgba(0,0,0,0.45),
+    0 2px 24px rgba(0,200,255,0.12);
+}
+
+/* Gradient */
+.btn-mech-grad {
+  background: linear-gradient(178deg, #44d8ff 0%, #00c8ff 18%, #7045e8 62%, #7b35d4 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    inset 0 -2px 0 rgba(0,0,0,0.3),
+    0 8px 0 #2e1268,
+    0 10px 0 #1e0c45,
+    0 12px 0 #0e0528,
+    0 16px 40px rgba(123,53,212,0.42),
+    0 24px 60px rgba(0,0,0,0.5);
+}
+.btn-mech-grad:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -2px 0 rgba(0,0,0,0.3),
+    0 8px 0 #2e1268,
+    0 10px 0 #1e0c45,
+    0 12px 0 #0e0528,
+    0 18px 50px rgba(123,53,212,0.55),
+    0 28px 70px rgba(0,0,0,0.5);
+}
+.btn-mech-grad:active {
+  transform: translateY(10px);
+  transition-duration: 40ms;
+  box-shadow:
+    inset 0 3px 8px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 2px 0 #1e0c45,
+    0 3px 0 #0e0528,
+    0 6px 18px rgba(0,0,0,0.45),
+    0 2px 24px rgba(123,53,212,0.18);
+}
+
+/* Gold */
+.btn-mech-gold {
+  background: linear-gradient(178deg, #f4d888 0%, #e8c97a 28%, #c9a84c 72%, #b09030 100%);
+  color: #180d00;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.42),
+    inset 0 -2px 0 rgba(0,0,0,0.22),
+    0 8px 0 #6a4e08,
+    0 10px 0 #4c3804,
+    0 12px 0 #342600,
+    0 16px 40px rgba(232,201,122,0.28),
+    0 24px 60px rgba(0,0,0,0.5);
+}
+.btn-mech-gold:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.52),
+    inset 0 -2px 0 rgba(0,0,0,0.22),
+    0 8px 0 #6a4e08,
+    0 10px 0 #4c3804,
+    0 12px 0 #342600,
+    0 18px 50px rgba(232,201,122,0.38),
+    0 28px 70px rgba(0,0,0,0.5);
+}
+.btn-mech-gold:active {
+  transform: translateY(10px);
+  transition-duration: 40ms;
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 2px 0 #4c3804,
+    0 3px 0 #342600,
+    0 6px 18px rgba(0,0,0,0.45);
+}
+
+/* Danger */
+.btn-mech-danger {
+  background: linear-gradient(178deg, #ff9090 0%, #ff6b6b 30%, #d84040 70%, #c02828 100%);
+  color: #1a0000;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    inset 0 -2px 0 rgba(0,0,0,0.25),
+    0 8px 0 #800000,
+    0 10px 0 #5a0000,
+    0 12px 0 #3a0000,
+    0 16px 40px rgba(255,107,107,0.28),
+    0 24px 60px rgba(0,0,0,0.5);
+}
+.btn-mech-danger:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -2px 0 rgba(0,0,0,0.25),
+    0 8px 0 #800000,
+    0 10px 0 #5a0000,
+    0 12px 0 #3a0000,
+    0 18px 50px rgba(255,107,107,0.38),
+    0 28px 70px rgba(0,0,0,0.5);
+}
+.btn-mech-danger:active {
+  transform: translateY(10px);
+  transition-duration: 40ms;
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 2px 0 #5a0000,
+    0 3px 0 #3a0000,
+    0 6px 18px rgba(0,0,0,0.45);
+}
+
+/* ═══════════════════════════════════════════════════════
+   02  CHROME BEVEL
+   Polished metal edge. Light source top-left.
+   Active: inverted bevel = pressed inward.
+   ═══════════════════════════════════════════════════════ */
+
+.btn-bevel {
+  transition: all 200ms var(--sy-ease);
+}
+
+.btn-bevel-cyan {
+  background: linear-gradient(155deg, #182240 0%, #0e1530 50%, #090d1e 100%);
+  color: var(--sy-cyan);
+  border: 1px solid rgba(0,200,255,0.14);
+  box-shadow:
+    inset 1px 1px 0 rgba(0,200,255,0.32),
+    inset -1px -1px 0 rgba(0,0,0,0.85),
+    inset 0 0 28px rgba(0,200,255,0.03),
+    0 5px 18px rgba(0,0,0,0.45),
+    0 10px 36px rgba(0,0,0,0.28);
+}
+.btn-bevel-cyan:hover {
+  color: #38ecff;
+  border-color: rgba(0,200,255,0.28);
+  background: linear-gradient(155deg, #1e2c50 0%, #111e3c 50%, #0c1028 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(0,200,255,0.52),
+    inset -1px -1px 0 rgba(0,0,0,0.9),
+    inset 0 0 36px rgba(0,200,255,0.055),
+    0 0 0 1px rgba(0,200,255,0.06),
+    0 8px 28px rgba(0,0,0,0.5),
+    0 0 40px rgba(0,200,255,0.13),
+    0 16px 40px rgba(0,0,0,0.28);
+}
+.btn-bevel-cyan:active {
+  background: linear-gradient(155deg, #050810 0%, #0a0e1c 100%);
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 5px rgba(0,0,0,0.85),
+    inset -1px -1px 0 rgba(0,200,255,0.1),
+    inset 0 0 16px rgba(0,0,0,0.6),
+    0 2px 8px rgba(0,0,0,0.35);
+}
+
+.btn-bevel-ghost {
+  background: linear-gradient(155deg, rgba(240,242,255,0.05) 0%, rgba(240,242,255,0.015) 100%);
+  color: var(--sy-fg-2);
+  border: 1px solid rgba(240,242,255,0.07);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.09),
+    inset -1px -1px 0 rgba(0,0,0,0.65),
+    0 4px 16px rgba(0,0,0,0.3);
+}
+.btn-bevel-ghost:hover {
+  color: var(--sy-white);
+  border-color: rgba(240,242,255,0.14);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.16),
+    inset -1px -1px 0 rgba(0,0,0,0.75),
+    0 8px 28px rgba(0,0,0,0.4);
+}
+.btn-bevel-ghost:active {
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 4px rgba(0,0,0,0.65),
+    inset -1px -1px 0 rgba(255,255,255,0.04),
+    0 2px 6px rgba(0,0,0,0.25);
+}
+
+.btn-bevel-gold {
+  background: linear-gradient(155deg, rgba(232,201,122,0.13) 0%, rgba(201,168,76,0.06) 100%);
+  color: var(--sy-gold);
+  border: 1px solid rgba(232,201,122,0.17);
+  box-shadow:
+    inset 1px 1px 0 rgba(232,201,122,0.38),
+    inset -1px -1px 0 rgba(0,0,0,0.85),
+    0 5px 18px rgba(0,0,0,0.45);
+}
+.btn-bevel-gold:hover {
+  color: #f4d888;
+  border-color: rgba(232,201,122,0.32);
+  box-shadow:
+    inset 1px 1px 0 rgba(232,201,122,0.55),
+    inset -1px -1px 0 rgba(0,0,0,0.9),
+    0 0 40px rgba(232,201,122,0.1),
+    0 8px 28px rgba(0,0,0,0.45);
+}
+.btn-bevel-gold:active {
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 5px rgba(0,0,0,0.8),
+    inset -1px -1px 0 rgba(232,201,122,0.1),
+    0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* ═══════════════════════════════════════════════════════
+   03  PRISMATIC TILT
+   Perspective rotates toward cursor.
+   Iridescent film + specular sheen shift with angle.
+   ═══════════════════════════════════════════════════════ */
+
+.btn-prism-wrap {
+  display: inline-block;
+  perspective: 700px;
+}
+.btn-prism {
+  transform-style: preserve-3d;
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform 350ms var(--sy-ease-out), box-shadow 350ms var(--sy-ease-out);
+  overflow: hidden;
+  position: relative;
+}
+/* Specular sheen */
+.btn-prism .p-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.04) 45%, transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms;
+  pointer-events: none;
+}
+/* Iridescent film */
+.btn-prism .p-film {
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(0,200,255,0.18),
+    rgba(123,53,212,0.18),
+    rgba(232,201,122,0.12),
+    rgba(76,255,145,0.1),
+    rgba(0,200,255,0.18)
+  );
+  opacity: 0;
+  transition: opacity 300ms;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.btn-prism:hover .p-sheen,
+.btn-prism:hover .p-film { opacity: 1; }
+
+.btn-prism-grad {
+  background: var(--sy-grad);
+  color: #fff;
+  box-shadow:
+    0 8px 32px rgba(123,53,212,0.45),
+    0 2px 8px rgba(0,200,255,0.3),
+    0 24px 60px rgba(0,0,0,0.4);
+}
+.btn-prism-grad:hover {
+  box-shadow:
+    0 14px 50px rgba(123,53,212,0.65),
+    0 4px 16px rgba(0,200,255,0.45),
+    0 32px 80px rgba(0,0,0,0.4);
+}
+
+.btn-prism-dark {
+  background: linear-gradient(135deg, #0f1228 0%, #1a2438 100%);
+  color: var(--sy-cyan);
+  border: 1px solid rgba(0,200,255,0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 4px 20px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(0,200,255,0.05);
+}
+.btn-prism-dark:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 8px 40px rgba(0,0,0,0.6),
+    0 0 40px rgba(0,200,255,0.18),
+    0 0 0 1px rgba(0,200,255,0.14);
+}
+
+/* ═══════════════════════════════════════════════════════
+   04  LIQUID GLASS
+   Frosted, backlit depth. Top-edge specular.
+   Float up on hover; compress on active.
+   ═══════════════════════════════════════════════════════ */
+
+.btn-glass {
+  position: relative;
+  overflow: hidden;
+  transition: all 230ms var(--sy-ease);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.btn-glass .g-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.13) 0%, transparent 100%);
+  pointer-events: none;
+}
+.btn-glass .g-bot {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 30%;
+  pointer-events: none;
+  transition: opacity 230ms;
+  opacity: 0.6;
+}
+
+.btn-glass-cyan {
+  background: rgba(0,200,255,0.11);
+  border: 1px solid rgba(0,200,255,0.28);
+  color: var(--sy-white);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(0,200,255,0.09),
+    0 4px 24px rgba(0,200,255,0.18),
+    0 16px 48px rgba(0,0,0,0.42);
+}
+.btn-glass-cyan .g-bot { background: linear-gradient(0deg, rgba(0,200,255,0.09), transparent); }
+.btn-glass-cyan:hover {
+  background: rgba(0,200,255,0.18);
+  border-color: rgba(0,200,255,0.48);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.24),
+    inset 0 -1px 0 rgba(0,200,255,0.14),
+    0 8px 40px rgba(0,200,255,0.28),
+    0 24px 64px rgba(0,0,0,0.42);
+}
+.btn-glass-cyan:active {
+  transform: translateY(0);
+  transition-duration: 65ms;
+  background: rgba(0,200,255,0.07);
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,0.32),
+    0 2px 16px rgba(0,200,255,0.12),
+    0 8px 24px rgba(0,0,0,0.35);
+}
+
+.btn-glass-purple {
+  background: rgba(123,53,212,0.14);
+  border: 1px solid rgba(123,53,212,0.34);
+  color: var(--sy-white);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.11),
+    0 4px 24px rgba(123,53,212,0.24),
+    0 16px 48px rgba(0,0,0,0.42);
+}
+.btn-glass-purple .g-bot { background: linear-gradient(0deg, rgba(123,53,212,0.1), transparent); }
+.btn-glass-purple:hover {
+  background: rgba(123,53,212,0.22);
+  border-color: rgba(123,53,212,0.55);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    0 8px 40px rgba(123,53,212,0.38),
+    0 24px 64px rgba(0,0,0,0.42);
+}
+.btn-glass-purple:active {
+  transform: translateY(0);
+  transition-duration: 65ms;
+  background: rgba(123,53,212,0.07);
+}
+
+.btn-glass-white {
+  background: rgba(240,242,255,0.07);
+  border: 1px solid rgba(240,242,255,0.1);
+  color: var(--sy-fg-2);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    0 4px 16px rgba(0,0,0,0.32);
+}
+.btn-glass-white .g-bot { background: linear-gradient(0deg, rgba(255,255,255,0.04), transparent); }
+.btn-glass-white:hover {
+  background: rgba(240,242,255,0.11);
+  border-color: rgba(240,242,255,0.18);
+  color: var(--sy-white);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    0 8px 32px rgba(0,0,0,0.42);
+}
+.btn-glass-white:active {
+  transform: translateY(0);
+  transition-duration: 65ms;
+}
+
+/* ═══════════════════════════════════════════════════════
+   05  NEON EXTRUDE
+   Wireframe border + glowing side walls.
+   Text-shadow glow. Dark face — depth from color alone.
+   ═══════════════════════════════════════════════════════ */
+
+.btn-neon {
+  background: transparent;
+  transition: transform 90ms ease, box-shadow 90ms ease, text-shadow 200ms;
+}
+
+.btn-neon-cyan {
+  color: var(--sy-cyan);
+  border: 1px solid rgba(0,200,255,0.8);
+  text-shadow: 0 0 12px rgba(0,200,255,0.5);
+  box-shadow:
+    inset 0 0 16px rgba(0,200,255,0.04),
+    0 6px 0 #004a64,
+    0 8px 0 #002c3d,
+    0 9px 0 rgba(0,200,255,0.12),
+    0 0 20px rgba(0,200,255,0.14),
+    0 14px 28px rgba(0,0,0,0.55);
+}
+.btn-neon-cyan:hover {
+  text-shadow: 0 0 20px rgba(0,200,255,0.9);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 24px rgba(0,200,255,0.08),
+    0 6px 0 #00607a,
+    0 8px 0 #003a52,
+    0 9px 0 rgba(0,200,255,0.2),
+    0 0 32px rgba(0,200,255,0.28),
+    0 0 72px rgba(0,200,255,0.12),
+    0 16px 32px rgba(0,0,0,0.55);
+}
+.btn-neon-cyan:active {
+  transform: translateY(7px);
+  transition-duration: 40ms;
+  text-shadow: 0 0 8px rgba(0,200,255,0.4);
+  box-shadow:
+    inset 0 0 16px rgba(0,200,255,0.1),
+    0 1px 0 #004a64,
+    0 2px 0 rgba(0,200,255,0.1),
+    0 0 18px rgba(0,200,255,0.18),
+    0 4px 14px rgba(0,0,0,0.45);
+}
+
+.btn-neon-gold {
+  color: var(--sy-gold);
+  border: 1px solid rgba(232,201,122,0.75);
+  text-shadow: 0 0 10px rgba(232,201,122,0.45);
+  box-shadow:
+    inset 0 0 16px rgba(232,201,122,0.04),
+    0 6px 0 #523c00,
+    0 8px 0 #342600,
+    0 0 18px rgba(232,201,122,0.1),
+    0 14px 28px rgba(0,0,0,0.55);
+}
+.btn-neon-gold:hover {
+  text-shadow: 0 0 18px rgba(232,201,122,0.8);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 24px rgba(232,201,122,0.07),
+    0 6px 0 #6b5000,
+    0 8px 0 #483600,
+    0 0 28px rgba(232,201,122,0.24),
+    0 0 64px rgba(232,201,122,0.1),
+    0 16px 32px rgba(0,0,0,0.55);
+}
+.btn-neon-gold:active {
+  transform: translateY(7px);
+  transition-duration: 40ms;
+  box-shadow:
+    inset 0 0 16px rgba(232,201,122,0.08),
+    0 1px 0 #523c00,
+    0 0 16px rgba(232,201,122,0.14),
+    0 4px 14px rgba(0,0,0,0.45);
+}
+
+.btn-neon-green {
+  color: var(--sy-green);
+  border: 1px solid rgba(76,255,145,0.7);
+  text-shadow: 0 0 10px rgba(76,255,145,0.45);
+  box-shadow:
+    0 6px 0 #0a4020,
+    0 8px 0 #062a14,
+    0 0 18px rgba(76,255,145,0.1),
+    0 14px 28px rgba(0,0,0,0.55);
+}
+.btn-neon-green:hover {
+  text-shadow: 0 0 18px rgba(76,255,145,0.85);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 #0e5428,
+    0 8px 0 #08381a,
+    0 0 28px rgba(76,255,145,0.25),
+    0 0 64px rgba(76,255,145,0.1),
+    0 16px 32px rgba(0,0,0,0.55);
+}
+.btn-neon-green:active {
+  transform: translateY(7px);
+  transition-duration: 40ms;
+}
+
+/* ═══════════════════════════════════════════════════════
+   3D CARDS — Perspective tilt + layered content depth
+   ═══════════════════════════════════════════════════════ */
+
+.card-wrap {
+  perspective: 950px;
+  display: inline-block;
+}
+.card-3d {
+  background: var(--sy-navy-2);
+  border: 1px solid var(--sy-fg-4);
+  padding: 32px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform 450ms var(--sy-ease-out), box-shadow 450ms var(--sy-ease-out);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+  cursor: default;
+  width: 280px;
+}
+.card-3d::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: var(--sy-grad);
+  transition: opacity 400ms;
+  opacity: 0.65;
+}
+.card-3d:hover::before { opacity: 1; }
+.card-3d:hover {
+  box-shadow: 0 28px 90px rgba(0,0,0,0.55), 0 0 60px rgba(0,200,255,0.08);
+}
+.card-shine {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms;
+  background: radial-gradient(ellipse at 35% 30%, rgba(255,255,255,0.065), transparent 68%);
+}
+.card-3d:hover .card-shine { opacity: 1; }
+
+.card-ey {
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--sy-cyan);
+  opacity: 0.65;
+  font-family: var(--sy-font-body);
+  margin-bottom: 14px;
+  transform: translateZ(4px);
+  display: block;
+}
+.card-ttl {
+  font-family: var(--sy-font-display);
+  font-size: 34px;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  color: var(--sy-white);
+  margin-bottom: 18px;
+  transform: translateZ(14px);
+  display: block;
+}
+.card-meta-txt {
+  font-weight: 300;
+  font-size: 12px;
+  color: var(--sy-fg-3);
+  line-height: 1.75;
+  margin-bottom: 24px;
+  transform: translateZ(8px);
+  display: block;
+}
+.card-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  transform: translateZ(18px);
+  margin-bottom: 22px;
+}
+.card-stat-n {
+  font-family: var(--sy-font-mono);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--sy-cyan);
+  letter-spacing: -0.02em;
+}
+.card-stat-l {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sy-fg-3);
+  font-family: var(--sy-font-body);
+}
+.card-btn-wrap { transform: translateZ(22px); display: block; }
+
+.cards-row {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DEPTH INPUTS — Inset well. Concave surface.
+   ═══════════════════════════════════════════════════════ */
+
+.inp-group { display: flex; flex-direction: column; }
+.inp-lbl {
+  font-family: var(--sy-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sy-fg-3);
+  margin-bottom: 8px;
+}
+.inp-wrap { position: relative; }
+.inp-icon {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--sy-fg-3);
+  pointer-events: none;
+  display: flex;
+}
+.inp-icon svg {
+  width: 15px; height: 15px;
+  stroke: currentColor; fill: none; stroke-width: 1.5;
+}
+.inp-3d {
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #020407 0%, #050810 60%, #08091a 100%);
+  border: 1px solid rgba(0,200,255,0.09);
+  color: var(--sy-fg-1);
+  font-family: var(--sy-font-body);
+  font-weight: 300;
+  font-size: 14px;
+  padding: 13px 16px 13px 44px;
+  outline: none;
+  transition: all 230ms var(--sy-ease);
+  box-shadow:
+    inset 0 3px 8px rgba(0,0,0,0.75),
+    inset 0 1px 3px rgba(0,0,0,0.9),
+    inset 0 -1px 0 rgba(0,200,255,0.04),
+    0 1px 0 rgba(255,255,255,0.02),
+    0 2px 8px rgba(0,0,0,0.2);
+}
+.inp-3d::placeholder { color: var(--sy-fg-4); }
+.inp-3d:focus {
+  border-color: rgba(0,200,255,0.28);
+  background: linear-gradient(180deg, #010205 0%, #040712 100%);
+  box-shadow:
+    inset 0 4px 12px rgba(0,0,0,0.85),
+    inset 0 1px 3px rgba(0,0,0,0.9),
+    inset 0 -1px 0 rgba(0,200,255,0.09),
+    0 0 0 2px rgba(0,200,255,0.14),
+    0 0 28px rgba(0,200,255,0.07),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.sel-3d {
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(155deg, #121828 0%, #0a0e18 100%);
+  border: 1px solid rgba(0,200,255,0.09);
+  color: var(--sy-fg-1);
+  font-family: var(--sy-font-body);
+  font-weight: 300;
+  font-size: 14px;
+  padding: 13px 40px 13px 16px;
+  cursor: pointer;
+  outline: none;
+  transition: all 230ms var(--sy-ease);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.04),
+    inset -1px -1px 0 rgba(0,0,0,0.75),
+    0 4px 12px rgba(0,0,0,0.32);
+}
+.sel-3d:hover {
+  border-color: rgba(0,200,255,0.18);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.06),
+    inset -1px -1px 0 rgba(0,0,0,0.8),
+    0 8px 24px rgba(0,0,0,0.4),
+    0 0 20px rgba(0,200,255,0.06);
+}
+.sel-arrow {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--sy-fg-3);
+  pointer-events: none;
+  display: flex;
+}
+.sel-arrow svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+.inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BADGES — Extruded micro-chips
+   ═══════════════════════════════════════════════════════ */
+
+.bdg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  font-family: var(--sy-font-body);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  cursor: default;
+}
+.bdg-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bdg-cyan {
+  background: linear-gradient(180deg, #0d8fad 0%, #006b88 55%, #005878 100%);
+  color: #ccf6ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 4px 0 #002a38,
+    0 5px 0 #001820,
+    0 7px 16px rgba(0,200,255,0.22),
+    0 12px 22px rgba(0,0,0,0.42);
+}
+.bdg-cyan .bdg-dot { background: #44f0ff; box-shadow: 0 0 6px rgba(0,200,255,0.8); }
+.bdg-cyan:hover { transform: translateY(-1px); }
+
+.bdg-gold {
+  background: linear-gradient(180deg, #c9a84c 0%, #a88828 55%, #947820 100%);
+  color: #fff8e0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    0 4px 0 #3e2c00,
+    0 5px 0 #281c00,
+    0 7px 16px rgba(232,201,122,0.22),
+    0 12px 22px rgba(0,0,0,0.42);
+}
+.bdg-gold .bdg-dot { background: var(--sy-gold); box-shadow: 0 0 6px rgba(232,201,122,0.7); }
+.bdg-gold:hover { transform: translateY(-1px); }
+
+.bdg-green {
+  background: linear-gradient(180deg, #1eaa50 0%, #108238 55%, #0a6a2c 100%);
+  color: #ccffe0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 4px 0 #042e14,
+    0 5px 0 #021c0c,
+    0 7px 16px rgba(76,255,145,0.18),
+    0 12px 22px rgba(0,0,0,0.42);
+}
+.bdg-green .bdg-dot { background: var(--sy-green); box-shadow: 0 0 6px rgba(76,255,145,0.8); }
+.bdg-green:hover { transform: translateY(-1px); }
+
+.bdg-red {
+  background: linear-gradient(180deg, #c84040 0%, #a42828 55%, #8a1a1a 100%);
+  color: #ffd0d0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 4px 0 #3a0000,
+    0 5px 0 #240000,
+    0 7px 16px rgba(255,107,107,0.2),
+    0 12px 22px rgba(0,0,0,0.42);
+}
+.bdg-red .bdg-dot { background: var(--sy-red); box-shadow: 0 0 6px rgba(255,107,107,0.8); }
+
+/* ═══════════════════════════════════════════════════════
+   PHYSICAL TOGGLE
+   ═══════════════════════════════════════════════════════ */
+
+.tgl {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.tgl-track {
+  width: 52px; height: 28px;
+  position: relative;
+  background: linear-gradient(180deg, #010305 0%, #050810 100%);
+  border: 1px solid rgba(0,200,255,0.1);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 3px 7px rgba(0,0,0,0.85),
+    inset 0 1px 2px rgba(0,0,0,0.95),
+    0 1px 0 rgba(255,255,255,0.02);
+  transition: background 260ms, border-color 260ms, box-shadow 260ms;
+  flex-shrink: 0;
+}
+.tgl-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px; left: 3px;
+  background: linear-gradient(180deg, #242c50 0%, #161e38 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(0,0,0,0.4),
+    0 2px 4px rgba(0,0,0,0.55),
+    0 4px 10px rgba(0,0,0,0.32);
+  transition: transform 260ms var(--sy-ease-out), background 260ms, box-shadow 260ms;
+}
+.tgl.on .tgl-track {
+  background: linear-gradient(180deg, #003850 0%, #005070 50%, #004060 100%);
+  border-color: rgba(0,200,255,0.38);
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.5),
+    inset 0 0 14px rgba(0,200,255,0.1),
+    0 0 22px rgba(0,200,255,0.14);
+}
+.tgl.on .tgl-thumb {
+  transform: translateX(24px);
+  background: linear-gradient(180deg, #44ecff 0%, #00c8ff 50%, #009ac0 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.42),
+    inset 0 -1px 0 rgba(0,0,0,0.22),
+    0 0 14px rgba(0,200,255,0.55),
+    0 2px 6px rgba(0,0,0,0.4);
+}
+.tgl-lbl {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--sy-fg-2);
+  font-weight: 300;
+  font-family: var(--sy-font-body);
+}
+
+</style>
+</head>
+<body class="sy-grain">
+<div class="wrap">
+
+  <!-- ── PAGE HEADER ──────────────────────────────────── -->
+  <header class="page-head">
+    <div class="eyebrow">StudioYou — Alternative Component System</div>
+    <h1><span class="grad">3D</span> DEPTH<br>COMPONENTS</h1>
+    <p>An alternative component language built on the same palette and type. Physical depth, perspective, and dimensional form — where the 2D system uses light, this one uses volume.</p>
+  </header>
+
+  <!-- ── 01 MECHANICAL EXTRUDE ────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">01</span>
+      <span class="t">MECHANICAL EXTRUDE</span>
+      <span class="s">— Click to press</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Primary hierarchy — three tiers</div>
+      <div class="stg-row">
+        <button class="btn btn-lg btn-mech btn-mech-grad">
+          Enter Studio Lot
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="btn btn-mech btn-mech-cyan">Save Scene</button>
+        <button class="btn btn-sm btn-mech btn-mech-gold">Founding Member</button>
+      </div>
+      <p class="stg-note">The face is a physical surface with a light source at top: specular highlight along the top edge, shadowed underside. Below the face, layered box-shadows build a visible side wall. Click — the face presses flush with the floor as the wall collapses to 0.</p>
+    </div>
+
+    <div class="stage dark">
+      <div class="stg-lbl">Full palette — hover each, then click</div>
+      <div class="stg-row">
+        <button class="btn btn-sm btn-mech btn-mech-cyan">Primary</button>
+        <button class="btn btn-sm btn-mech btn-mech-grad">Gradient</button>
+        <button class="btn btn-sm btn-mech btn-mech-gold">Gold</button>
+        <button class="btn btn-sm btn-mech btn-mech-danger">Destructive</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 02 CHROME BEVEL ──────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">02</span>
+      <span class="t">CHROME BEVEL</span>
+      <span class="s">— Polished dark metal</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Light source top-left · Inset edge highlight</div>
+      <div class="stg-row">
+        <button class="btn btn-lg btn-bevel btn-bevel-cyan">
+          Enter Studio Lot
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="btn btn-bevel btn-bevel-ghost">Cancel</button>
+        <button class="btn btn-bevel btn-bevel-gold">Bill of Rights</button>
+      </div>
+      <p class="stg-note">A single-pixel inset shadow on the top-left edge catches the light; the bottom-right stays in deep shadow. The illusion of a beveled metal plate. Active state inverts the bevel — pressed inward, like a key bottoming out.</p>
+    </div>
+  </section>
+
+  <!-- ── 03 PRISMATIC TILT ─────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">03</span>
+      <span class="t">PRISMATIC TILT</span>
+      <span class="s">— Move cursor slowly across</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">CSS perspective · Mouse-tracked tilt · Iridescent film coating</div>
+      <div class="stg-row" style="gap: 28px;">
+        <div class="btn-prism-wrap">
+          <button class="btn btn-lg btn-prism btn-prism-grad">
+            Enter Studio Lot
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <div class="p-sheen"></div>
+            <div class="p-film"></div>
+          </button>
+        </div>
+        <div class="btn-prism-wrap">
+          <button class="btn btn-prism btn-prism-dark">
+            Save Scene
+            <div class="p-sheen"></div>
+            <div class="p-film"></div>
+          </button>
+        </div>
+        <div class="btn-prism-wrap">
+          <button class="btn btn-sm btn-prism btn-prism-grad">
+            Rolling
+            <div class="p-sheen"></div>
+            <div class="p-film"></div>
+          </button>
+        </div>
+      </div>
+      <p class="stg-note">Mouse position drives CSS perspective rotation (rotateX + rotateY). A specular sheen overlay shifts with the tilt, and a conic-gradient film layer blends prismatic color across the surface. Snaps back with an ease-out spring on leave.</p>
+    </div>
+  </section>
+
+  <!-- ── 04 LIQUID GLASS ──────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">04</span>
+      <span class="t">LIQUID GLASS</span>
+      <span class="s">— Frosted depth</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Backdrop blur · Top-edge specular · Float on hover</div>
+      <div class="stg-row">
+        <button class="btn btn-lg btn-glass btn-glass-cyan">
+          Enter Studio Lot
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <div class="g-top"></div>
+          <div class="g-bot"></div>
+        </button>
+        <button class="btn btn-glass btn-glass-purple">
+          Process
+          <div class="g-top"></div>
+          <div class="g-bot"></div>
+        </button>
+        <button class="btn btn-glass btn-glass-white">
+          Cancel
+          <div class="g-top"></div>
+          <div class="g-bot"></div>
+        </button>
+      </div>
+      <p class="stg-note">A frosted glass face: backdrop blur for depth, a top-edge gradient for the specular catch, a bottom gradient for the colored reflection. Floats 3px upward on hover; compresses on active. Best over textured or gradient backgrounds.</p>
+    </div>
+  </section>
+
+  <!-- ── 05 NEON EXTRUDE ──────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">05</span>
+      <span class="t">NEON EXTRUDE</span>
+      <span class="s">— Dark face, glowing walls</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage dark">
+      <div class="stg-lbl">Wire border · Colored side walls · Text-shadow glow</div>
+      <div class="stg-row">
+        <button class="btn btn-lg btn-neon btn-neon-cyan">
+          Enter Studio Lot
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="btn btn-neon btn-neon-gold">Bill of Rights</button>
+        <button class="btn btn-sm btn-neon btn-neon-green">FY Active</button>
+      </div>
+      <p class="stg-note">The face is void — depth comes entirely from the glowing border and the colored shadow-wall below it. Text-shadow glow matches the edge color. Hover intensifies the halo. Press collapses the wall, same mechanic as the mechanical extrude.</p>
+    </div>
+  </section>
+
+  <!-- ── 06 PERSPECTIVE CARDS ─────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">06</span>
+      <span class="t">PERSPECTIVE CARDS</span>
+      <span class="s">— Move cursor across</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Mouse-tracked tilt · Floating content layers · Specular shine</div>
+      <div class="cards-row">
+
+        <div class="card-wrap">
+          <div class="card-3d">
+            <div class="card-shine"></div>
+            <span class="card-ey">Process Management</span>
+            <span class="card-ttl">SCENE 04<br>REVISION</span>
+            <span class="card-meta-txt">Interior Day — Studio B<br>Director: A. Vasquez</span>
+            <div class="card-stat">
+              <span class="card-stat-n">87</span>
+              <span class="card-stat-l">takes logged</span>
+            </div>
+            <span class="card-btn-wrap">
+              <button class="btn btn-sm btn-mech btn-mech-cyan">Open Scene</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="card-wrap">
+          <div class="card-3d" style="border-color: var(--sy-border-gold);">
+            <div class="card-shine"></div>
+            <span class="card-ey" style="color:var(--sy-gold)">Bill of Rights · Founding</span>
+            <span class="card-ttl" style="background:var(--sy-grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">CHARTER<br>MEMBER</span>
+            <span class="card-meta-txt">FY 2024 Class &nbsp;·&nbsp; ID: SY-F-0001</span>
+            <div class="card-stat">
+              <span class="card-stat-n" style="color:var(--sy-gold)">01</span>
+              <span class="card-stat-l">founding tier</span>
+            </div>
+            <span class="card-btn-wrap">
+              <button class="btn btn-sm btn-mech btn-mech-gold">View Rights</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="card-wrap">
+          <div class="card-3d" style="border-color:rgba(76,255,145,0.1)">
+            <div class="card-shine"></div>
+            <span class="card-ey" style="color:var(--sy-green)">Award Ceremony</span>
+            <span class="card-ttl">FY 2024<br>WINNER</span>
+            <span class="card-meta-txt">Best Production Design<br>Studio A — Category I</span>
+            <div class="card-stat">
+              <span class="card-stat-n" style="color:var(--sy-green)">12</span>
+              <span class="card-stat-l">nominations</span>
+            </div>
+            <span class="card-btn-wrap">
+              <button class="btn btn-sm btn-neon btn-neon-green">View Trophy</button>
+            </span>
+          </div>
+        </div>
+
+      </div>
+      <p class="stg-note">Each card tilts toward the cursor in 3D space. The specular shine overlay tracks mouse position independently. Content layers are offset on the Z axis — title at 14px depth, stats at 18px — creating subtle parallax as the card rotates.</p>
+    </div>
+  </section>
+
+  <!-- ── 07 DEPTH INPUTS ──────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">07</span>
+      <span class="t">DEPTH INPUTS</span>
+      <span class="s">— Inset concave well</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Inset shadow stack · Focus ring lift · Bevel select</div>
+      <div class="inputs-grid">
+        <div class="inp-group">
+          <div class="inp-lbl">Scene Title</div>
+          <div class="inp-wrap">
+            <div class="inp-icon">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <input class="inp-3d" type="text" placeholder="Interior Day — Studio B">
+          </div>
+        </div>
+        <div class="inp-group">
+          <div class="inp-lbl">Search</div>
+          <div class="inp-wrap">
+            <div class="inp-icon">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+            <input class="inp-3d" type="search" placeholder="Search 847 scenes…">
+          </div>
+        </div>
+        <div class="inp-group">
+          <div class="inp-lbl">Phase</div>
+          <div class="inp-wrap">
+            <div class="sel-arrow">
+              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <select class="sel-3d">
+              <option>Pre-production</option>
+              <option>Principal Photography</option>
+              <option>Post-production</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <p class="stg-note">Inputs are pressed into the surface rather than raised above it. Multiple inset shadows simulate concavity — the mouth of the well is darkest at the rim. The select uses a chrome bevel finish. Focus adds a subtle outer glow ring.</p>
+    </div>
+  </section>
+
+  <!-- ── 08 BADGES + TOGGLES ──────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">08</span>
+      <span class="t">BADGES &amp; TOGGLES</span>
+      <span class="s">— Micro-extrusion</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Extruded status chips · Physical toggle switch</div>
+      <div class="stg-row" style="margin-bottom: 36px;">
+        <span class="bdg bdg-cyan"><span class="bdg-dot"></span>Live</span>
+        <span class="bdg bdg-green"><span class="bdg-dot"></span>FY Active</span>
+        <span class="bdg bdg-gold"><span class="bdg-dot"></span>Founding</span>
+        <span class="bdg bdg-red"><span class="bdg-dot"></span>Error</span>
+      </div>
+      <div class="stg-row" style="gap: 32px; flex-wrap: wrap;">
+        <label class="tgl" id="tgl-a">
+          <div class="tgl-track"><div class="tgl-thumb"></div></div>
+          <span class="tgl-lbl">Scene Active</span>
+        </label>
+        <label class="tgl on" id="tgl-b">
+          <div class="tgl-track"><div class="tgl-thumb"></div></div>
+          <span class="tgl-lbl">Production Live</span>
+        </label>
+        <label class="tgl" id="tgl-c">
+          <div class="tgl-track"><div class="tgl-thumb"></div></div>
+          <span class="tgl-lbl">Auto-Save</span>
+        </label>
+      </div>
+      <p class="stg-note">Badges use the same extrusion logic as buttons at micro scale — a solid-colored face with a visible wall below. The toggle track is a deep inset well; the thumb is an extruded disc that catches light along its top edge when lit (ON state).</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ── PRISMATIC TILT ───────────────────────────────────── */
+document.querySelectorAll('.btn-prism-wrap').forEach(wrap => {
+  const btn = wrap.querySelector('.btn-prism');
+  if (!btn) return;
+
+  wrap.addEventListener('mousemove', e => {
+    const r = wrap.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    btn.style.transform = `rotateY(${x * 36}deg) rotateX(${-y * 22}deg) scale(1.03)`;
+    btn.style.transition = 'transform 80ms linear, box-shadow 80ms linear';
+  });
+
+  wrap.addEventListener('mouseleave', () => {
+    btn.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1)';
+    btn.style.transition = 'transform 550ms cubic-bezier(0.16,1,0.3,1), box-shadow 550ms cubic-bezier(0.16,1,0.3,1)';
+  });
+});
+
+/* ── PERSPECTIVE CARDS ───────────────────────────────── */
+document.querySelectorAll('.card-wrap').forEach(wrap => {
+  const card = wrap.querySelector('.card-3d');
+  const shine = card.querySelector('.card-shine');
+  if (!card) return;
+
+  wrap.addEventListener('mousemove', e => {
+    const r = wrap.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    card.style.transform = `perspective(950px) rotateY(${x * 22}deg) rotateX(${-y * 16}deg)`;
+    card.style.transition = 'transform 100ms linear, box-shadow 100ms linear';
+    if (shine) {
+      shine.style.background = `radial-gradient(ellipse at ${(x+0.5)*100}% ${(y+0.5)*100}%, rgba(255,255,255,0.075), transparent 68%)`;
+      shine.style.opacity = '1';
+    }
+  });
+
+  wrap.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(950px) rotateY(0deg) rotateX(0deg)';
+    card.style.transition = 'transform 650ms cubic-bezier(0.16,1,0.3,1), box-shadow 650ms cubic-bezier(0.16,1,0.3,1)';
+    if (shine) shine.style.opacity = '0';
+  });
+});
+
+/* ── TOGGLES ─────────────────────────────────────────── */
+document.querySelectorAll('.tgl').forEach(tgl => {
+  tgl.addEventListener('click', () => tgl.classList.toggle('on'));
+});
+</script>
+
+</body>
+</html>

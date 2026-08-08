@@ -1,0 +1,301 @@
+/* ============================================================
+   StudioYou — Colors & Type
+   Cinematic editorial dark. "A stage curtain going up."
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&display=swap');
+
+/* ── Bebas Neue (display) ─────────────────────────────────── */
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('fonts/BebasNeue-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Playfair Display (editorial) ─────────────────────────── */
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-Italic.ttf') format('truetype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-MediumItalic.ttf') format('truetype');
+  font-weight: 500; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-BoldItalic.ttf') format('truetype');
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-ExtraBold.ttf') format('truetype');
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-Black.ttf') format('truetype');
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('fonts/PlayfairDisplay-BlackItalic.ttf') format('truetype');
+  font-weight: 900; font-style: italic; font-display: swap;
+}
+
+:root {
+  /* ── BASE PALETTE ─────────────────────────────────────────── */
+  --sy-black:    #06091a;   /* primary background — true midnight */
+  --sy-navy-1:   #080c14;
+  --sy-navy:     #0b0d1a;   /* surface 1 — cards, sidebars */
+  --sy-navy-2:   #0f1228;   /* surface 2 — raised */
+  --sy-navy-3:   #141830;   /* surface 3 — input wells */
+  --sy-navy-4:   #1a2438;
+
+  --sy-white:    #f0f2ff;   /* off-white, slight cool cast */
+
+  /* Foreground tints (rgba on white) */
+  --sy-fg-1:     #f0f2ff;                       /* primary text */
+  --sy-fg-2:     rgba(240,242,255,0.65);        /* dim text / body */
+  --sy-fg-3:     rgba(240,242,255,0.32);        /* muted, labels */
+  --sy-fg-4:     rgba(240,242,255,0.06);        /* ghost, dividers */
+
+  /* Accents */
+  --sy-cyan:     #00c8ff;   /* primary accent — electric blue */
+  --sy-cyan-15:  rgba(0,200,255,0.15);
+  --sy-cyan-08:  rgba(0,200,255,0.08);
+  --sy-cyan-03:  rgba(0,200,255,0.03);
+
+  --sy-purple:   #7b35d4;   /* secondary — used in gradients only */
+  --sy-purple-2: #5e28a8;
+
+  --sy-gold:     #e8c97a;   /* premium / founding / bill-of-rights */
+  --sy-gold-2:   #c9a84c;   /* deeper editorial gold */
+
+  --sy-green:    #4cff91;   /* "FY active / live" status only */
+  --sy-red:      #ff6b6b;   /* error only */
+
+  /* Gradients */
+  --sy-grad:     linear-gradient(135deg, #00c8ff 0%, #5e28a8 60%, #7b35d4 100%);
+  --sy-grad-t:   linear-gradient(135deg, #00c8ff 0%, #a06be8 100%);
+  --sy-grad-gold:linear-gradient(135deg, #c9a84c, #e8c96a);
+  --sy-grad-cg:  linear-gradient(135deg, #00c8ff, #e8c97a);
+
+  /* Borders */
+  --sy-border:   rgba(0,200,255,0.08);
+  --sy-border-h: rgba(0,200,255,0.22);          /* hover */
+  --sy-border-a: rgba(0,200,255,0.35);          /* active */
+  --sy-border-gold: rgba(232,201,122,0.20);
+
+  /* Spacing scale (4px base) */
+  --sy-sp-1:  4px;
+  --sy-sp-2:  8px;
+  --sy-sp-3:  12px;
+  --sy-sp-4:  16px;
+  --sy-sp-5:  20px;
+  --sy-sp-6:  24px;
+  --sy-sp-8:  32px;
+  --sy-sp-10: 40px;
+  --sy-sp-12: 48px;
+  --sy-sp-16: 64px;
+  --sy-sp-20: 80px;
+
+  /* Radii — StudioYou uses sharp corners by default. Editorial. */
+  --sy-radius-0: 0px;        /* default */
+  --sy-radius-1: 2px;        /* subtle softening on inputs */
+  --sy-radius-pill: 999px;   /* dots, status indicators */
+
+  /* Shadows */
+  --sy-shadow-soft:    0 8px 32px rgba(0,0,0,0.5);
+  --sy-shadow-glow-c:  0 0 0 2px rgba(0,200,255,0.2), 0 0 18px rgba(0,200,255,0.25);
+  --sy-shadow-modal:   0 0 60px rgba(0,200,255,0.08);
+  --sy-shadow-pop:     0 8px 32px rgba(0,0,0,0.5);
+
+  /* Type stacks */
+  --sy-font-display: 'Bebas Neue', 'Impact', 'Oswald', sans-serif;
+  --sy-font-body:    'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sy-font-serif:   'Playfair Display', 'Georgia', serif;
+  --sy-font-mono:    ui-monospace, 'Menlo', 'Monaco', 'Cascadia Mono', monospace;
+
+  /* Tracking / transforms — used as utilities */
+  --sy-track-eyebrow: 0.28em;   /* 9-10px caps eyebrows */
+  --sy-track-display: 0.04em;
+  --sy-track-button:  0.14em;
+
+  /* Motion */
+  --sy-ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --sy-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --sy-dur-fast:    0.15s;
+  --sy-dur:         0.25s;
+  --sy-dur-slow:    0.5s;
+  --sy-dur-cinema:  0.8s;
+}
+
+/* ============================================================
+   SEMANTIC TYPE — drop-in classes / element defaults
+   ============================================================ */
+
+.sy-h1, h1.sy {
+  font-family: var(--sy-font-display);
+  font-size: clamp(52px, 8vw, 108px);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--sy-white);
+  margin: 0;
+}
+.sy-h1-grad {
+  background: var(--sy-grad-t);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sy-h2, h2.sy {
+  font-family: var(--sy-font-display);
+  font-size: clamp(36px, 5vw, 72px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--sy-white);
+  margin: 0;
+}
+
+.sy-h3, h3.sy {
+  font-family: var(--sy-font-display);
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  color: var(--sy-white);
+  margin: 0;
+}
+
+.sy-h4 {
+  font-family: var(--sy-font-display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--sy-white);
+}
+
+/* Editorial italic — quotes, FY voice, descriptors */
+.sy-quote, .sy-italic {
+  font-family: var(--sy-font-serif);
+  font-style: italic;
+  font-size: clamp(18px, 2.4vw, 28px);
+  line-height: 1.65;
+  color: var(--sy-fg-1);
+}
+.sy-quote-sm {
+  font-family: var(--sy-font-serif);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--sy-fg-2);
+}
+
+/* Eyebrow — universal small caps label */
+.sy-eyebrow {
+  font-family: var(--sy-font-body);
+  font-size: 9px;
+  letter-spacing: var(--sy-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--sy-cyan);
+  opacity: 0.7;
+  font-weight: 400;
+}
+.sy-eyebrow-gold { color: var(--sy-gold); opacity: 0.85; }
+.sy-eyebrow-mute { color: var(--sy-fg-3); opacity: 1; }
+
+/* Body */
+.sy-body, p.sy {
+  font-family: var(--sy-font-body);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--sy-fg-2);
+}
+.sy-body-sm {
+  font-family: var(--sy-font-body);
+  font-weight: 300;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--sy-fg-2);
+}
+
+/* Button label — Bebas always */
+.sy-button-label {
+  font-family: var(--sy-font-display);
+  font-size: 14px;
+  letter-spacing: var(--sy-track-button);
+  text-transform: none;          /* Bebas is already caps */
+}
+
+/* Caps micro-label (chips, badges, status) */
+.sy-caps {
+  font-family: var(--sy-font-body);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sy-fg-3);
+}
+
+.sy-mono {
+  font-family: var(--sy-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--sy-fg-3);
+}
+
+/* ============================================================
+   GLOBAL CHROME — film grain, base
+   ============================================================ */
+
+.sy-grain::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  background-size: 256px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Hairline gradient top-rule on cards */
+.sy-rule-top {
+  position: relative;
+}
+.sy-rule-top::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: var(--sy-grad);
+}

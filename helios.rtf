@@ -1,0 +1,165 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;\f1\fnil\fcharset0 Menlo-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red162\green168\blue247;}
+{\*\expandedcolortbl;;\csgray\c0;\cssrgb\c69412\c72549\c97647;}
+\margl1440\margr1440\vieww11520\viewh12420\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 \CocoaLigature0  Now I have the full picture. Here's the updated analysis with Helios's actual \
+  capabilities mapped specifically to StudioYou:     \
+                                                                                \
+  ---                                                                           \
+  
+\f1\b What Helios Actually Is
+\f0\b0                                                        \
+                                                                                \
+  A 
+\f1\b 14B-parameter Diffusion Transformer
+\f0\b0  that produces an infinite, steerable    \
+  video stream. Key mechanics that matter for StudioYou:                        \
+                                                                                \
+  - 
+\f1\b 33 frames per chunk
+\f0\b0  (~1.4s at 24fps) \'97 commands queue for the next chunk, so\
+   UI reactions to user actions appear within ~1-2 seconds  \
+  - 
+\f1\b Image-to-video
+\f0\b0  \'97 upload any image, it animates it into a living scene; swap \
+  mid-stream with \cf3 "blend"\cf2  transition                                            \
+  - 
+\f1\b \cf3 schedule_prompt\cf2  at specific chunks
+\f0\b0  \'97 you can script a cinematic sequence in\
+  advance, precisely timed                                                      \
+  - 
+\f1\b \cf3 set_seed
+\f0\b0 \cf2  \'97 same seed = same video, always. Reproducible per-user worlds\
+  - 
+\f1\b \cf3 prompt_switched\cf2  event
+\f0\b0  \'97 exact notification when the video transitions, lets \
+  you sync UI to video frame-perfectly                                          \
+  - 
+\f1\b \cf3 pause\cf2 /\cf3 resume
+\f0\b0 \cf2  \'97 stop generation when not in view, resume without losing state\
+                                                                                \
+  This is not a clip generator. It's a 
+\f1\b live, scriptable, reactive video 
+\f0\b0         \
+  
+\f1\b environment.
+\f0\b0                                                                   \
+                                                                                \
+  ---                                                       \
+  
+\f1\b Concrete StudioYou Applications
+\f0\b0 \
+                                 \
+  
+\f1\b 1. FutureYou Cinematic Reveal \'97 Build This First
+\f0\b0 \
+                                                                                \
+  At onboarding completion, after the user has defined their studio:\
+  - User optionally uploads a photo (headshot, workspace, mood board) \uc0\u8594          \
+  \cf3 set_image\cf2                                                                      \
+  - Backend constructs a richly detailed prompt from their formation data:\
+  creator type + stage + studio name + tier                                     \
+  - \cf3 schedule_prompt\cf2  at chunks 0, 5, 10 queues a 3-act cinematic sequence of     \
+  their future                                                             \
+  - Their actual image animates into a living vision of where they're headed    \
+                                                                            \
+  The \cf3 set_seed\cf2  tied to their \cf3 email\cf2  hash means their FutureYou world is          \
+  
+\f1\b consistent and personal
+\f0\b0  \'97 every time they return, it's the same world,        \
+  evolving only when they hit new stages.                                       \
+                                                                                \
+  
+\f1\b Backend work:
+\f0\b0  One new endpoint in \cf3 main.py\cf2 : \cf3 POST /api/reactor/token\cf2  \'97 exchanges\
+   \cf3 REACTOR_API_KEY\cf2  for a JWT, mirrors the auth pattern alrsteady in the codebase.\
+                                                                                \
+  ---                                                       \
+  
+\f1\b 2.
+\f0\b0  
+\f1\b Stage
+\f0\b0  
+\f1\b Completion
+\f0\b0  
+\f1\b Cinematics
+\f0\b0  
+\f1\b \'97
+\f0\b0  
+\f1\b The
+\f0\b0  
+\f1\b Gamification
+\f0\b0  
+\f1\b Loop
+\f0\b0 \
+\
+  When a creator marks a FutureYou stage complete:\
+  - Trigger a \cf3 schedule_prompt\cf2  sequence that transitions their studio world\
+  forward                                                                       \
+  - The \cf3 prompt_switched\cf2  event fires at the exact chunk boundary \'97 use it to sync\
+   the UI milestone animation (unlock badge, counter tick, etc.) frame-perfectly\
+   with the video                                                               \
+  - \cf3 "blend"\cf2  transition for stage upgrades = smooth cinematic progression; \cf3 "cut"\cf2 \
+  for a dramatic reveal on major tier changes                                   \
+                                                                                \
+  This makes progression 
+\f1\b visceral
+\f0\b0 . The world literally changes when you do.\
+                                                                                \
+  ---                                                       \
+  
+\f1\b 3. Dashboard Hero \'97 Persistent Studio World
+\f0\b0                                    \
+                                                            \
+  The main dashboard background is their studio world running continuously:\
+  - Seeded to their \cf3 email\cf2  hash \uc0\u8594  same world, always                             \
+  - \cf3 schedule_prompt\cf2  loops through their current active stage context            \
+  - \cf3 pause\cf2  on tab blur, \cf3 resume\cf2  on focus \'97 no wasted compute                      \
+  - \cf3 current_prompt\cf2  from state messages can surface "what your studio is working \
+  toward" as ambient copy                                                       \
+                                                                                \
+  ---                                                                           \
+  
+\f1\b 4. Creator Type Explorer \'97 Acquisition / Landing Page
+\f0\b0                          \
+                                                            \
+  Five pre-seeded Helios sessions, one per archetype from the Creator Typologies\
+   doc:                                                                         \
+  - Visitor clicks "Step inside Solo Creator" \uc0\u8594  their archetype world streams\
+  - Switching archetypes fires \cf3 set_prompt\cf2  with a \cf3 blend\cf2  transition \'97 live        \
+  morphing between worlds                                               \
+  - No login required, immediate emotional proof of StudioYou's positioning     \
+  - This is the differentiator in the 50-tool competitive stack \'97 nothing else\
+  in that list does this                                                        \
+                                                                                \
+  ---                                                                           \
+  
+\f1\b Build Order
+\f0\b0                                                                    \
+                                                            \
+  \uc0\u9484 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9516 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9516 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9516 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9488  \
+  \uc0\u9474  Step \u9474             What            \u9474   Where   \u9474         Complexity        \u9474    \
+  \uc0\u9500 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9508  \
+  \uc0\u9474  1    \u9474  \cf3 POST /api/reactor/token\cf2     \uc0\u9474  \cf3 main.py\cf2   \uc0\u9474  Trivial (~15 lines)      \u9474    \
+  \uc0\u9474       \u9474  JWT endpoint               \u9474           \u9474                           \u9474  \
+  \uc0\u9500 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9508    \
+  \uc0\u9474       \u9474                             \u9474  Next.js  \u9474  Low \'97 \cf3 ReactorProvider\cf2  +  \uc0\u9474 \
+  \uc0\u9474  2    \u9474  FutureYou reveal component \u9474  app      \u9474  \cf3 ReactorView\cf2  + formation  \uc0\u9474    \
+  \uc0\u9474       \u9474                             \u9474           \u9474  data                     \u9474 \
+  \uc0\u9500 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9508    \
+  \uc0\u9474  3    \u9474  Dashboard hero with        \u9474  Next.js  \u9474  Medium                   \u9474 \
+  \uc0\u9474       \u9474  \cf3 pause\cf2 /\cf3 resume\cf2  on visibility \uc0\u9474  app      \u9474                           \u9474    \
+  \uc0\u9500 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9508 \
+  \uc0\u9474  4    \u9474  Stage completion cinematic \u9474  Next.js  \u9474  Medium                   \u9474    \
+  \uc0\u9474       \u9474   + \cf3 prompt_switched\cf2  sync    \uc0\u9474  app      \u9474                           \u9474 \
+  \uc0\u9500 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9532 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9508 \
+  \uc0\u9474  5    \u9474  Landing page archetype     \u9474  Next.js  \u9474  Medium \'97 5 parallel      \u9474 \
+  \uc0\u9474       \u9474  explorer                   \u9474  app      \u9474  sessions                 \u9474    \
+  \uc0\u9492 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9524 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9524 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9524 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9496 \
+                                                                                \
+  The token endpoint in Flask is the only backend change required. Everything   \
+  else lives in the Next.js frontend at\
+  \cf3 /Users/supercreativepeople/Downloads/studioyou-app\cf2 . Want to start with that?}

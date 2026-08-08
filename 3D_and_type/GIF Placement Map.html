@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — GIF Placement Map</title>
+<link rel="icon" type="image/gif" href="assets/SY_SHUTTER_FAVICON.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --black:#06091a; --navy:#0b0d1a; --white:#f0f2ff;
+    --cyan:#00c8ff; --green:#4cff91; --gold:#e8c97a; --red:#ff6b6b; --violet:#a06be8;
+    --grad:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+    --gradT:linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+    --border:rgba(0,200,255,0.08); --border-mid:rgba(0,200,255,0.14);
+    --ghost:rgba(240,242,255,0.05); --fg2:#c8cadc; --fg3:#7a7c94;
+  }
+  html, body { background:var(--black); color:var(--white); font-family:'Outfit',sans-serif; font-weight:300; min-height:100%; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E"); background-size:256px; pointer-events:none; z-index:9999; }
+
+  .page { max-width:1100px; margin:0 auto; padding:56px 44px 120px; position:relative; z-index:1; }
+
+  /* HEADER */
+  .hd-eyebrow { font-size:9px; letter-spacing:0.32em; text-transform:uppercase; color:var(--fg3); display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .hd-eyebrow::before { content:''; width:24px; height:1px; background:var(--fg3); opacity:0.35; }
+  .hd-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,6vw,80px); letter-spacing:0.04em; line-height:1; background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:12px; }
+  .hd-sub { font-family:'Playfair Display',serif; font-style:italic; font-size:16px; color:var(--fg2); line-height:1.7; max-width:580px; margin-bottom:52px; }
+
+  /* GIF LEGEND */
+  .gif-legend { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:64px; }
+  .gif-legend-card { background:rgba(14,16,32,0.7); padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
+  .gif-legend-img { width:80px; height:80px; object-fit:contain; }
+  .gif-legend-name { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.08em; }
+  .gif-legend-meaning { font-size:11px; color:var(--fg3); line-height:1.6; max-width:200px; }
+  .gif-legend-uses { font-size:9px; letter-spacing:0.16em; text-transform:uppercase; padding:3px 10px; border:1px solid; margin-top:4px; }
+
+  /* SECTION */
+  .section { margin-bottom:64px; }
+  .section-header { display:flex; align-items:center; gap:16px; padding:18px 0 22px; border-bottom:1px solid var(--border-mid); margin-bottom:28px; }
+  .section-stripe { height:3px; }
+  .section-num { font-size:9px; letter-spacing:0.24em; text-transform:uppercase; color:var(--fg3); }
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:0.06em; }
+  .confirmed-tag { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; padding:3px 10px; border:1px solid rgba(76,255,145,0.35); color:var(--green); margin-left:auto; }
+  .suggested-tag { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; padding:3px 10px; border:1px solid rgba(232,201,122,0.3); color:var(--gold); margin-left:auto; }
+
+  /* PLACEMENT ROWS */
+  .placement-grid { display:flex; flex-direction:column; gap:1px; }
+  .placement-row { display:grid; grid-template-columns:1fr 320px; border:1px solid var(--border); border-bottom:none; background:rgba(14,16,32,0.55); overflow:hidden; }
+  .placement-row:last-child { border-bottom:1px solid var(--border); }
+  .placement-row.confirmed { border-color:rgba(76,255,145,0.1); }
+  .placement-row.confirmed:last-child { border-bottom:1px solid rgba(76,255,145,0.1); }
+  .pl-body { padding:22px 26px; display:flex; flex-direction:column; gap:8px; justify-content:center; border-right:1px solid var(--border); }
+  .pl-file { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); font-family:'Courier New',monospace; margin-bottom:3px; }
+  .pl-where { font-size:14px; color:var(--white); font-weight:400; letter-spacing:0.02em; }
+  .pl-reason { font-size:11px; color:var(--fg2); line-height:1.65; margin-top:4px; }
+  .pl-moment { font-size:10px; color:var(--fg3); font-style:italic; font-family:'Playfair Display',serif; margin-top:4px; }
+  .pl-impl { font-family:'Courier New',monospace; font-size:10px; color:rgba(0,200,255,0.6); background:rgba(0,200,255,0.04); border:1px solid rgba(0,200,255,0.1); padding:4px 10px; margin-top:6px; display:inline-block; width:fit-content; }
+  .pl-demo { padding:22px; display:flex; align-items:center; justify-content:center; background:rgba(6,9,26,0.5); }
+
+  /* MOCK UI FRAMES */
+  .mock-frame { background:rgba(11,13,26,0.9); border:1px solid var(--border-mid); padding:18px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; max-width:270px; position:relative; overflow:hidden; }
+  .mock-frame::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .mock-frame-label { font-size:8px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); align-self:flex-start; }
+  .mock-headline { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.04em; text-align:center; line-height:1; }
+  .mock-subtext { font-family:'Playfair Display',serif; font-style:italic; font-size:11px; color:var(--fg2); text-align:center; line-height:1.6; }
+  .mock-gif { width:64px; height:64px; object-fit:contain; }
+  .mock-gif-lg { width:80px; height:80px; object-fit:contain; }
+  .mock-btn { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.12em; padding:9px 22px; background:transparent; color:var(--cyan); border:1px solid rgba(0,200,255,0.7); cursor:default; }
+  .mock-progress { height:2px; background:rgba(0,200,255,0.12); width:100%; }
+  .mock-progress-fill { height:100%; width:60%; background:var(--gradT); }
+
+  /* Subscribe step 1 mock */
+  .mock-sub-step1 { background:rgba(11,13,26,0.9); border:1px solid var(--border-mid); width:270px; position:relative; overflow:hidden; }
+  .mock-sub-step1::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .mock-sub-header { padding:14px 16px 12px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center; }
+  .mock-sub-headline { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.04em; line-height:1.15; }
+  .mock-sub-headline span { background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; display:block; }
+  .mock-sub-body { padding:12px 16px 14px; }
+  .mock-tier-row { display:flex; gap:6px; margin-bottom:8px; }
+  .mock-tier { flex:1; border:1px solid var(--border); padding:8px 8px; }
+  .mock-tier.ind { border-color:rgba(0,200,255,0.2); }
+  .mock-tier-name { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.06em; }
+  .mock-tier-price { font-size:10px; color:var(--fg3); }
+
+  /* Signup mock */
+  .mock-signup { background:rgba(11,13,26,0.9); border:1px solid var(--border-mid); width:270px; padding:18px 18px; display:flex; flex-direction:column; align-items:center; gap:10px; position:relative; overflow:hidden; }
+  .mock-signup::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .mock-input { width:100%; background:rgba(0,200,255,0.03); border:1px solid var(--border-mid); padding:7px 10px; font-size:11px; font-family:'Outfit',sans-serif; color:var(--fg3); }
+  .mock-input-row { display:flex; gap:4px; width:100%; }
+
+  /* Preamble mock */
+  .mock-preamble { background:rgba(11,13,26,0.9); border:1px solid var(--border-mid); width:270px; padding:20px 18px; display:flex; flex-direction:column; align-items:center; gap:10px; position:relative; text-align:center; overflow:hidden; }
+  .mock-preamble::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,var(--violet),transparent); }
+
+  /* Avatar mock */
+  .mock-avatar { background:rgba(6,9,26,0.95); border:1px solid var(--border-mid); width:270px; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  .mock-avatar::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .mock-avatar-zone { height:100px; background:linear-gradient(160deg,#06091a,#0e1228); display:flex; align-items:center; justify-content:center; position:relative; }
+  .mock-avatar-bottom { padding:10px 14px; display:flex; flex-direction:column; gap:6px; }
+
+  /* Journey mock */
+  .mock-journey { background:rgba(11,13,26,0.9); border:1px solid var(--border-mid); width:270px; padding:16px 18px; position:relative; overflow:hidden; }
+  .mock-journey::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,var(--gold),transparent); }
+  .mock-journey-label { font-size:8px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); margin-bottom:10px; }
+  .mock-journey-phase { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:0.06em; margin-bottom:2px; }
+  .mock-bar { height:2px; background:rgba(240,242,255,0.06); margin-bottom:6px; }
+  .mock-bar-fill { height:100%; background:var(--grad); }
+  .mock-milestone { display:flex; gap:8px; align-items:center; font-size:10px; color:var(--fg2); padding:8px 0; border-top:1px solid var(--border); }
+
+  /* FULL GIF SYSTEM STRIP */
+  .gif-system-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-top:56px; }
+  .gss-cell { background:rgba(14,16,32,0.7); padding:18px 16px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+  .gss-gif { width:44px; height:44px; object-fit:contain; }
+  .gss-name { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.1em; }
+  .gss-use { font-size:9px; color:var(--fg3); line-height:1.5; }
+  .gss-status { font-size:7px; letter-spacing:0.16em; text-transform:uppercase; padding:2px 7px; border:1px solid; }
+  .gss-status.active { color:var(--green); border-color:rgba(76,255,145,0.3); }
+  .gss-status.new { color:var(--gold); border-color:rgba(232,201,122,0.3); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation:fadeUp 0.5s ease both; }
+  @keyframes pg { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,255,145,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(76,255,145,0)} }
+  .dot-g { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pg 2s infinite; display:inline-block; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hd-eyebrow">STUDIOYOU — BRAND MOTION SYSTEM</div>
+  <div class="hd-title fade-up">GIF PLACEMENT<br/>MAP</div>
+  <div class="hd-sub fade-up">Three new animated assets join the system alongside the existing shutter and process GIFs. Each is anchored to a specific emotional moment — not decoration. Their rarity is part of their power. Use sparingly.</div>
+
+  <!-- GIF LEGEND -->
+  <div class="gif-legend fade-up">
+    <div class="gif-legend-card">
+      <img src="assets/award-ceremony.gif" class="gif-legend-img" alt="velvet rope">
+      <div class="gif-legend-name" style="color:var(--gold)">AWARD CEREMONY</div>
+      <div class="gif-legend-meaning">The velvet rope. Exclusive access. You have been selected. The rope opens for you — and not everyone.</div>
+      <div class="gif-legend-uses" style="color:var(--gold);border-color:rgba(232,201,122,0.35)">SUCCESS · ACCESS · ARRIVAL</div>
+    </div>
+    <div class="gif-legend-card">
+      <img src="assets/trophy.gif" class="gif-legend-img" alt="trophy">
+      <div class="gif-legend-name" style="color:var(--gold)">TROPHY</div>
+      <div class="gif-legend-meaning">Achievement. You made the right call. A milestone has been reached — something has been won.</div>
+      <div class="gif-legend-uses" style="color:var(--gold);border-color:rgba(232,201,122,0.35)">MILESTONE · SUBSCRIBE · WIN</div>
+    </div>
+    <div class="gif-legend-card">
+      <img src="assets/id-card-key.gif" class="gif-legend-img" alt="id card">
+      <div class="gif-legend-name" style="color:var(--cyan)">ID CARD</div>
+      <div class="gif-legend-meaning">Identity being established. Credentials being issued. You are becoming a recognized entity inside the system.</div>
+      <div class="gif-legend-uses" style="color:var(--cyan);border-color:rgba(0,200,255,0.35)">IDENTITY · SIGNUP · CREDENTIALS</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1 — AWARD CEREMONY (VELVET ROPE)
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--gold),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div class="section-title" style="color:var(--gold)">AWARD CEREMONY — VELVET ROPE</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Subscribe success -->
+      <div class="placement-row confirmed">
+        <div class="pl-body">
+          <div class="pl-file">dashboard.html · SubscribeModal · handleReserve() success state</div>
+          <div class="pl-where">Subscribe Modal — Reservation Confirmed</div>
+          <div class="pl-reason">The user has chosen their tier and committed. The rope drops. This is the exact metaphor — they're past the velvet rope now, inside the studio. Replaces the generic confirmation state entirely. Show the GIF centered, large, then fade into the copy.</div>
+          <div class="pl-moment">"You're in. The gate is open."</div>
+          <div class="pl-impl">Step 3: after handleReserve() → show success screen with gif before onClose()</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:6px;"><div class="dot-g"></div>CONFIRMED PLACEMENT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame">
+            <div class="mock-frame-label">SUBSCRIBE SUCCESS</div>
+            <img src="assets/award-ceremony.gif" class="mock-gif-lg">
+            <div class="mock-headline">YOU'RE IN.</div>
+            <div class="mock-subtext">Founding Member secured.<br/>The lot is yours.</div>
+            <div style="height:2px;background:rgba(232,201,122,0.12);width:100%;overflow:hidden;"><div style="height:100%;width:100%;background:linear-gradient(90deg,var(--gold),transparent);animation:shrink 3s linear forwards;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verify success -->
+      <div class="placement-row confirmed">
+        <div class="pl-body">
+          <div class="pl-file">verify.html · showSuccess()</div>
+          <div class="pl-where">Verification Success — Studio Unlocked</div>
+          <div class="pl-reason">Magic link verified. The user is back. The rope drops again — this time they're returning, not arriving for the first time. Sits above the "Your studio is unlocked" message. Smaller than the subscribe version (64px vs 80px) — they've done this before, so the moment is familiar, not revelatory.</div>
+          <div class="pl-moment">"Welcome back. You know where the gate is."</div>
+          <div class="pl-impl">showSuccess(): inject gif above message text, 64px, before progress bar</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:6px;"><div class="dot-g"></div>CONFIRMED PLACEMENT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame">
+            <div class="mock-frame-label">VERIFY SUCCESS</div>
+            <img src="assets/award-ceremony.gif" class="mock-gif">
+            <div class="mock-headline" style="font-size:17px;">STUDIO UNLOCKED</div>
+            <div class="mock-subtext" style="font-size:10px;">Welcome back, Lee.<br/>Entering your studio...</div>
+            <div class="mock-progress"><div class="mock-progress-fill" style="animation:shrink 4s linear forwards;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FutureYou First Words reveal — suggested -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">dashboard.html · FYPanel · fresh user First Words reveal</div>
+          <div class="pl-where">Dashboard — FutureYou First Words Reveal</div>
+          <div class="pl-reason">The very first time FY speaks to the user — after formation is complete, after studio is named — this is the most emotionally charged moment in the entire product. The velvet rope sits in the FY panel eyebrow area for 2 seconds before the typewriter begins. The message: FutureYou has decided you're ready to be let in.</div>
+          <div class="pl-moment">"FutureYou has something to say. This is where it starts."</div>
+          <div class="pl-impl">FYPanel: when isFresh=true, show gif for 2s in eyebrow before typewrite() begins</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame" style="border-color:rgba(76,255,145,0.12);">
+            <div class="mock-frame-label" style="color:var(--green);">FUTUREYOU — FIRST WORDS</div>
+            <img src="assets/award-ceremony.gif" class="mock-gif" style="opacity:0.9;">
+            <div style="height:1px;width:100%;background:rgba(240,242,255,0.06);"></div>
+            <div class="mock-subtext" style="font-family:'Playfair Display',serif;font-style:italic;text-align:left;opacity:0.7;">I know what it took to get here...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Studio name lock-in — suggested -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">index.html · studio_name phase · name confirmed state</div>
+          <div class="pl-where">Formation — Studio Name Locked In</div>
+          <div class="pl-reason">When the user confirms their studio name, FY says "[Name] is on the gate." The gate IS the velvet rope. Show the rope GIF for 1.5 seconds at the moment of confirmation, before the progress bar drains and the redirect fires. The name is now on the gate — the rope drops to let you through.</div>
+          <div class="pl-moment">"Your name is on the gate. The gate opens."</div>
+          <div class="pl-impl">studio_name phase: on name confirm, show gif 1.5s then drain → redirect</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame">
+            <div class="mock-frame-label">STUDIO NAME CONFIRMED</div>
+            <img src="assets/award-ceremony.gif" class="mock-gif">
+            <div class="mock-headline" style="background:var(--gradT);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">APEX STUDIOS</div>
+            <div class="mock-subtext" style="font-size:10px;">Is on the gate.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2 — TROPHY
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--gold),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div class="section-title" style="color:var(--gold)">TROPHY</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Subscribe step 2 -->
+      <div class="placement-row confirmed">
+        <div class="pl-body">
+          <div class="pl-file">dashboard.html · SubscribeModal · step 2 confirmation panel</div>
+          <div class="pl-where">Subscribe Modal Step 2 — Tier Confirmed</div>
+          <div class="pl-reason">The user has selected their tier and landed on the confirmation screen. The trophy sits in the left panel above the tier name — not the full success screen, but the commitment page. They haven't clicked RESERVE yet, but they've made the choice. The trophy says: you picked the right tier. This is your win.</div>
+          <div class="pl-moment">"You picked your studio. That choice matters."</div>
+          <div class="pl-impl">sub-step2 left panel: trophy above .sub2-tier-name, 56px</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:6px;"><div class="dot-g"></div>CONFIRMED PLACEMENT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-sub-step1">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;">
+              <img src="assets/trophy.gif" style="width:44px;height:44px;object-fit:contain;">
+              <div>
+                <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg3);margin-bottom:3px;">YOU'RE BUILDING</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;background:var(--gradT);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">INDEPENDENT</div>
+              </div>
+            </div>
+            <div style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--fg3)">Annual</span><span>$129/mo</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--fg3)">Formation fee</span><span style="color:var(--green)">WAIVED</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0 4px;"><span style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:0.08em;">DUE TODAY</span><span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--cyan);">$0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Journey Engine phase complete — suggested -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">dashboard.html · Sidebar · Journey Engine · phase completion</div>
+          <div class="pl-where">Sidebar — Journey Engine Phase Completion</div>
+          <div class="pl-reason">When the Journey Engine advances from Phase 1 → Phase 2, the sidebar block should briefly show the trophy before settling into the new phase display. This is a rare moment — most users won't reach it for weeks. That's exactly why the trophy is right: you've earned something real, and the system knows it.</div>
+          <div class="pl-moment">"Phase 1 is done. You built a studio. That's not nothing."</div>
+          <div class="pl-impl">Journey Engine: on phase advance, flash trophy 2s in sidebar block, then update phase display</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-journey">
+            <div class="mock-journey-label">JOURNEY ENGINE</div>
+            <img src="assets/trophy.gif" style="width:40px;height:40px;object-fit:contain;margin-bottom:4px;">
+            <div class="mock-journey-phase" style="color:var(--gold);">PHASE 1</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:10px;color:var(--fg3);margin-bottom:8px;">Complete</div>
+            <div class="mock-bar"><div class="mock-bar-fill" style="width:100%;"></div></div>
+            <div class="mock-milestone">
+              <div style="width:4px;height:4px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+              Advancing to Phase 2 →
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FutureYou avatar creation — suggested -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">FutureYou Avatar.html · generating state · step 4 (replica complete)</div>
+          <div class="pl-where">FutureYou Avatar — Replica Build Complete</div>
+          <div class="pl-reason">At step 4 of the Tavus pipeline ("Building FutureYou replica"), when the replica is confirmed, briefly show the trophy before advancing to "Joining LiveKit room." You built your future self. That deserves acknowledgment. Shows for 1.5s between steps 4 and 5.</div>
+          <div class="pl-moment">"FutureYou exists. You just built yourself."</div>
+          <div class="pl-impl">Pipeline step 4 complete: flash trophy 1.5s before step 5 fires</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame" style="border-color:rgba(76,255,145,0.12);">
+            <div class="mock-frame-label">STEP 4 COMPLETE</div>
+            <img src="assets/trophy.gif" class="mock-gif">
+            <div class="mock-headline" style="font-size:15px;line-height:1.2;">FUTUREYOU<br/>BUILT.</div>
+            <div class="mock-subtext" style="font-size:10px;">Joining LiveKit room...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3 — ID CARD
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div class="section-title" style="color:var(--cyan)">ID CARD</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Summary email / signup -->
+      <div class="placement-row confirmed">
+        <div class="pl-body">
+          <div class="pl-file">index.html · SummaryAndEmail · summaryDone=true state</div>
+          <div class="pl-where">Formation — Email Capture / "Save Your Studio"</div>
+          <div class="pl-reason">The email capture screen is where the user becomes a registered entity in the system. They have a briefing, a studio name — now they need an identity. The ID card appears above the "SAVE YOUR STUDIO" label as summaryDone becomes true. The briefing is done. Now it's time to become official.</div>
+          <div class="pl-moment">"Your briefing exists. Now you need credentials."</div>
+          <div class="pl-impl">SummaryAndEmail: above .email-capture-label when summaryDone=true, 64px</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:6px;"><div class="dot-g"></div>CONFIRMED PLACEMENT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-signup">
+            <img src="assets/id-card-key.gif" style="width:64px;height:64px;object-fit:contain;">
+            <div style="font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--fg3);">SAVE YOUR STUDIO</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.04em;text-align:center;line-height:1.1;">You're In.<br/>Save Your Studio.</div>
+            <div class="mock-input-row">
+              <div class="mock-input" style="flex:1;">First name</div>
+              <div class="mock-input" style="flex:1;">Last name</div>
+            </div>
+            <div class="mock-input" style="width:100%;">your@email.com</div>
+            <div class="mock-btn" style="width:100%;text-align:center;font-size:11px;">ENTER YOUR STUDIO →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verify loading state -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">verify.html · initial loading state</div>
+          <div class="pl-where">Verification — Loading State (replaces spinner)</div>
+          <div class="pl-reason">The spinner currently shows while the magic link is being validated. The ID card GIF is a far more meaningful replacement — credentials are literally being checked. It communicates "we're reading your ID" before revealing your studio. The animated GIF provides the motion that the spinner currently provides, plus the correct semantic meaning.</div>
+          <div class="pl-moment">"Your credentials are being read."</div>
+          <div class="pl-impl">verify.html: replace .spinner with id-card-key.gif, 52px, centered</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame">
+            <div class="mock-frame-label">VERIFYING STUDIO</div>
+            <img src="assets/id-card-key.gif" class="mock-gif">
+            <div class="mock-headline" style="font-size:17px;">VERIFYING<br/>YOUR STUDIO</div>
+            <div class="mock-subtext" style="font-size:10px;">Reading your credentials...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FutureYou avatar photo step -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">FutureYou Avatar.html · PhotoCaptureStep</div>
+          <div class="pl-where">FutureYou Avatar — Photo Upload Step</div>
+          <div class="pl-reason">The photo capture step asks the user for their face — their literal identity. The ID card is the right frame for this: you're being issued a visual identity credential. Shows in the eyebrow area above "FUTUREYOU IS WAITING." — small (36px) so it doesn't compete with the headline. It signals: your face is your ID for this system.</div>
+          <div class="pl-moment">"Your face becomes your credential."</div>
+          <div class="pl-impl">PhotoCaptureStep: above photo-eyebrow text, 36px, inline with eyebrow</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-preamble">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+              <img src="assets/id-card-key.gif" style="width:28px;height:28px;object-fit:contain;opacity:0.8;">
+              <div style="font-size:8px;letter-spacing:0.28em;text-transform:uppercase;color:var(--green);">AVATAR INITIALIZATION</div>
+            </div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.04em;line-height:1;background:var(--gradT);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">FUTUREYOU<br/>IS WAITING.</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:11px;color:rgba(240,242,255,0.55);line-height:1.6;">Upload your photo. Tavus will build your future self.</div>
+            <div style="border:1px dashed rgba(0,200,255,0.3);padding:14px;width:100%;font-size:9px;color:var(--fg3);text-align:center;letter-spacing:0.12em;">DROP PHOTO HERE</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archetype conclusion -->
+      <div class="placement-row">
+        <div class="pl-body">
+          <div class="pl-file">index.html / dashboard.html · archetype conclusion moment</div>
+          <div class="pl-where">Formation / Dashboard — Archetype Concluded</div>
+          <div class="pl-reason">When the archetype engine concludes the user's creator type — either at formation end or on first dashboard load — this is the moment their creative identity is officially defined. The ID card is exactly right: their creator credentials have been issued. Show briefly (1.5s) before the archetype badge materializes in the Studio World Hero.</div>
+          <div class="pl-moment">"Your creator identity has been determined."</div>
+          <div class="pl-impl">Archetype conclude panel: ID card above the bars for 1.5s before bars animate in</div>
+          <div style="margin-top:8px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:6px;">◈ SUGGESTED</div>
+        </div>
+        <div class="pl-demo">
+          <div class="mock-frame" style="border-color:rgba(0,200,255,0.15);">
+            <div class="mock-frame-label">ARCHETYPE ENGINE</div>
+            <img src="assets/id-card-key.gif" class="mock-gif" style="opacity:0.9;">
+            <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg3);">CONCLUDED</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;color:var(--gold);">DOCUMENTARY</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FULL SYSTEM STRIP -->
+  <div style="margin-top:56px;">
+    <div style="font-size:8px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg3);margin-bottom:16px;">THE COMPLETE STUDIOYOU GIF SYSTEM</div>
+    <div class="gif-system-strip">
+      <div class="gss-cell">
+        <img src="assets/SY_SHUTTER_FAVICON.gif" class="gss-gif">
+        <div class="gss-name">SHUTTER</div>
+        <div class="gss-use">FY thinking / generating / loading states. Favicon. FY chat send.</div>
+        <div class="gss-status active">IN USE</div>
+      </div>
+      <div class="gss-cell">
+        <img src="assets/award-ceremony.gif" class="gss-gif">
+        <div class="gss-name">VELVET ROPE</div>
+        <div class="gss-use">Subscribe success, verify success, First Words reveal, name lock-in.</div>
+        <div class="gss-status new">NEW</div>
+      </div>
+      <div class="gss-cell">
+        <img src="assets/trophy.gif" class="gss-gif">
+        <div class="gss-name">TROPHY</div>
+        <div class="gss-use">Tier confirmation, phase completion, avatar replica built.</div>
+        <div class="gss-status new">NEW</div>
+      </div>
+      <div class="gss-cell">
+        <img src="assets/id-card-key.gif" class="gss-gif">
+        <div class="gss-name">ID CARD</div>
+        <div class="gss-use">Email signup, verify loading, photo capture, archetype conclusion.</div>
+        <div class="gss-status new">NEW</div>
+      </div>
+      <div class="gss-cell">
+        <img src="assets/SY_SHUTTER_FAVICON.gif" class="gss-gif" style="opacity:0.25;filter:grayscale(1);">
+        <div class="gss-name" style="color:var(--fg3);">PROCESS</div>
+        <div class="gss-use" style="color:rgba(122,124,148,0.6);">Building pipeline states. Reserved for production workflow.</div>
+        <div class="gss-status active">IN USE</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:var(--fg3);font-style:italic;font-family:'Playfair Display',serif;line-height:1.6;">Rule: never show more than one GIF at a time. Their rarity is their power. Each one marks a moment — overusing them collapses the meaning entirely.</div>
+  </div>
+
+</div>
+<style>
+@keyframes shrink { from{transform:scaleX(1);transform-origin:left} to{transform:scaleX(0);transform-origin:left} }
+</style>
+</body>
+</html>

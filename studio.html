@@ -1,0 +1,3418 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  FILE: studio.html
+  VERSION: 1.0.0 — Three-Column Persistent Canvas
+  UPDATED: May 19, 2026
+  CHANGES:
+    - Initial build. Supersedes BuildingOverlay modal pattern on dashboard.
+    - Three-column layout: Journey Engine (260px) / Canvas (flex) / FY Rail (300px)
+    - Building slug routing via ?building= param from dashboard.html
+    - FY rail: avatar slot, full chat, tier-aware behavior (directive/peer)
+    - Phase tracker: pulls from /api/session/journey
+    - Canvas state persistence: resumes from sy_session_id on return
+    - Desktop only. No mobile layout.
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Studio</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sy-3d.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+<style>
+  :root {
+    --black:#06091a; --navy:#0b0d1a; --navy-2:#0f1228; --navy-3:#141830; --navy-mid:#0e1020;
+    --white:#f0f2ff;
+    --sy-cyan:#00c8ff; --sy-purple:#7b35d4; --sy-gold:#e8c97a; --sy-green:#4cff91; --sy-red:#ff6b6b;
+    --cyan:#00c8ff; --purple:#7b35d4; --green:#00e676;
+    --grad:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+    --gradT:linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+    --border:rgba(0,200,255,0.08); --border-mid:rgba(0,200,255,0.14); --border-h:rgba(0,200,255,0.22);
+    --ghost:rgba(0,200,255,0.04);
+    --fg2:#c8cadc; --fg3:#7a7c94;
+    --left-w:260px; --right-w:300px;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; overflow:hidden; }
+  /* Suppress blinking cursor on non-input elements */
+  *:not(input):not(textarea):not([contenteditable]) { caret-color: transparent; }
+  body {
+    background:var(--black); color:var(--white); font-family:'Outfit',sans-serif; font-weight:300;
+    background-size:cover; background-position:center; background-repeat:no-repeat;
+    background-attachment:fixed;
+    transition:background-image 0.6s ease;
+  }
+
+  /* Dark overlay on body bg — sits below everything */
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:rgba(6,9,26,0.82);
+    z-index:0; pointer-events:none;
+  }
+
+  /* ── Layout shell ── */
+  .studio-shell { display:flex; flex-direction:column; height:100vh; overflow:hidden; position:relative; z-index:1; }
+
+  /* ── Top bar ── */
+  .studio-topbar {
+    height:54px; display:flex; align-items:center; padding:0 20px;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+    background:rgba(6,9,26,0.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    position:relative;
+  }
+  /* Left zone */
+  .topbar-left { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .topbar-logo-wrap { position:relative; cursor:pointer; display:flex; align-items:center; flex-shrink:0; }
+  .topbar-logo-wrap img { height:24px; width:auto; display:block; }
+  .topbar-sep { width:1px; height:14px; background:var(--border-mid); flex-shrink:0; }
+  .topbar-path {
+    display:flex; align-items:center; gap:6px;
+  }
+  .topbar-path-seg {
+    font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:rgba(200,202,220,0.7);
+    cursor:pointer; transition:color 0.15s; font-family:'Outfit',sans-serif; font-weight:400;
+  }
+  .topbar-path-seg:hover { color:var(--white); }
+  .topbar-path-seg.current { color:var(--cyan); cursor:default; font-weight:500; }
+  .topbar-path-arrow { font-size:15px; color:rgba(0,200,255,0.45); line-height:1; user-select:none; font-weight:600; }
+
+  /* Center zone — studio name */
+  .topbar-center {
+    position:absolute; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center;
+  }
+  .topbar-studio-name {
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.05em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    white-space:nowrap;
+  }
+
+  /* Right zone — mirrors dashboard exactly */
+  .topbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .topbar-welcome { font-size:10px; letter-spacing:0.08em; color:#d4af37; font-weight:500; }
+  .topbar-signed-label { font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:#d4af37; margin-right:4px; animation:pgGold 2.4s ease-in-out infinite; }
+  .topbar-user-email { font-size:10px; color:#d4af37; letter-spacing:0.04em; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* Logo dropdown menu */
+  .logo-menu {
+    position:fixed; top:54px; left:0;
+    background:rgba(11,13,26,0.96); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--border-mid); min-width:200px; z-index:10000;
+    animation:fadeUp 0.18s ease both;
+  }
+  .logo-menu-backdrop {
+    position:fixed; inset:0; z-index:9999; background:transparent;
+  }
+  .logo-menu-section-label { font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:#7a7c94; padding:8px 16px 4px; opacity:0.6; }
+  .logo-menu-item {
+    display:flex; align-items:center; gap:10px; padding:11px 16px; font-size:12px; font-weight:300;
+    color:#c8cadc; cursor:pointer; transition:all 0.15s; border-bottom:1px solid var(--border);
+  }
+  .logo-menu-item:last-child { border-bottom:none; }
+  .logo-menu-item:hover { color:var(--white); background:var(--ghost); }
+  .logo-menu-item.danger:hover { color:#ff5c5c; }
+  .logo-menu-icon { font-size:12px; opacity:0.6; width:14px; text-align:center; }
+
+  @keyframes pg { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes pgGold { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  /* ── Three-column body ── */
+  .studio-body { flex:1; display:flex; overflow:hidden; }
+
+  /* ═══ LEFT: Journey Engine ═══ */
+  .journey-col {
+    width:var(--left-w); flex-shrink:0; display:flex; flex-direction:column;
+    border-right:1px solid var(--border); overflow:hidden; background:rgba(11,13,26,0.72);
+  }
+  .journey-col > .cd-box { flex:1; min-height:80px; max-height:160px; }
+
+  /* Box 1: Journey Engine identity */
+  .journey-engine-box {
+    padding:14px 16px 12px; border-bottom:1px solid var(--border);
+    flex-shrink:0; position:relative;
+    background:linear-gradient(155deg,#1c2646 0%,#131a32 55%,#090d1e 100%);
+    border-top:1px solid rgba(0,200,255,0.14);
+    border-left:1px solid rgba(0,200,255,0.14);
+    border-right:1px solid rgba(0,0,0,0.85);
+    box-shadow:inset 1px 1px 0 rgba(0,200,255,0.22),inset -1px -1px 0 rgba(0,0,0,0.85),inset 0 0 28px rgba(0,200,255,0.03),0 8px 24px rgba(0,0,0,0.5);
+  }
+  .journey-engine-box::before {
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,#00c8ff,#7b35d4 60%,transparent);opacity:0.7;z-index:1;
+  }
+  .journey-engine-label {
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    line-height:1; margin-bottom:10px;
+  }
+  .journey-stat-row {
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:8px; margin-bottom:5px;
+  }
+  .journey-stat-row:last-child { margin-bottom:0; }
+  .journey-stat-label {
+    font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(240,242,255,0.58); flex-shrink:0;
+  }
+  .journey-stat-value {
+    font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.08em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    text-align:right;
+  }
+  .journey-active-row { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .journey-active-dot { width:5px; height:5px; border-radius:50%; background:var(--sy-green); animation:pg 2s infinite; flex-shrink:0; }
+  .journey-active-label-text { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:var(--sy-green); font-weight:500; }
+  .journey-proj-value { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.08em;
+    color:var(--white); text-align:right; cursor:pointer; transition:color 0.15s; }
+  .journey-proj-value:hover { color:var(--cyan); }
+
+  /* Milestone list */
+  .journey-phase-bar-3d { position:relative; margin-bottom:4px; }
+  .journey-phase-bar-track {
+    height:6px;
+    background:linear-gradient(180deg, rgba(0,200,255,0.06) 0%, rgba(0,200,255,0.12) 100%);
+    border:1px solid rgba(0,200,255,0.12);
+    border-bottom:1px solid rgba(0,0,0,0.4);
+    overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .journey-phase-bar-fill {
+    height:100%;
+    background:linear-gradient(90deg, var(--sy-cyan) 0%, var(--sy-purple) 100%);
+    box-shadow:0 0 8px rgba(0,200,255,0.5);
+    transition:width 0.6s ease;
+  }
+  .journey-phase-bar-shadow {
+    height:2px;
+    background:linear-gradient(90deg, rgba(0,200,255,0.15), transparent);
+    margin-top:1px;
+  }
+  .journey-phase-pct {
+    font-size:10px; color:var(--cyan); letter-spacing:0.08em;
+  }
+
+  /* Milestone list */
+  .journey-col-body { flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent; padding:12px 0; }
+  .journey-col-body::-webkit-scrollbar { width:2px; }
+  .journey-col-body::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+  .journey-section-label {
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    padding:10px 16px 6px; line-height:1;
+  }
+  .milestone-item {
+    padding:8px 16px; display:flex; align-items:flex-start; gap:10px; cursor:default;
+    transition:background 0.15s; border-bottom:1px solid rgba(0,200,255,0.04);
+  }
+  .milestone-item.clickable { cursor:pointer; }
+  .milestone-item.clickable:hover { background:rgba(0,200,255,0.04); }
+  .milestone-dot {
+    width:7px; height:7px; border-radius:50%; border:1px solid var(--fg3); flex-shrink:0; margin-top:4px;
+  }
+  .milestone-dot.done { background:var(--sy-green); border-color:var(--sy-green); }
+  .milestone-dot.active { background:var(--cyan); border-color:var(--cyan); box-shadow:0 0 6px rgba(0,200,255,0.4); }
+  .milestone-dot.upcoming { background:transparent; border-color:rgba(0,200,255,0.25); }
+  .milestone-text { flex:1; }
+  .milestone-title { font-size:12px; color:var(--white); line-height:1.4; }
+  .milestone-item.done .milestone-title { color:var(--fg2); }
+  .milestone-item.upcoming .milestone-title { color:var(--fg3); }
+  .milestone-sub { font-size:10px; color:var(--fg3); margin-top:2px; line-height:1.4; }
+  .milestone-tag {
+    font-size:8px; letter-spacing:0.14em; text-transform:uppercase; padding:2px 6px;
+    border:1px solid; margin-top:3px; display:inline-block;
+  }
+  .milestone-tag.done { color:var(--sy-green); border-color:rgba(76,255,145,0.3); }
+  .milestone-tag.active { color:var(--cyan); border-color:rgba(0,200,255,0.35); }
+  .milestone-fy-copy {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:11px; line-height:1.6; color:rgba(200,202,220,0.55); margin-top:4px;
+  }
+
+  /* ═══ CENTER: Canvas ═══ */
+  .canvas-col { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; background:rgba(6,9,26,0.45); }
+
+  /* Canvas topbar — building context */
+  .canvas-header {
+    padding:16px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    position:relative; overflow:hidden; min-height:90px;
+    background:rgba(6,9,26,0.55);
+  }
+  .canvas-header::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+    background:var(--grad); opacity:0.35; z-index:1;
+  }
+  .canvas-header-left { flex:1; min-width:0; position:relative; z-index:2; }
+  .canvas-header-right { display:flex; align-items:center; gap:10px; flex-shrink:0; margin-top:4px; position:relative; z-index:2; }
+  .canvas-bldg-gif {
+    width:72px; height:72px; object-fit:contain;
+    flex-shrink:0; display:block;
+    transform:translateX(-25px);
+  }
+  .canvas-building-eyebrow {
+    font-size:9px; letter-spacing:0.26em; text-transform:uppercase; color:var(--fg3); margin-bottom:6px;
+  }
+  .canvas-building-title {
+    font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:0.06em; color:var(--white); line-height:1;
+    margin-bottom:6px;
+  }
+  .canvas-building-fy-quote {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:13px; line-height:1.7; color:var(--fg2); max-width:520px;
+  }
+  .canvas-state-badge {
+    font-size:9px; letter-spacing:0.18em; text-transform:uppercase; padding:4px 10px;
+    border:1px solid var(--border-mid); color:var(--fg3);
+  }
+  .canvas-state-badge.active { border-color:rgba(0,200,255,0.3); color:var(--cyan); }
+
+  /* Canvas task tabs */
+  .canvas-task-tabs {
+    display:flex; border-bottom:1px solid var(--border); flex-shrink:0; padding:0 24px; gap:0;
+  }
+  .canvas-tab {
+    font-size:10px; letter-spacing:0.18em; text-transform:uppercase; padding:10px 16px;
+    color:var(--fg3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s;
+  }
+  .canvas-tab:hover { color:var(--fg2); }
+  .canvas-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
+
+  /* Canvas work surface */
+  .canvas-surface {
+    flex:1; overflow-y:auto; overflow-x:hidden; padding:24px;
+    scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent;
+  }
+  .canvas-surface::-webkit-scrollbar { width:3px; }
+  .canvas-surface::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+
+  /* Task section card */
+  .task-section { margin-bottom:24px; }
+  .task-section-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:10px; border-bottom:1px solid var(--border); margin-bottom:14px;
+  }
+  .task-section-title {
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:0.1em; color:var(--white);
+  }
+  .task-section-status {
+    font-size:9px; letter-spacing:0.16em; text-transform:uppercase; padding:3px 8px;
+    border:1px solid; flex-shrink:0;
+  }
+  .task-section-status.locked { color:var(--fg3); border-color:var(--border-mid); }
+  .task-section-status.open { color:var(--cyan); border-color:rgba(0,200,255,0.3); }
+
+  /* Task item row */
+  .task-row {
+    padding:14px 16px; border:1px solid var(--border); margin-bottom:8px;
+    background:rgba(0,200,255,0.02); transition:all 0.18s; cursor:pointer; position:relative;
+  }
+  .task-row::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); opacity:0; transition:opacity 0.18s; }
+  .task-row:hover { background:rgba(0,200,255,0.05); border-color:var(--border-mid); }
+  .task-row:hover::before { opacity:1; }
+  .task-row-header { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .task-row-level {
+    font-size:8px; letter-spacing:0.14em; text-transform:uppercase; padding:2px 8px;
+    border:1px solid rgba(0,200,255,0.2); color:var(--fg3); flex-shrink:0; white-space:nowrap;
+  }
+  .task-row-title { font-size:13px; color:var(--white); font-weight:400; flex:1; }
+  .task-row-cta {
+    font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:0.16em;
+    text-transform:uppercase; flex-shrink:0;
+    padding:5px 14px;
+    background:linear-gradient(180deg, rgba(0,200,255,0.18) 0%, rgba(0,200,255,0.06) 100%);
+    border:1px solid rgba(0,200,255,0.45);
+    color:var(--cyan);
+    box-shadow: 0 2px 0 rgba(0,200,255,0.25), 0 4px 12px rgba(0,200,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08);
+    cursor:pointer; transition:all 0.15s;
+    display:flex; align-items:center; gap:6px;
+    position:relative; top:0;
+  }
+  .task-row-cta:hover {
+    background:linear-gradient(180deg, rgba(0,200,255,0.28) 0%, rgba(0,200,255,0.12) 100%);
+    box-shadow: 0 1px 0 rgba(0,200,255,0.3), 0 2px 8px rgba(0,200,255,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
+    top:1px;
+  }
+  .task-row-cta:active { top:2px; box-shadow:0 0 0 rgba(0,200,255,0.2); }
+  .task-row-cta.recommended {
+    border-color:rgba(0,200,255,0.9);
+    animation:btnPulse 2s ease-in-out infinite;
+  }
+  @keyframes btnPulse {
+    0%,100% { box-shadow: 0 2px 0 rgba(0,200,255,0.4), 0 0 16px rgba(0,200,255,0.2), inset 0 1px 0 rgba(255,255,255,0.1); }
+    50%      { box-shadow: 0 2px 0 rgba(0,200,255,0.5), 0 0 32px rgba(0,200,255,0.45), inset 0 1px 0 rgba(255,255,255,0.15); }
+  }
+  .task-row-desc { font-size:12px; color:var(--fg3); line-height:1.6; }
+  .task-row-fy { font-family:'Playfair Display',serif; font-style:italic; font-size:11px; color:rgba(200,202,220,0.5); margin-top:6px; line-height:1.5; }
+
+  /* Canvas action bar */
+  /* WORKSPACE mode — canvas header state change on BEGIN */
+  .canvas-header.workspace-mode {
+    background:rgba(10,16,32,0.55);
+    border-bottom:1px solid rgba(76,255,145,0.2);
+  }
+  .canvas-workspace-badge {
+    font-size:8px; letter-spacing:0.2em; text-transform:uppercase;
+    padding:4px 10px; border:1px solid rgba(76,255,145,0.5);
+    color:var(--sy-green); background:rgba(76,255,145,0.08);
+    animation:pg 2.4s ease-in-out infinite;
+  }
+  /* Activated accordion — lower opacity bg for readability, green border */
+  .canvas-accordion.activated {
+    opacity:1;
+    border:1px solid rgba(76,255,145,0.2);
+    border-left:2px solid var(--sy-green);
+    background:rgba(10,16,32,0.55);
+  }
+  .canvas-accordion-body { padding:14px 16px; display:flex; flex-direction:column; gap:8px; background:rgba(6,9,26,0.25); }
+
+  /* CANVAS label in tab strip */
+  .canvas-strip-label {
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    flex-shrink:0; align-self:center; padding-bottom:6px; padding-right:14px;
+    border-right:1px solid var(--border); margin-right:10px; white-space:nowrap;
+  }
+  /* ── Building tab strip — Chrome Bevel 3D tabs ── */
+  .building-tab-strip {
+    display:flex; overflow-x:auto; flex-shrink:0;
+    border-bottom:1px solid rgba(0,200,255,0.12); padding:6px 16px 0;
+    gap:4px; scrollbar-width:none; background:var(--navy-2);
+    align-items:flex-end;
+  }
+  .building-tab-strip::-webkit-scrollbar { display:none; }
+
+  /* Base tab — all states share this */
+  .building-tab {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:7px 11px 8px;
+    font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.1em;
+    white-space:nowrap; flex-shrink:0; cursor:pointer;
+    position:relative; top:1px;
+    transition:all 180ms ease;
+    user-select:none;
+  }
+
+  /* Inactive — ghost bevel: recessed, dark, sitting in the lower plane */
+  .building-tab {
+    background: linear-gradient(155deg, rgba(240,242,255,0.04) 0%, rgba(240,242,255,0.01) 100%);
+    color: var(--fg3);
+    border: 1px solid rgba(240,242,255,0.07);
+    border-bottom: none;
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.06),
+      inset -1px -1px 0 rgba(0,0,0,0.5),
+      0 2px 6px rgba(0,0,0,0.3);
+  }
+  .building-tab:hover {
+    color: var(--fg2);
+    border-color: rgba(240,242,255,0.12);
+    background: linear-gradient(155deg, rgba(240,242,255,0.07) 0%, rgba(240,242,255,0.02) 100%);
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.1),
+      inset -1px -1px 0 rgba(0,0,0,0.6),
+      0 3px 10px rgba(0,0,0,0.35);
+  }
+
+  /* Active — Chrome Bevel cyan: raised, top-left lit, breaks through strip border */
+  .building-tab.active {
+    color: var(--cyan);
+    background: linear-gradient(155deg, #182240 0%, #0e1530 50%, #090d1e 100%);
+    border: 1px solid rgba(0,200,255,0.22);
+    border-bottom: 1px solid var(--navy-2); /* sits on top — breaks the strip line */
+    box-shadow:
+      inset 1px 1px 0 rgba(0,200,255,0.45),
+      inset -1px -1px 0 rgba(0,0,0,0.85),
+      inset 0 0 28px rgba(0,200,255,0.04),
+      0 0 14px rgba(0,200,255,0.1),
+      0 -1px 0 rgba(0,200,255,0.3);
+    top: 1px;
+    z-index: 1;
+  }
+  .building-tab.active:hover {
+    color: #38ecff;
+    border-color: rgba(0,200,255,0.35);
+    background: linear-gradient(155deg, #1e2c50 0%, #111e3c 50%, #0c1028 100%);
+    box-shadow:
+      inset 1px 1px 0 rgba(0,200,255,0.6),
+      inset -1px -1px 0 rgba(0,0,0,0.9),
+      inset 0 0 36px rgba(0,200,255,0.05),
+      0 0 20px rgba(0,200,255,0.16),
+      0 -1px 0 rgba(0,200,255,0.4);
+  }
+
+  .building-tab-icon { font-size:11px; opacity:0.7; }
+
+  /* ── Accordion sections inside canvas ── */
+  .canvas-accordion { border:1px solid var(--border); margin-bottom:8px; transition:opacity 0.25s ease; }
+  /* Closed sections are dimmed — active is full opacity */
+  .canvas-accordion.dimmed { opacity:0.38; }
+  .canvas-accordion.dimmed:hover { opacity:0.65; }
+  .canvas-accordion-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; cursor:pointer; transition:background 0.15s;
+    background:rgba(0,200,255,0.02);
+  }
+  .canvas-accordion-header:hover { background:rgba(0,200,255,0.05); }
+  .canvas-accordion-header.open { background:rgba(0,200,255,0.05); border-bottom:1px solid var(--border); }
+  .canvas-accordion-title {
+    font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.12em; color:var(--white);
+  }
+  .canvas-accordion-header.open .canvas-accordion-title { color:var(--cyan); }
+  .canvas-accordion-meta { display:flex; align-items:center; gap:10px; }
+  .canvas-accordion-count { font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--fg3); }
+  .canvas-accordion-chevron { font-size:10px; color:var(--fg3); transition:transform 0.2s; }
+  .canvas-accordion-header.open .canvas-accordion-chevron { transform:rotate(180deg); color:var(--cyan); }
+
+  /* ── FY Active Work Feed (left column bottom) ── */
+  .fy-work-feed {
+    flex:1; display:flex; flex-direction:column; overflow:hidden;
+    border-top:2px solid var(--border-mid);
+    background:rgba(4,6,18,0.6);
+  }
+  .fy-work-feed-header {
+    padding:10px 16px 8px; flex-shrink:0;
+    background:rgba(0,0,0,0.3); border-bottom:1px solid var(--border);
+  }
+  .fy-work-feed-label {
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    line-height:1;
+  }
+  .fy-work-feed-dot { display:none; } /* removed — header matches JE style now */
+  .fy-work-feed-body { flex:1; overflow-y:auto; padding:0 16px 12px; scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent; }
+  .fy-work-feed-body::-webkit-scrollbar { width:2px; }
+  .fy-work-feed-body::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+  .fy-feed-item { padding:8px 0; border-bottom:1px solid rgba(0,200,255,0.05); }
+  .fy-feed-item:last-child { border-bottom:none; }
+  .fy-feed-step { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); margin-bottom:3px; }
+  .fy-feed-detail { font-size:11px; color:var(--fg2); line-height:1.5; }
+  .fy-feed-tool {
+    display:inline-flex; align-items:center; gap:5px; margin-top:5px;
+    font-size:8px; letter-spacing:0.14em; text-transform:uppercase;
+    padding:3px 8px; border:1px solid var(--border-mid); color:var(--fg3);
+  }
+  .fy-feed-tool.active { border-color:rgba(0,200,255,0.3); color:var(--cyan); }
+  /* Partner platform callout */
+  .fy-feed-partner {
+    margin-top:8px; padding:8px 10px;
+    background:rgba(0,200,255,0.03); border:1px solid var(--border-mid);
+    border-left:2px solid var(--sy-cyan);
+  }
+  .fy-feed-partner-label { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); margin-bottom:3px; }
+  .fy-feed-partner-name { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.08em; color:var(--cyan); margin-bottom:2px; }
+  .fy-feed-partner-note { font-size:10px; color:var(--fg3); line-height:1.5; }
+  .fy-feed-empty {
+    padding:16px 0; font-size:11px; color:var(--fg3); line-height:1.6;
+    font-family:'Playfair Display',serif; font-style:italic;
+  }
+
+  /* ═══ RIGHT: FY Rail ═══ */
+  .fy-col {
+    width:var(--right-w); flex-shrink:0; display:flex; flex-direction:column;
+    border-left:1px solid var(--border); overflow:hidden; background:rgba(11,13,26,0.72);
+    position:relative; min-height:0; height:100%;
+  }
+  .fy-col::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  /* FY chat section must shrink to allow body to scroll */
+  .fy-chat-section { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+
+  /* Avatar slot */
+  .fy-avatar-slot {
+    width:100%; aspect-ratio:1/1; max-height:180px; background:rgba(0,200,255,0.03);
+    border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; position:relative; overflow:hidden;
+    background:linear-gradient(160deg, rgba(0,200,255,0.04) 0%, rgba(6,9,26,0.8) 50%, rgba(160,107,232,0.04) 100%);
+    transition:all 0.35s ease;
+  }
+  .fy-avatar-slot.collapsed { aspect-ratio:unset; height:0; border-bottom:none; }
+  /* Subtle grid pattern on placeholder */
+  .fy-avatar-slot::before {
+    content:''; position:absolute; inset:0;
+    background-image:linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+    background-size:24px 24px;
+    pointer-events:none;
+  }
+  /* Corner brackets */
+  .fy-avatar-slot::after {
+    content:''; position:absolute; inset:10px;
+    border:1px solid transparent;
+    border-top-color:rgba(0,200,255,0.12); border-left-color:rgba(0,200,255,0.12);
+    pointer-events:none;
+  }
+  .fy-avatar-slot iframe { width:100%; height:100%; border:none; position:relative; z-index:1; }
+  .fy-avatar-slot .fy-avatar-video { width:100%; height:100%; border:none; position:relative; z-index:1; object-fit:cover; display:block; }
+  .fy-avatar-placeholder {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    position:relative; z-index:1;
+  }
+  /* Bottom-right corner bracket via box-shadow on placeholder */
+  .fy-avatar-placeholder::after {
+    content:''; position:absolute; bottom:-40px; right:-40px;
+    width:20px; height:20px;
+    border-bottom:1px solid rgba(160,107,232,0.18); border-right:1px solid rgba(160,107,232,0.18);
+    pointer-events:none;
+  }
+  .fy-avatar-ring {
+    width:80px; height:80px; border-radius:50%; border:1px solid rgba(0,200,255,0.2);
+    display:flex; align-items:center; justify-content:center; position:relative;
+    background:rgba(0,200,255,0.03);
+    box-shadow:0 0 30px rgba(0,200,255,0.06), inset 0 0 20px rgba(0,200,255,0.03);
+  }
+  .fy-avatar-ring::before {
+    content:''; position:absolute; inset:-6px; border-radius:50%;
+    border:1px solid rgba(0,200,255,0.06); animation:avatarPulse 3s ease-in-out infinite;
+  }
+  .fy-avatar-ring::after {
+    content:''; position:absolute; inset:-12px; border-radius:50%;
+    border:1px solid rgba(0,200,255,0.03); animation:avatarPulse 3s ease-in-out infinite; animation-delay:0.5s;
+  }
+  @keyframes avatarPulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
+  .fy-avatar-initials {
+    font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:0.06em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .fy-avatar-label { font-size:13px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(76,255,145,0.7); margin-top:2px; font-weight:600; }
+  .fy-avatar-coming { font-size:14px; letter-spacing:0.08em; text-transform:none; color:var(--fg3); opacity:0.75; }
+
+  /* FY video toggle */
+  .fy-avatar-toggle { display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none; flex-shrink:0; }
+  .fy-avatar-toggle .tgl-track { width:36px; height:20px; position:relative; background:linear-gradient(180deg,#010305 0%,#050810 100%); border:1px solid rgba(0,200,255,0.1); border-radius:999px; box-shadow:inset 0 3px 7px rgba(0,0,0,0.85),inset 0 1px 2px rgba(0,0,0,0.95),0 1px 0 rgba(255,255,255,0.02); transition:background 260ms,border-color 260ms,box-shadow 260ms; flex-shrink:0; }
+  .fy-avatar-toggle .tgl-thumb { width:14px; height:14px; border-radius:50%; position:absolute; top:2px; left:2px; background:linear-gradient(180deg,#242c50 0%,#161e38 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),inset 0 -1px 0 rgba(0,0,0,0.4),0 2px 4px rgba(0,0,0,0.55); transition:transform 260ms,background 260ms,box-shadow 260ms; }
+  .fy-avatar-toggle.on .tgl-track { background:linear-gradient(180deg,#003850 0%,#005070 50%,#004060 100%); border-color:rgba(0,200,255,0.38); box-shadow:inset 0 3px 6px rgba(0,0,0,0.5),inset 0 0 14px rgba(0,200,255,0.1),0 0 22px rgba(0,200,255,0.14); }
+  .fy-avatar-toggle.on .tgl-thumb { transform:translateX(16px); background:linear-gradient(180deg,#44ecff 0%,#00c8ff 50%,#009ac0 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.42),inset 0 -1px 0 rgba(0,0,0,0.22),0 0 14px rgba(0,200,255,0.55),0 2px 6px rgba(0,0,0,0.4); }
+  .fy-avatar-toggle .tgl-lbl { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.35); font-weight:300; }
+
+  /* FY rail header */
+  .fy-rail-header {
+    padding:12px 16px 10px; border-bottom:1px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .fy-rail-header-left { display:flex; align-items:center; gap:8px; }
+  .fy-rail-dot { width:5px; height:5px; border-radius:50%; background:var(--sy-green); animation:pg 2s infinite; }
+  .fy-rail-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--sy-green); font-weight:500; }
+  .fy-rail-building-ctx { font-size:9px; color:var(--fg3); letter-spacing:0.1em; }
+  .fy-rail-reset { background:transparent; border:1px solid var(--border-mid); color:var(--fg3); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; cursor:pointer; transition:all 0.15s; }
+  .fy-rail-reset:hover { color:var(--white); border-color:rgba(0,200,255,0.3); }
+
+  /* FY chat body */
+  .fy-chat-body {
+    flex:1; overflow-y:auto; padding:14px 14px 8px; display:flex; flex-direction:column; gap:10px;
+    min-height:0;
+    scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent;
+  }
+  .fy-chat-body::-webkit-scrollbar { width:2px; }
+  .fy-chat-body::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+
+  .fy-msg { display:flex; flex-direction:column; gap:3px; animation:msgIn 0.24s ease both; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .fy-msg-fy .fy-msg-bubble {
+    background:rgba(0,200,255,0.05); border:1px solid var(--border-mid);
+    font-size:12px; line-height:1.65; color:var(--fg2); padding:10px 12px;
+  }
+  .fy-msg-user .fy-msg-bubble {
+    background:rgba(76,255,145,0.04); border:1px solid rgba(76,255,145,0.12);
+    font-size:12px; line-height:1.65; color:var(--white); padding:10px 12px; align-self:flex-end;
+  }
+  .fy-msg-sender { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); }
+  .fy-msg-fy .fy-msg-sender { color:var(--sy-green); }
+
+  /* FY typing indicator */
+  .fy-typing { display:flex; align-items:center; gap:4px; padding:10px 12px; }
+  .fy-typing span { width:5px; height:5px; border-radius:50%; background:rgba(0,200,255,0.4); animation:dp 1.2s ease-in-out infinite; }
+  .fy-typing span:nth-child(2) { animation-delay:0.2s; }
+  .fy-typing span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes dp { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* FY input row */
+  .fy-input-area {
+    border-top:1px solid var(--border); padding:10px 12px; flex-shrink:0;
+    background:rgba(6,9,26,0.6);
+  }
+  .fy-input-row {
+    display:flex;
+    background:linear-gradient(180deg,#010305 0%,#050810 100%);
+    border:1px solid rgba(0,200,255,0.12);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 2px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.02);
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .fy-input-row:focus-within {
+    border-color:rgba(0,230,118,0.3);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.6), inset 0 0 12px rgba(0,200,255,0.04), 0 0 14px rgba(0,200,255,0.06);
+  }
+  .fy-input {
+    flex:1; background:transparent; border:none; color:var(--white);
+    font-family:'Outfit',sans-serif; font-size:12px; font-weight:300;
+    padding:9px 12px; outline:none; resize:none; min-height:38px; max-height:80px;
+    caret-color:var(--sy-green); line-height:1.5;
+  }
+  .fy-input::placeholder { color:rgba(120,124,148,0.6); }
+  .fy-send {
+    background:transparent; border:none; border-left:1px solid rgba(0,200,255,0.1);
+    color:var(--sy-green); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.08em;
+    padding:0 14px; cursor:pointer; transition:all 0.15s; align-self:flex-end; height:38px; flex-shrink:0;
+    box-shadow:inset 1px 0 0 rgba(255,255,255,0.02);
+  }
+  .fy-send:hover { background:rgba(76,255,145,0.06); border-left-color:rgba(76,255,145,0.2); }
+  .fy-send:disabled { opacity:0.25; cursor:default; }
+
+  /* FY tier mode label */
+  .fy-mode-label {
+    font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3);
+    padding:6px 12px 0; text-align:center;
+  }
+
+  /* Process indicator */
+  /* Model output panel */
+  .task-output {
+    margin-top: 12px;
+    border-top: 1px solid rgba(0,200,255,0.1);
+    padding-top: 12px;
+  }
+  .task-output-img {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 4px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .task-output-meta {
+    font-size: 10px;
+    color: rgba(240,242,255,0.3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .task-output-error {
+    font-size: 12px;
+    color: #ff6b6b;
+    padding: 8px 0;
+  }
+  .task-output-generating {
+    font-size: 12px;
+    color: rgba(0,200,255,0.7);
+    letter-spacing: 0.08em;
+    padding: 8px 0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .task-row-done {
+    font-size: 10px;
+    color: rgba(0,200,255,0.6);
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .task-row.passive .task-row-header { cursor: default; }
+  .task-row.passive:hover { border-color: rgba(240,242,255,0.06); }
+  .task-row.done { border-color: rgba(0,200,255,0.15); }
+  .task-row.done .task-row-title { color: rgba(240,242,255,0.5); }
+
+  .task-row-cta.running {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .shutter-indicator {
+    position:fixed; bottom:16px; right:16px; width:36px; height:36px; z-index:9999;
+    display:none;
+  }
+  .shutter-indicator.visible { display:block; }
+  .shutter-indicator img { width:100%; height:100%; object-fit:contain; }
+
+  /* Empty canvas state */
+  .canvas-empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100%; gap:12px; padding:40px;
+  }
+  .canvas-empty-icon { font-size:32px; opacity:0.3; }
+  .canvas-empty-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); }
+  .canvas-empty-sub { font-size:12px; color:var(--fg3); text-align:center; max-width:280px; line-height:1.6; }
+
+  /* Animations */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation:fadeUp 0.3s ease both; }
+
+
+  /* ── Project Modal (studio) ── */
+  .proj-modal-backdrop{position:fixed;inset:0;z-index:9998;background:transparent;}
+  .proj-modal{position:fixed;left:var(--left-w);top:54px;width:280px;z-index:9999;background:rgba(8,10,24,0.99);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(0,200,255,0.14);border-left:2px solid var(--cyan);display:flex;flex-direction:column;max-height:calc(100vh - 100px);animation:fadeUp 0.18s ease both;}
+  .proj-modal-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .proj-modal-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:0.08em;color:var(--cyan);}
+  .proj-modal-count{font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:#7a7c94;margin-left:auto;margin-right:10px;}
+  .proj-modal-close{background:none;border:none;color:#7a7c94;cursor:pointer;font-size:14px;padding:0 2px;transition:color 0.15s;line-height:1;}
+  .proj-modal-close:hover{color:var(--white);}
+  .proj-modal-body{flex:1;overflow-y:auto;scrollbar-width:none;}
+  .proj-modal-item{padding:9px 16px;font-size:11px;color:#c8cadc;cursor:pointer;border-bottom:1px solid var(--border);transition:all 0.12s;display:flex;align-items:center;gap:8px;}
+  .proj-modal-item:hover{color:var(--white);background:rgba(0,200,255,0.04);}
+  .proj-modal-item.proj-modal-active{color:var(--cyan);}
+  .proj-modal-item-num{font-size:9px;color:#7a7c94;width:14px;flex-shrink:0;}
+  .proj-modal-item-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
+  .proj-modal-item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .proj-modal-item-meta{font-size:9px;color:#7a7c94;flex-shrink:0;}
+  .proj-modal-delete-btn{background:none;border:none;color:rgba(240,242,255,0.15);font-size:10px;cursor:pointer;padding:0 0 0 8px;flex-shrink:0;transition:color 0.15s;line-height:1;}
+  .proj-modal-item:hover .proj-modal-delete-btn{color:rgba(255,100,100,0.5);}
+  .proj-modal-delete-btn:hover{color:#ff6b6b !important;}
+  .proj-confirm-inline{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:auto;}
+  .proj-confirm-inline-text{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,107,107,0.7);white-space:nowrap;}
+  .proj-confirm-btn{font-size:8px;letter-spacing:0.14em;text-transform:uppercase;border:none;cursor:pointer;padding:4px 10px;font-family:'Outfit',sans-serif;transition:all 0.15s;}
+  .proj-confirm-btn.danger{background:rgba(255,80,80,0.15);color:#ff6b6b;border:1px solid rgba(255,80,80,0.3);}
+  .proj-confirm-btn.danger:hover{background:rgba(255,80,80,0.25);}
+  .proj-confirm-btn.cancel{background:rgba(240,242,255,0.05);color:#7a7c94;border:1px solid var(--border);}
+  .proj-confirm-btn.cancel:hover{color:var(--white);}
+  .proj-modal-new-btn{display:inline-flex;align-items:center;align-self:flex-start;gap:6px;margin:12px 16px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(0,200,255,0.14);padding:7px 18px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 200ms ease;background:linear-gradient(155deg,#1c2646 0%,#131a32 55%,#090d1e 100%);box-shadow:inset 1px 1px 0 rgba(0,200,255,0.22),inset -1px -1px 0 rgba(0,0,0,0.85),0 4px 14px rgba(0,0,0,0.4);}
+  .proj-modal-new-btn:hover{color:#38ecff;border-color:rgba(0,200,255,0.28);background:linear-gradient(155deg,#1e2c50 0%,#111e3c 55%,#0c1028 100%);box-shadow:inset 1px 1px 0 rgba(0,200,255,0.38),inset -1px -1px 0 rgba(0,0,0,0.9),0 0 24px rgba(0,200,255,0.13),0 8px 24px rgba(0,0,0,0.5);}
+  .proj-modal-new-btn.at-limit{color:rgba(240,242,255,0.25);border-color:rgba(240,242,255,0.06);cursor:default;background:linear-gradient(155deg,#0e1220 0%,#0a0d18 100%);box-shadow:none;}
+  .je-new-proj-btn{display:inline-flex;align-items:center;align-self:flex-start;gap:5px;margin-top:10px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(0,200,255,0.14);padding:7px 18px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 200ms ease;background:linear-gradient(155deg,#1c2646 0%,#131a32 55%,#090d1e 100%);box-shadow:inset 1px 1px 0 rgba(0,200,255,0.22),inset -1px -1px 0 rgba(0,0,0,0.85),0 3px 10px rgba(0,0,0,0.4);}
+  .je-new-proj-btn:hover{color:#38ecff;border-color:rgba(0,200,255,0.28);box-shadow:inset 1px 1px 0 rgba(0,200,255,0.38),inset -1px -1px 0 rgba(0,0,0,0.9),0 0 16px rgba(0,200,255,0.1),0 6px 18px rgba(0,0,0,0.5);}
+  /* ═══ SECTIONS NAV — left rail middle slot ═══ */
+  .sections-nav {
+    flex-shrink:0; border-bottom:1px solid var(--border);
+    display:flex; flex-direction:column;
+  }
+  .sections-nav-header {
+    padding:8px 16px 6px; border-bottom:1px solid var(--border);
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    line-height:1; flex-shrink:0;
+  }
+  .sections-nav-list { display:flex; flex-direction:column; }
+  .sections-nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 16px;
+    cursor:pointer; border-bottom:1px solid rgba(0,200,255,0.04);
+    transition:background 0.15s; position:relative; overflow:hidden;
+  }
+  .sections-nav-item:last-child { border-bottom:none; }
+  .sections-nav-item:hover { background:rgba(0,200,255,0.04); }
+  .sections-nav-item.active { background:rgba(0,200,255,0.06); }
+  .sections-nav-item.recommended {
+    animation:sectionPulse 2s ease-in-out infinite;
+  }
+  @keyframes sectionPulse {
+    0%,100% { background:rgba(76,255,145,0.04); border-left:2px solid rgba(76,255,145,0.5); }
+    50%      { background:rgba(76,255,145,0.09); border-left:2px solid rgba(76,255,145,0.9); }
+  }
+  .sections-nav-item.active { border-left:2px solid var(--cyan); }
+  .sections-nav-num {
+    font-size:8px; letter-spacing:0.14em; color:var(--fg3); flex-shrink:0; width:16px;
+  }
+  .sections-nav-name {
+    font-size:11px; color:var(--fg2); flex:1; line-height:1.3;
+  }
+  .sections-nav-item.active .sections-nav-name { color:var(--white); }
+  .sections-nav-item.recommended .sections-nav-name { color:var(--sy-green); }
+  .sections-nav-chevron { font-size:10px; color:var(--fg3); flex-shrink:0; }
+  .sections-nav-complete { font-size:10px; color:var(--sy-green); flex-shrink:0; }
+
+  /* Step drawer — slides out from left rail into canvas */
+  .step-drawer {
+    position:fixed; left:var(--left-w); top:54px;
+    width:240px; z-index:100; max-height:calc(100vh - 54px - 36px);
+    background:rgba(8,11,28,0.98); backdrop-filter:blur(20px);
+    border-right:1px solid var(--border-mid);
+    border-left:1px solid rgba(0,200,255,0.15);
+    display:flex; flex-direction:column;
+    animation:drawerIn 0.2s cubic-bezier(0.25,0.46,0.45,0.94) both;
+    box-shadow:6px 0 32px rgba(0,0,0,0.6);
+  }
+  @keyframes drawerIn {
+    from { transform:translateX(-100%); opacity:0; }
+    to   { transform:translateX(0);     opacity:1; }
+  }
+  .step-drawer-header {
+    padding:14px 16px 10px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .step-drawer-section {
+    font-family:"Bebas Neue",sans-serif; font-size:18px; letter-spacing:0.08em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    line-height:1; margin-bottom:2px;
+  }
+  .step-drawer-sub {
+    font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--fg3);
+  }
+  .step-drawer-close {
+    position:absolute; top:12px; right:14px;
+    font-size:14px; color:var(--fg3); cursor:pointer; transition:color 0.15s;
+    background:none; border:none; padding:4px;
+  }
+  .step-drawer-close:hover { color:var(--white); }
+  .step-drawer-list { flex:1; overflow-y:auto; padding:10px 0; }
+  .step-drawer-item {
+    display:flex; align-items:flex-start; gap:10px; padding:12px 16px;
+    cursor:pointer; border-bottom:1px solid rgba(0,200,255,0.04);
+    transition:background 0.15s;
+  }
+  .step-drawer-item:hover { background:rgba(0,200,255,0.05); }
+  .step-drawer-item.recommended { animation:sectionPulse 2s ease-in-out infinite; }
+  .step-drawer-num {
+    font-size:8px; letter-spacing:0.14em; color:var(--fg3); flex-shrink:0;
+    padding:3px 6px; border:1px solid var(--border-mid); margin-top:2px;
+  }
+  .step-drawer-title { font-size:12px; color:var(--fg2); line-height:1.4; flex:1; }
+  .step-drawer-desc { font-size:10px; color:var(--fg3); margin-top:3px; line-height:1.4; }
+
+  /* Active step header — attached to canvas header, cohesive treatment */
+  .active-step-header {
+    padding:10px 24px 10px; flex-shrink:0;
+    display:flex; align-items:center; gap:12px;
+    background:rgba(0,200,255,0.04);
+    border-bottom:1px solid rgba(0,200,255,0.18);
+    border-top:1px solid rgba(0,200,255,0.08);
+    box-shadow:inset 0 1px 0 rgba(0,200,255,0.06), 0 1px 0 rgba(0,200,255,0.06);
+    position:relative;
+  }
+  .active-step-header::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+    background:linear-gradient(180deg, var(--sy-cyan), var(--sy-purple));
+  }
+  .active-step-tag {
+    font-size:8px; letter-spacing:0.18em; text-transform:uppercase;
+    padding:3px 8px; border:1px solid rgba(0,200,255,0.3); color:var(--cyan);
+    flex-shrink:0; font-family:"Bebas Neue",sans-serif;
+  }
+  .active-step-title {
+    font-size:13px; color:var(--white); font-weight:400; flex:1;
+    letter-spacing:0.02em;
+  }
+  .active-step-change {
+    font-size:9px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--fg3); cursor:pointer; border:1px solid var(--border-mid);
+    padding:3px 10px; transition:all 0.15s; background:none;
+    font-family:"Bebas Neue",sans-serif;
+  }
+  .active-step-change:hover { color:var(--cyan); border-color:rgba(0,200,255,0.3); }
+
+  /* Canvas workspace — below active step header */
+  .canvas-workspace {
+    flex:1; overflow-y:auto; padding:16px 24px 24px;
+    scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .canvas-workspace::-webkit-scrollbar { width:3px; }
+  .canvas-workspace::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+
+  /* Canvas empty — before any section selected */
+  .canvas-empty-state {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:10px; padding:40px; text-align:center;
+  }
+  .canvas-empty-icon { font-size:40px; opacity:0.15; }
+  .canvas-empty-title {
+    font-family:"Bebas Neue",sans-serif; font-size:20px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .canvas-empty-sub { font-size:12px; color:var(--fg3); line-height:1.6; max-width:300px; }
+
+  /* Canvas output area */
+  .canvas-output-card {
+    border:1px solid rgba(76,255,145,0.15); background:rgba(76,255,145,0.02);
+    padding:16px; animation:fadeUp 0.3s ease both;
+  }
+  .canvas-output-label {
+    font-size:8px; letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--sy-green); margin-bottom:10px;
+  }
+  .canvas-output-img {
+    width:100%; max-width:560px; display:block; margin-bottom:8px;
+  }
+  .canvas-output-meta {
+    font-size:9px; color:var(--fg3); letter-spacing:0.1em;
+  }
+  .canvas-output-error { font-size:12px; color:var(--sy-red); padding:8px 0; }
+  .canvas-output-generating {
+    font-size:12px; color:rgba(0,200,255,0.7); letter-spacing:0.08em;
+    animation:pg 1.5s ease-in-out infinite;
+  }
+
+  /* Progress bar — in canvas during generation */
+  .canvas-progress-wrap { margin:8px 0; }
+  .canvas-progress-track {
+    height:5px; background:rgba(0,200,255,0.06);
+    border:1px solid rgba(0,200,255,0.1); overflow:hidden;
+  }
+  .canvas-progress-fill {
+    height:100%;
+    background:linear-gradient(90deg, var(--sy-cyan) 0%, var(--sy-purple) 100%);
+    box-shadow:0 0 8px rgba(0,200,255,0.4);
+    width:0%; transition:width 0.4s ease;
+  }
+
+  /* ═══ CANVAS DETAILS — event log ═══ */
+  .cd-box {
+    flex:1; display:flex; flex-direction:column; overflow:hidden;
+    border-bottom:1px solid var(--border); min-height:80px;
+  }
+  .cd-header {
+    padding:8px 16px 6px; border-bottom:1px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(0,200,255,0.02);
+  }
+  .cd-header-dot { width:5px; height:5px; border-radius:50%; background:var(--cyan); opacity:0.6; flex-shrink:0; }
+  .cd-header-label {
+    font-family:"Bebas Neue",sans-serif; font-size:22px; letter-spacing:0.1em;
+    background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    line-height:1;
+  }
+  .cd-log {
+    flex:1; overflow-y:auto; padding:8px 12px; display:flex; flex-direction:column; gap:6px;
+    scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.08) transparent;
+  }
+  .cd-log::-webkit-scrollbar { width:2px; }
+  .cd-log::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.1); }
+  .cd-standby {
+    display:flex; flex-direction:column; gap:4px; padding:8px 0;
+  }
+  .cd-standby-label { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(0,200,255,0.60); }
+  .cd-standby-sub { font-size:10px; color:rgba(240,242,255,0.55); line-height:1.5; }
+  .cd-event {
+    border:1px solid var(--border); padding:8px 10px;
+    background:rgba(0,200,255,0.02); animation:fadeUp 0.2s ease both;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .cd-event.running { border-color:rgba(0,200,255,0.2); }
+  .cd-event.done { border-color:rgba(76,255,145,0.15); }
+  .cd-event.locked { border-color:rgba(232,201,122,0.25); background:rgba(232,201,122,0.03); }
+  .cd-event.error { border-color:rgba(255,107,107,0.2); }
+  .cd-event-tool { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .cd-event-tool-name { font-size:8px; letter-spacing:0.16em; text-transform:uppercase; color:var(--cyan); font-weight:500; }
+  .cd-event-status { font-size:8px; letter-spacing:0.12em; text-transform:uppercase; padding:1px 5px; border:1px solid; }
+  .cd-event-status.running { color:var(--cyan); border-color:rgba(0,200,255,0.3); animation:pg 2s infinite; }
+  .cd-event-status.done { color:var(--sy-green); border-color:rgba(76,255,145,0.3); }
+  .cd-event-status.locked { color:var(--sy-gold); border-color:rgba(232,201,122,0.3); }
+  .cd-event-status.error { color:var(--sy-red); border-color:rgba(255,107,107,0.3); }
+  .cd-event-desc { font-size:10px; color:rgba(240,242,255,0.82); line-height:1.5; }
+  .cd-event-step { font-size:9px; color:rgba(240,242,255,0.55); }
+  .cd-event-link {
+    font-size:9px; color:rgba(0,200,255,0.5); cursor:pointer;
+    text-decoration:none; transition:color 0.15s; display:inline-block;
+  }
+  .cd-event-link:hover { color:var(--cyan); }
+
+  /* ═══ VAULT ═══ */
+  .vault-box {
+    flex-shrink:0; border-top:1px solid var(--border);
+    display:flex; flex-direction:column;
+  }
+  .vault-header {
+    padding:7px 16px 5px; border-bottom:1px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(232,201,122,0.03);
+  }
+  .vault-header-left { display:flex; align-items:center; gap:8px; }
+  .vault-header-dot { width:5px; height:5px; border-radius:50%; background:var(--sy-gold); flex-shrink:0; }
+  .vault-header-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--sy-gold); font-weight:500; }
+  .vault-header-count { font-size:9px; color:rgba(232,201,122,0.5); }
+  .vault-body {
+    max-height:220px; overflow-y:auto; padding:6px 12px 8px;
+    display:flex; flex-direction:column; gap:5px;
+    scrollbar-width:thin; scrollbar-color:rgba(232,201,122,0.08) transparent;
+  }
+  .vault-empty { font-size:10px; color:rgba(122,124,148,0.35); text-align:center; padding:8px 0; }
+  .vault-type-group { display:flex; flex-direction:column; gap:4px; }
+  .vault-type-header {
+    display:flex; align-items:center; gap:6px; padding:3px 2px; cursor:pointer;
+    font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--fg3);
+  }
+  .vault-type-toggle { font-size:9px; color:rgba(232,201,122,0.4); flex-shrink:0; }
+  .vault-type-icon { font-size:10px; flex-shrink:0; }
+  .vault-type-label { flex:1; }
+  .vault-type-count { color:rgba(232,201,122,0.5); }
+  .vault-asset {
+    cursor: pointer;
+    display:flex; align-items:flex-start; gap:7px; padding:6px 7px;
+    border:1px solid rgba(232,201,122,0.12); background:rgba(232,201,122,0.02);
+    animation:fadeUp 0.2s ease both;
+  }
+  .vault-asset:hover { border-color:rgba(232,201,122,0.3); }
+  .vault-asset-icon { font-size:11px; flex-shrink:0; }
+  .vault-asset-name { font-size:10px; color:var(--fg2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vault-asset-meta { font-size:9px; color:var(--fg3); margin-top:1px; }
+
+  /* Vault item expand modal */
+  .vault-item-modal-backdrop {
+    position:fixed; inset:0; background:rgba(6,7,15,0.72); z-index:200;
+    animation:fadeUp 0.15s ease both;
+  }
+  .vault-item-modal {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:min(480px, 88vw); max-height:80vh; overflow-y:auto; z-index:201;
+    background:#12131f; border:1px solid rgba(232,201,122,0.25);
+    box-shadow:0 20px 60px rgba(0,0,0,0.5); border-radius:4px;
+  }
+  .vault-item-modal-header {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    padding:16px 18px 12px; border-bottom:1px solid rgba(232,201,122,0.12);
+  }
+  .vault-item-modal-section { font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(232,201,122,0.55); margin-bottom:4px; }
+  .vault-item-modal-title { font-size:15px; font-weight:700; color:var(--fg1); }
+  .vault-item-modal-close { background:none; border:none; color:rgba(240,242,255,0.4); font-size:14px; cursor:pointer; padding:2px 6px; }
+  .vault-item-modal-close:hover { color:var(--fg1); }
+  .vault-item-modal-body { padding:16px 18px 18px; display:flex; flex-direction:column; gap:12px; }
+  .vault-item-modal-text { font-size:13px; line-height:1.6; color:var(--fg2); white-space:pre-wrap; }
+  .vault-item-modal-media { width:100%; max-height:50vh; object-fit:contain; border-radius:2px; background:#000; }
+  .vault-item-modal-empty { font-size:11px; color:rgba(122,124,148,0.5); font-style:italic; padding:12px 0; }
+  .vault-item-modal-meta { display:flex; gap:12px; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(232,201,122,0.4); }
+
+  /* Sticky notes — IDEATE's captured-answer entries only. Classic sticky-note
+     read (paper look, slight tilt, torn-corner shadow) since it's the one UI
+     metaphor everyone already recognizes for "a thing worth keeping." */
+  .vault-stickies { display:flex; flex-wrap:wrap; gap:8px; padding:2px 0 6px; }
+  .vault-sticky {
+    cursor: pointer;
+    width:118px; min-height:96px; padding:9px 9px 8px;
+    font-family:'Comic Sans MS', 'Segoe Print', cursive, sans-serif;
+    color:#2a2410; box-shadow:2px 3px 6px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.05);
+    display:flex; flex-direction:column; gap:4px; position:relative;
+    animation:fadeUp 0.25s ease both;
+    transition:transform 0.15s ease;
+  }
+  .vault-sticky:nth-child(4n+1){ background:#f5e27a; transform:rotate(-2deg); }
+  .vault-sticky:nth-child(4n+2){ background:#f7b9d0; transform:rotate(1.5deg); }
+  .vault-sticky:nth-child(4n+3){ background:#a8d8f0; transform:rotate(-1deg); }
+  .vault-sticky:nth-child(4n+4){ background:#b9e8ae; transform:rotate(2deg); }
+  .vault-sticky:hover { transform:rotate(0deg) scale(1.04); z-index:2; }
+  .vault-sticky.sealed { box-shadow:2px 3px 6px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(76,255,145,0.5); }
+  .vault-sticky-stamp { position:absolute; top:6px; right:7px; font-size:10px; color:rgba(20,80,40,0.55); }
+  .vault-sticky-section { font-size:8px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.55; }
+  .vault-sticky-step { font-size:11px; font-weight:700; line-height:1.2; }
+  .vault-sticky-text { font-size:10px; line-height:1.3; overflow-wrap:break-word; }
+
+  /* ═══ FY RAIL FIXES — chat scrolls properly, input stays on screen ═══ */
+  .fy-col { display:flex; flex-direction:column; height:100%; overflow:hidden; min-height:0; }
+  .fy-chat-section { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; min-width:0; }
+  .fy-chat-body { flex:1; overflow-y:auto; padding:14px 14px 8px; display:flex; flex-direction:column; gap:10px; min-height:0; }
+  .fy-input-area { flex-shrink:0; }
+  .fy-mode-label { flex-shrink:0; }
+  .fy-confirm-bar { flex-shrink:0; }
+  .fy-lock-bar { flex-shrink:0; }
+
+  /* FY agent monologue */
+  .fy-msg-agent { padding:3px 12px; }
+  .fy-msg-agent-text {
+    font-family:"Playfair Display",serif; font-style:italic;
+    font-size:11px; color:rgba(200,202,220,0.38); line-height:1.6;
+  }
+
+  /* Confirmation bar */
+  .fy-confirm-bar {
+    flex-shrink:0; margin:0 12px 6px; padding:10px 12px;
+    background:rgba(0,200,255,0.04); border:1px solid rgba(0,200,255,0.22);
+    display:flex; flex-direction:column; gap:8px; animation:fadeUp 0.2s ease both;
+  }
+  .fy-confirm-desc { font-size:12px; color:var(--fg2); line-height:1.5; }
+  .fy-confirm-actions { display:flex; gap:8px; }
+  .fy-confirm-btn {
+    font-family:"Bebas Neue",sans-serif; font-size:11px; letter-spacing:0.14em;
+    padding:5px 14px; cursor:pointer; transition:all 0.15s; border:1px solid; background:transparent;
+  }
+  .fy-confirm-btn.confirm { color:var(--sy-green); border-color:rgba(76,255,145,0.4); }
+  .fy-confirm-btn.confirm:hover { background:rgba(76,255,145,0.08); }
+  .fy-confirm-btn.cancel { color:var(--fg3); border-color:var(--border-mid); }
+  .fy-confirm-btn.cancel:hover { color:var(--white); }
+
+  /* Lock bar */
+  .fy-lock-bar {
+    flex-shrink:0; margin:0 12px 6px; padding:10px 12px;
+    background:rgba(232,201,122,0.04); border:1px solid rgba(232,201,122,0.22);
+    display:flex; flex-direction:column; gap:8px; animation:fadeUp 0.2s ease both;
+  }
+  .fy-lock-desc { font-size:12px; color:var(--fg2); line-height:1.5; }
+  .fy-lock-actions { display:flex; gap:8px; }
+  .fy-lock-btn {
+    font-family:"Bebas Neue",sans-serif; font-size:11px; letter-spacing:0.14em;
+    padding:5px 14px; cursor:pointer; transition:all 0.15s; border:1px solid; background:transparent;
+  }
+  .fy-lock-btn.lock { color:var(--sy-gold); border-color:rgba(232,201,122,0.4); }
+  .fy-lock-btn.lock:hover { background:rgba(232,201,122,0.08); }
+  .fy-lock-btn.keep { color:var(--fg3); border-color:var(--border-mid); }
+  .fy-lock-btn.keep:hover { color:var(--white); }
+
+
+  /* ═══ SPATIAL CANVAS ═══ */
+  .canvas-spatial {
+    flex:1; overflow-y:auto; overflow-x:hidden; position:relative;
+    background-image: radial-gradient(circle, rgba(0,200,255,0.09) 1px, transparent 1px);
+    background-size: 28px 28px;
+    padding: 52px 24px 80px;
+    display:flex; flex-direction:column; align-items:center; gap:24px;
+    scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.1) transparent;
+  }
+  .canvas-spatial::-webkit-scrollbar { width:3px; }
+  .canvas-spatial::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+  .canvas-step-chip {
+    position:absolute; top:14px; left:16px; z-index:10;
+    display:flex; align-items:center; gap:6px;
+    background:rgba(6,9,26,0.92); border:1px solid rgba(76,255,145,0.4);
+    padding:5px 12px 5px 10px; pointer-events:none;
+  }
+  .canvas-step-chip-dot { width:5px; height:5px; border-radius:50%; background:var(--sy-green); animation:pg 2s infinite; flex-shrink:0; }
+  .canvas-step-chip-text { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:var(--sy-green); font-weight:500; }
+  .canvas-step-chip-title { font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(240,242,255,0.6); }
+  .canvas-spatial-empty {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:60px 40px; text-align:center; min-height:300px;
+  }
+  .canvas-spatial-empty-icon { font-size:28px; opacity:0.2; }
+  .canvas-spatial-empty-label { font-size:9px; letter-spacing:0.24em; text-transform:uppercase; color:var(--fg3); }
+  .canvas-spatial-empty-sub { font-size:12px; color:var(--fg3); max-width:260px; line-height:1.65; font-family:'Playfair Display',serif; font-style:italic; opacity:0.6; }
+
+  /* Live step-answer stickies — one per step in the active section */
+  .canvas-step-answers {
+    display:flex; flex-wrap:wrap; gap:16px; padding:24px; align-content:flex-start;
+  }
+  .canvas-answer-sticky {
+    width:220px; min-height:140px; border-radius:2px; padding:14px 16px;
+    display:flex; flex-direction:column; gap:8px;
+    background:rgba(18,19,31,0.92); border:1px solid rgba(232,201,122,0.18);
+    box-shadow:2px 4px 12px rgba(0,0,0,0.3);
+  }
+  .canvas-answer-sticky.filled { cursor:pointer; border-color:rgba(76,255,145,0.3); }
+  .canvas-answer-sticky.filled:hover { border-color:rgba(76,255,145,0.6); }
+  .canvas-answer-sticky.open { border-style:dashed; border-color:rgba(240,242,255,0.12); opacity:0.55; }
+  .canvas-answer-sticky.editing { border-color:rgba(0,200,255,0.5); }
+  .canvas-answer-sticky-header { display:flex; flex-direction:column; gap:2px; }
+  .canvas-answer-sticky-section { font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(232,201,122,0.55); }
+  .canvas-answer-sticky-title { font-size:12px; font-weight:700; color:var(--fg1); line-height:1.3; }
+  .canvas-answer-sticky-text { font-size:11px; line-height:1.5; color:var(--fg2); flex:1; overflow-wrap:break-word; }
+  .canvas-answer-sticky-waiting { font-size:10px; color:rgba(240,242,255,0.25); font-style:italic; }
+  .canvas-answer-sticky-edit-hint { font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(0,200,255,0.35); margin-top:auto; }
+  .canvas-answer-sticky-textarea {
+    flex:1; min-height:80px; background:rgba(0,0,0,0.3); border:1px solid rgba(232,201,122,0.25);
+    color:var(--fg1); font-size:11px; line-height:1.5; padding:8px; resize:vertical; font-family:inherit;
+  }
+  .canvas-answer-sticky-actions { display:flex; gap:8px; }
+  .canvas-answer-sticky-save, .canvas-answer-sticky-cancel {
+    font-size:9px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px;
+    border:1px solid rgba(232,201,122,0.3); background:transparent; color:var(--fg2); cursor:pointer;
+  }
+  .canvas-answer-sticky-save { color:var(--sy-green); border-color:rgba(76,255,145,0.4); }
+  .canvas-answer-sticky-save:hover { background:rgba(76,255,145,0.08); }
+  .canvas-answer-sticky-cancel:hover { background:rgba(240,242,255,0.05); }
+  .canvas-card-wrap {
+    width:300px; flex-shrink:0; position:relative;
+    display:flex; flex-direction:column; gap:0;
+    animation:fadeUp 0.28s ease both;
+  }
+  .canvas-card-wrap:hover .canvas-card-controls { opacity:1; transform:translateX(-50%) translateY(0); }
+  .canvas-card-label {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 4px 5px;
+  }
+  .canvas-card-label-title { font-size:10px; color:rgba(240,242,255,0.5); letter-spacing:0.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+  .canvas-card-label-tool { font-size:8px; color:rgba(0,200,255,0.5); letter-spacing:0.12em; text-transform:uppercase; flex-shrink:0; }
+  .canvas-card-controls {
+    position:absolute; top:-38px; left:50%; transform:translateX(-50%) translateY(6px);
+    display:flex; align-items:center; gap:2px;
+    background:rgba(6,9,26,0.96); border:1px solid rgba(0,200,255,0.18); padding:4px 8px;
+    opacity:0; transition:all 0.18s ease; z-index:20;
+  }
+  .canvas-ctrl {
+    background:none; border:none; color:rgba(240,242,255,0.4); font-size:13px; cursor:pointer;
+    padding:3px 7px; transition:color 0.12s; line-height:1;
+  }
+  .canvas-ctrl:hover { color:var(--white); }
+  .canvas-ctrl.lock-ctrl { color:rgba(232,201,122,0.35); }
+  .canvas-ctrl.lock-ctrl:hover { color:var(--sy-gold); }
+  .canvas-card {
+    width:300px; border:1px solid rgba(0,200,255,0.14);
+    background:rgba(6,9,26,0.75); overflow:hidden; position:relative;
+    transition:border-color 0.25s;
+  }
+  .canvas-card:hover { border-color:rgba(0,200,255,0.28); }
+  .canvas-card.vaulted { border-color:rgba(232,201,122,0.45); }
+  .canvas-card.vaulted:hover { border-color:rgba(232,201,122,0.7); }
+  .canvas-card.generating { min-height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:20px; }
+  .canvas-card-vault-badge {
+    position:absolute; top:8px; right:8px;
+    font-size:7px; letter-spacing:0.2em; text-transform:uppercase;
+    padding:3px 8px; border:1px solid rgba(232,201,122,0.5);
+    color:var(--sy-gold); background:rgba(6,9,26,0.9);
+  }
+  .canvas-card-img { width:100%; display:block; }
+  .canvas-card-gen-icon { font-size:22px; opacity:0.2; }
+  .canvas-card-gen-label { font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(0,200,255,0.7); }
+  .canvas-card-gen-sub { font-size:11px; color:var(--fg3); text-align:center; line-height:1.5; }
+  .canvas-card-gen-bar { width:180px; height:2px; background:rgba(0,200,255,0.08); border:1px solid rgba(0,200,255,0.1); margin-top:4px; }
+  .canvas-card-gen-fill { height:100%; background:linear-gradient(90deg,var(--sy-cyan),var(--sy-purple)); width:0%; transition:width 0.45s ease; }
+  .canvas-card-video { width:100%; display:block; }
+  .canvas-card-audio { width:100%; display:block; padding:12px 14px; box-sizing:border-box; }
+  .fy-rail-collapse-btn {
+    position:absolute; top:50%; left:-13px; transform:translateY(-50%);
+    width:26px; height:48px; background:rgba(8,10,24,0.96);
+    border:1px solid var(--border-mid); border-right:none;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--fg3); font-size:10px; z-index:10;
+    transition:color 0.15s, border-color 0.15s; user-select:none;
+  }
+  .fy-rail-collapse-btn:hover { color:var(--white); border-color:rgba(0,200,255,0.22); }
+  .fy-col.fy-collapsed { width:40px; }
+  .fy-col.fy-collapsed .fy-avatar-slot,
+  .fy-col.fy-collapsed .fy-rail-header,
+  .fy-col.fy-collapsed .fy-chat-section { display:none; }
+
+</style>
+</head>
+<body class="sy-3d">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+
+/* ── Model Invocation ── */
+async function invokeModel({ task, building, tier, params, email }) {
+  const res = await fetch(API_URL + '/api/model/invoke', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task, building, tier, params, email })
+  });
+  return await res.json();
+}
+
+function buildModelParams(toolTask, task, visualDesc) {
+  // visualDesc: synthesized from the actual conversation — the creator's stated
+  // direction. task.level1 (the static step description) is last-resort fallback only.
+  const core = visualDesc || task.level1;
+  if (toolTask === 'image_storyboard') {
+    return { prompt: 'Storyboard frame: ' + core + '. Clear composition, cinematic framing, sequential storytelling.', image_size: 'landscape_16_9', num_inference_steps: 28, num_images: 1 };
+  }
+  if (toolTask === 'video_generate' || toolTask === 'video_generate_pro') {
+    return { prompt: core + '. Cinematic, professional production quality.', duration: 5, aspect_ratio: '16:9' };
+  }
+  return { prompt: 'Cinematic visual reference: ' + core + '. Film still, professional lighting, high detail.', image_size: 'landscape_16_9', num_inference_steps: 4, num_images: 1 };
+}
+
+/* ── Building registry ── */
+const BUILDINGS = [
+  { id:'ideate',    icon:'💡', title:'IDEATE',    tag:'Brainstorm Engine', desc:'Raw idea capture, gut check, and concept hand-off. For creators who have a feeling but not yet a concept.',  cta:'Start a Brief',     fyq:"The bottleneck is never ideas. It's the system to evaluate them.", bg:'assets/BLDG_BGS/SY_IDEATE01.jpg',              gif:'assets/BLDG_HEADER_GIFS/1-quick-idea.gif' },
+  { id:'develop',   icon:'🎬', title:'DEVELOP',   tag:'Script & Story',    desc:'Scripting, storyboarding, visual development, pitch prep.',                          cta:'Develop a Project', fyq:"The script is the blueprint. Everything else is construction.", bg:'assets/BLDG_BGS/WRITERS_ROOM02.jpg',           gif:'assets/BLDG_HEADER_GIFS/2-script.gif' },
+  { id:'fund',      icon:'💰', title:'FUND',      tag:'Capital Engine',    desc:'Capital raise, budgeting, pitch materials, tax incentives.',                          cta:'Plan Your Funding', fyq:"Money follows vision. Your job is to make the vision undeniable.", bg:'assets/BLDG_BGS/SY_BANK_VAULT03.jpg',          gif:'assets/BLDG_HEADER_GIFS/3-money-bag.gif' },
+  { id:'cast',      icon:'🎭', title:'CAST',      tag:'Talent Engine',     desc:'Talent identification, audition management, booking.',                               cta:'Talk to FutureYou', fyq:"Casting is directing. The right face changes the whole film.", bg:'assets/BLDG_BGS/THE_ACTOR04.jpg',              gif:'assets/BLDG_HEADER_GIFS/4-theatre.gif' },
+  { id:'plan',      icon:'📋', title:'PLAN',      tag:'Pre-Production',    desc:'Production scheduling, crew hiring, pre-production, logistics.',                     cta:'Plan Production',   fyq:"Every day you don't plan is a day you're improvising on set.", bg:'assets/BLDG_BGS/PLAN_PRODUCTION06.jpg',        gif:'assets/BLDG_HEADER_GIFS/5-schedule.gif' },
+  { id:'produce',   icon:'🎥', title:'PRODUCE',   tag:'Production',        desc:'Shoot, capture, on-set workflow execution.',                                         cta:'Open Production',   fyq:"The set is the only place where time is the only currency.", bg:'assets/BLDG_BGS/SY_BACKLOT_PRODUCTION05.jpg',  gif:'assets/BLDG_HEADER_GIFS/6-director-chair.gif' },
+  { id:'post',      icon:'✂️', title:'POST',      tag:'Post Production',   desc:'Edit, mix, color, VFX, music, finishing, final output.',                             cta:'Open Post',         fyq:"Post is where the film is written a second time.", bg:'assets/BLDG_BGS/SY_POST_PROD07.jpg',           gif:'assets/BLDG_HEADER_GIFS/7-film-editing.gif' },
+  { id:'licensing', icon:'🛡️', title:'LEGAL & LICENSING', tag:'Rights & Clearance',desc:'Rights clearance, content licensing, IP protection, music sync.',                   cta:'Clear Content',     fyq:"You can't distribute what you don't own. Clear it before you cut it.", bg:'assets/BLDG_BGS/SY_LEGAL_LIC_EXT208.jpg',     gif:'assets/BLDG_HEADER_GIFS/8-court.gif' },
+  { id:'distribute',icon:'📡', title:'DISTRIBUTE',tag:'Release Engine',    desc:'Platform publishing, release strategy, syndication, audience delivery.',             cta:'Plan a Release',    fyq:"Distribution is the final creative decision. Make it deliberately.", bg:'assets/BLDG_BGS/SY_DISTRO_JUPITER09.jpg',     gif:'assets/BLDG_HEADER_GIFS/9-spotlight.gif' },
+  { id:'brand',     icon:'🎨', title:'BRAND',     tag:'Identity System',   desc:'Identity, visual system, style guide, brand consistency at scale.',                  cta:'Build Your Brand',  fyq:"Your brand is the signal your studio sends before you say a word.", bg:'assets/BLDG_BGS/SY_BRAND_EVENT10.jpg',         gif:'assets/BLDG_HEADER_GIFS/10-launch.gif' },
+  { id:'market',    icon:'📣', title:'MARKET',    tag:'Campaign Engine',   desc:'Campaign planning, content performance intelligence, launch, amplification.',        cta:'Plan a Campaign',   fyq:"The project isn't done when it's finished. It's done when people find it.", bg:'assets/BLDG_BGS/SY_MARKETING11.jpg',          gif:'assets/BLDG_HEADER_GIFS/11-red-carpet.gif' },
+  { id:'monetize',  icon:'✨', title:'MONETIZE',  tag:'Revenue Engine',    desc:'Sponsorship, brand deals, revenue tracking, representation discovery.',              cta:'See Opportunities', fyq:"The work creates the leverage. The leverage creates the deal.", bg:'assets/BLDG_BGS/SY_MONETIZE_FACTORY12.jpg',   gif:'assets/BLDG_HEADER_GIFS/12-social-media.gif' },
+];
+
+// Scripted, guaranteed-verbatim establishing line per building — spoken via
+// fy_say_verbatim the moment a creator lands, same reliability pattern as the
+// dashboard triage script and the "See you there." handoff line. The existing
+// LLM-generated openingPrompt in initFY() is smart about routing to a specific
+// section, but text-display-only (fy_directive) and not guaranteed to actually
+// be spoken or to say this specific thing — this line is the deterministic
+// orientation every creator gets on first arrival, regardless of what the LLM
+// does after it.
+const ARRIVAL_LINES = {
+  ideate:     "Welcome to Ideate. This is where a feeling becomes a concept worth building. Let's start with your raw idea.",
+  develop:    "Welcome to Develop. This is where the concept becomes a script and a plan. Let's get your story on the page.",
+  fund:       "Welcome to Fund. This is where the vision turns into capital. Let's build your raise.",
+  cast:       "Welcome to Cast. This is where the right people join the project. Let's find your talent.",
+  plan:       "Welcome to Plan. This is where the shoot gets built before you ever roll camera. Let's lock your schedule.",
+  produce:    "Welcome to Produce. This is where the work actually gets shot. Let's get you on set.",
+  post:       "Welcome to Post. This is where the film gets written a second time. Let's start your edit.",
+  licensing:  "Welcome to Legal and Licensing. This is where the work becomes something you actually own, free and clear. Let's clear what needs clearing.",
+  distribute: "Welcome to Distribute. This is where the work finds its audience. Let's plan the release.",
+  brand:      "Welcome to Brand. This is where your identity gets built to hold up at scale. Let's build your system.",
+  market:     "Welcome to Market. This is where people actually find the work. Let's plan the campaign.",
+  monetize:   "Welcome to Monetize. This is where the work starts paying you back. Let's look at your opportunities.",
+};
+
+// First-visit-only gate. No backend persistence exists yet (the Vault gap,
+// scoped separately) so this is localStorage — persists across sessions on
+// this browser, not across devices. Once Vault is built this should move
+// there so "have I seen this building" is a real fact, not a local flag.
+function hasVisitedBuilding(id) {
+  try {
+    const seen = JSON.parse(localStorage.getItem('sy_visited_buildings') || '[]');
+    return seen.includes(id);
+  } catch (e) { return false; }
+}
+function markBuildingVisited(id) {
+  try {
+    const seen = JSON.parse(localStorage.getItem('sy_visited_buildings') || '[]');
+    if (!seen.includes(id)) {
+      seen.push(id);
+      localStorage.setItem('sy_visited_buildings', JSON.stringify(seen));
+    }
+  } catch (e) {}
+}
+
+/* ── Task definitions per building (from SY_LOT_BUILDING_DETAILS) ── */
+const BUILDING_TASKS = {
+  ideate: [
+    { section:'Raw Idea', tasks:[
+      { title:'What\'s the Feeling?', level1:'Not the concept. The emotional instinct. What does this feel like before it has a shape? Tell me in your own words.', level2:'The feeling is the seed. FutureYou reacts to the instinct and helps it find its form before forcing a concept that isn\'t ready.' },
+      { title:'First Visual Instinct', level1:'What does it look like in your head? A color, a place, a reference — anything that exists before the idea has words.', level2:'Establishes the visual DNA before the concept is named. The image usually knows more than the idea does at this stage.' },
+      { title:'One Sentence', level1:'If you had to explain this to someone at a dinner table right now, what would you say?', level2:'The dinner table test. If you can say it clearly enough to make someone curious, FutureYou has enough to work with.' },
+    ]},
+    { section:'Gut Check', tasks:[
+      { title:'Does This Have Legs?', level1:'FutureYou pressure-tests the idea against where you said you want to go. Not a market report — a gut-level reality check from someone who knows your horizon.', level2:'The right idea at the wrong time is still the wrong move. FutureYou cross-references the raw idea against your formation goals and current stage.' },
+      { title:'Is Now the Right Time?', level1:'Do you have what you need to move this forward — or does something else need to happen first?', level2:'Timing is a creative decision. FutureYou helps identify whether the idea is ready for development or needs more runway before it can grow.' },
+    ]},
+    { section:'Hand-off', tasks:[
+      { title:'Let\'s Build on This', level1:'We have enough of the raw idea to take the next step. FutureYou carries what was captured here into DEVELOP as the foundation — not a finished concept.', level2:'DEVELOP takes over from here. Everything established in this building travels forward. The creator never starts from zero again.' },
+      { title:'Let This Breathe', level1:'The idea needs more time or input. FutureYou saves everything captured, suggests what might help it develop, and leaves the door open to return.', level2:'Stepping away is a legitimate creative choice. FutureYou holds the work and resurfaces it when the creator is ready — with everything intact.' },
+    ]},
+  ],
+  develop: [
+    { section:'Story & Structure', tasks:[
+      { title:'What\'s the Format?', level1:'Long-form, short-form, episodic, one-off, series? Format determines everything downstream — crew size, budget, timeline, platform.', level2:'Format is the first structural decision. FutureYou surfaces the right framing based on your archetype — episode structure for podcasters, three-act for filmmakers, content cadence for social creators.' },
+      { title:'What\'s the Premise?', level1:'One clear statement of what this is. Not a logline yet — just the core idea in plain language. Tell me in your own words.', level2:'The premise is the North Star every other decision navigates by. FutureYou uses it to pressure-test every downstream choice against the original intent.' },
+      { title:'Who\'s It For?', level1:'Not demographics. Real people. Who specifically needs to see, hear, or experience this — and why does it matter to them?', level2:'Grounds the creative in a real human being. FutureYou uses this to evaluate every creative and distribution decision against the actual audience, not an abstraction.' },
+    ]},
+    { section:'Script & Content', tasks:[
+      { title:'Do You Have a Script, Outline, or Format Bible?', level1:'Upload it or start one here. FutureYou adapts — script for narrative, outline for documentary, format bible for series or podcast, content calendar for social.', level2:'The written foundation everything else is built from. FutureYou meets you at whatever stage the writing is in — blank page or finished draft.' },
+      { title:'What\'s the Structure?', level1:'Beginning, middle, end — or episode one through ten. Whatever shape this takes, map it here. FutureYou helps build it from what exists.', level2:'Structure is the invisible architecture the audience never sees but always feels. FutureYou identifies structural gaps before they become production problems.' },
+      { title:'Characters & Voices', level1:'Who are the people in this? Real, fictional, or hosted. Tell me in your own words who they are before we name their function.', level2:'FutureYou adapts — characters for scripted, guests and hosts for podcast, on-camera persona for social. The voice of the project lives here.' },
+    ]},
+    { section:'Visual & Tonal Language', tasks:[
+      { title:'What Does This Look Like?', level1:'Mood boards, references, aesthetic direction. The visual contract that keeps every collaborator building the same project.', level2:'Unifies the creative team before anyone starts spending money. FutureYou generates visual references from the description and holds them as the project standard.' },
+      { title:'What Does This Sound Like?', level1:'Tone, music direction, pacing, energy. The audio identity of the project — before a single note is chosen.', level2:'Sound shapes emotion more directly than image. Establishing audio identity early prevents the most common post-production crisis: a finished picture with no musical identity.' },
+      { title:'Storyboard a Scene', level1:'Pick one moment and map it shot by shot. Proves the visual language works before production begins.', level2:'The single most efficient proof of concept in the toolkit. One scene storyboarded tells FutureYou whether the visual approach is executable and whether the budget is realistic.' },
+    ]},
+    { section:'Proof of Concept', tasks:[
+      { title:'Build a Sample', level1:'One scene, one episode, one clip. Enough to test whether the concept works in execution — and to show someone else.', level2:'The first real output of the project. FutureYou uses it to evaluate whether what was planned and what was made are pointing at the same thing.' },
+      { title:'Does This Work?', level1:'FutureYou reacts to the sample. Not a grade — a gut check from your future self who\'s already seen it succeed or fail.', level2:'The honest conversation most creators avoid. FutureYou brings formation context, creative brief, and visual references to this moment and tells you what it sees.' },
+    ]},
+    { section:'Pitch Readiness', tasks:[
+      { title:'Can You Explain This to a Stranger?', level1:'The pitch test. If FutureYou can\'t understand it from what\'s been built here, neither can a funder or collaborator.', level2:'Clarity is a creative virtue. A project that can\'t be explained simply hasn\'t been developed fully. FutureYou identifies the gap and helps close it.' },
+      { title:'What Do You Need Next?', level1:'Money, crew, equipment, time, distribution? FutureYou maps what\'s needed and opens the right buildings — FUND, CAST, PLAN, or straight to PRODUCE.', level2:'DEVELOP ends here. FutureYou synthesizes everything established and determines the fastest path to production from the creator\'s current position.' },
+    ]},
+  ],
+  fund: [
+    { section:'Capital Strategy', tasks:[
+      { title:'Target Budget', level1:'How much money do you need to make this?', level2:'Sets the financial reality. Triggers FutureYou to surface the most realistic funding paths and trade-offs.' },
+      { title:'Funding Strategy', level1:'Where is the money coming from? (self-funded, investors, brand sponsorship, crowdfunding, grants)', level2:'Identifies financial partners and their requirements — dictating legal and distribution obligations downstream.' },
+      { title:'Outreach & Pitching', level1:'Who are you pitching, and how do we track them?', level2:'Operationalizes the pitch assets from DEVELOP. FutureYou manages outreach flow and follow-up cadence.' },
+    ]},
+  ],
+  cast: [
+    { section:'Talent', tasks:[
+      { title:'Role Specs', level1:'What roles need to be filled?', level2:'Builds the casting breakdown from character development in DEVELOP.' },
+      { title:'Audition Management', level1:'How are submissions being tracked and reviewed?', level2:'Organizes the audition pipeline — submissions, notes, callbacks, director approval.' },
+      { title:'Booking', level1:'Is the offer out and the deal signed?', level2:'Closes the loop from talent identified to deal memos executed.' },
+    ]},
+  ],
+  plan: [
+    { section:'Pre-Production', tasks:[
+      { title:'Schedule & Timeline', level1:'When are we shooting and how long will it take?', level2:'Creates the operational calendar. Aligns equipment, locations, and talent on required dates.' },
+      { title:'Crew & Staffing', level1:'Who is working behind the scenes?', level2:'Builds the production team. Scales the workforce based on project format and budget.' },
+      { title:'Gear & Equipment', level1:'What equipment do we need to capture the project?', level2:'Translates visual development into a specific list of cameras, lighting, audio gear, or compute.' },
+      { title:'Logistics & Permitting', level1:'Are the locations legally cleared and the travel mapped out?', level2:'Ensures the production operates safely and legally. Covers permits, insurance, crew logistics.' },
+    ]},
+  ],
+  produce: [
+    { section:'Production', tasks:[
+      { title:'Daily Prep & Call Sheets', level1:'Does everyone know where they need to be and what they are doing today?', level2:'Aligns the daily workforce. Provides the roadmap for cast and crew with call times and scenes.' },
+      { title:'Capture & Execution', level1:'Are we recording the video, audio, or generative assets?', level2:'The execution phase where the project is recorded — physical set, vocal booth, or digital generation.' },
+      { title:'Data Management', level1:'Are the files safely backed up and organized?', level2:'Protects the project\'s assets. Establishes the workflow for offloading, duplicating, and storing raw media.' },
+    ]},
+  ],
+  post: [
+    { section:'Post Production', tasks:[
+      { title:'Editorial', level1:'How do we assemble the footage to tell the story?', level2:'Shapes the narrative. Organizes raw files and builds the project timeline from rough cut to locked edit.' },
+      { title:'Visual Polish', level1:'Does the image look complete and consistent?', level2:'Elevates the visual quality. Ensures the final image matches the mood boards from DEVELOP.' },
+      { title:'Audio Post', level1:'Do the voices, music, and sound effects sound professional?', level2:'Finishes the auditory experience. Mixes dialogue, sound effects, and music into a clear soundscape.' },
+      { title:'Mastering & Export', level1:'Is the final file exported in the right format?', level2:'Creates the final product. Packages the project into the technical formats required by platforms.' },
+    ]},
+  ],
+  licensing: [
+    { section:'Rights & Clearance', tasks:[
+      { title:'Clearances & Rights', level1:'Do we have permission to use the music, stock footage, or third-party assets?', level2:'Clears the project for public viewing. Secures rights for any external IP used.' },
+      { title:'Releases', level1:'Did everyone involved sign away their rights to appear in this?', level2:'Guarantees legal permission to use the likeness of individuals and locations captured in PRODUCE.' },
+    ]},
+  ],
+  distribute: [
+    { section:'Distribution', tasks:[
+      { title:'Platform Strategy', level1:'Where does this project live so people can see it?', level2:'Matches the project to its audience. Determines platforms: social, streaming, theaters, private network.' },
+      { title:'Asset Delivery', level1:'Are we uploading the final files and required metadata?', level2:'Executes the launch. Ensures master files, thumbnails, and descriptions meet platform specs.' },
+    ]},
+  ],
+  brand: [
+    { section:'Identity', tasks:[
+      { title:'Visual Identity', level1:'What does the packaging and artwork look like?', level2:'Creates the project\'s outward face. Develops logos, typography, and cover art for public representation.' },
+      { title:'Positioning', level1:'How do we describe this project to the world?', level2:'Crafts the public narrative. Translates internal details into press releases and descriptions that capture attention.' },
+    ]},
+  ],
+  market: [
+    { section:'Campaign', tasks:[
+      { title:'Campaign Strategy', level1:'How are we getting people to look at this?', level2:'Builds the promotional roadmap. Outlines the timeline for trailers, social posts, and advertising.' },
+      { title:'Asset Creation', level1:'What promotional materials do we need to share?', level2:'Generates the marketing materials — trailers, clips, and social posts to execute the campaign.' },
+    ]},
+  ],
+  monetize: [
+    { section:'Revenue', tasks:[
+      { title:'Revenue Streams', level1:'How does this project generate income?', level2:'Defines the financial return. Sets up ad revenue, subscription gates, merchandise, or direct sales.' },
+      { title:'Tracking & Analytics', level1:'Is the project making money and reaching the right people?', level2:'Measures success. Monitors performance data and revenue flow with clear creator metrics.' },
+    ]},
+  ],
+};
+
+/* ── Utility ── */
+function getBuildingById(id) { return BUILDINGS.find(b => b.id === id) || BUILDINGS[0]; }
+function getSlugFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  return p.get('building') || 'ideate';
+}
+
+/* ── FY Video State ── */
+const _fyVideoState = { on: true, listeners: [] };
+function _fyVideoSubscribe(fn) { _fyVideoState.listeners.push(fn); return () => { _fyVideoState.listeners = _fyVideoState.listeners.filter(f=>f!==fn); }; }
+function _fyVideoSet(val) { _fyVideoState.on = val; _fyVideoState.listeners.forEach(fn=>fn(val)); }
+
+function FYVideoToggle() {
+  const [videoOn, setVideoOn] = useState(_fyVideoState.on);
+  useEffect(() => _fyVideoSubscribe(setVideoOn), []);
+  return (
+    <div className={`fy-avatar-toggle${videoOn ? ' on' : ''}`} onClick={() => _fyVideoSet(!_fyVideoState.on)}>
+      <div className="tgl-track"><div className="tgl-thumb" /></div>
+      <span className="tgl-lbl">FY VIDEO</span>
+    </div>
+  );
+}
+
+/* ── FY Avatar Slot ── */
+function FYAvatarSlot({ tier, firstName, videoTrack }) {
+  const lastName = localStorage.getItem('sy_last_name') || '';
+  const initials = ((firstName ? firstName.charAt(0) : '') + (lastName ? lastName.charAt(0) : '')).toUpperCase() || 'FY';
+  const [videoOn, setVideoOn] = useState(_fyVideoState.on);
+  useEffect(() => _fyVideoSubscribe(setVideoOn), []);
+  const videoRef = useRef(null);
+  const isIndependent = tier !== 'operator';
+  // Distinguishes the first landing (never been live yet — "Arriving") from a
+  // mid-conversation drop, e.g. the Session AD avatar rotation swap or a real
+  // network blip ("Reconnecting"). Same placeholder, different copy depending
+  // on whether video has ever actually played in this session.
+  const hasBeenLiveRef = useRef(false);
+  useEffect(() => { if (videoTrack && videoOn) hasBeenLiveRef.current = true; }, [videoTrack, videoOn]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (videoTrack && videoOn) {
+      videoTrack.attach(videoRef.current);
+    } else if (videoTrack) {
+      videoTrack.detach(videoRef.current);
+    }
+    return () => { if (videoTrack && videoRef.current) videoTrack.detach(videoRef.current); };
+  }, [videoTrack, videoOn]);
+
+  if (!isIndependent) return null;
+  return (
+    <div className={`fy-avatar-slot${!videoOn ? ' collapsed' : ''}`}>
+      <video ref={videoRef} className="fy-avatar-video" autoPlay playsInline style={{display: videoTrack && videoOn ? 'block' : 'none'}} />
+      {(!videoTrack || !videoOn) && (
+        <div className="fy-avatar-placeholder">
+          <img src="assets/shutter1.gif" alt="" style={{width:64,height:64,objectFit:'contain'}}/>
+          <div className="fy-avatar-label">FUTUREYOU</div>
+          <div className="fy-avatar-coming">{hasBeenLiveRef.current ? 'Reconnecting' : 'Arriving'}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Shared state — tool registry, canvas details event bus, vault ── */
+const TOOL_REGISTRY = {
+  // IDEATE
+  'First Visual Instinct':     { task:'image_generate',     cardType:'image', name:'fal.ai',            desc:'Generating your first visual from what you described.',               tutorial:'https://fal.ai/docs' },
+  // DEVELOP
+  'What Does This Look Like?': { task:'image_generate',     cardType:'image', name:'fal.ai',            desc:'Rendering your mood board from the visual direction you set.',         tutorial:'https://fal.ai/docs' },
+  'Storyboard a Scene':        { task:'image_storyboard',   cardType:'image', name:'fal.ai',            desc:'Generating a storyboard frame from your scene description.',           tutorial:'https://fal.ai/docs' },
+  'Build a Sample':            { task:'image_generate_pro', cardType:'image', name:'fal.ai',            desc:'Producing a proof-of-concept visual from your concept.',               tutorial:'https://fal.ai/docs' },
+  // PRODUCE
+  'Capture & Execution':       { task:'video_generate',     cardType:'video', name:'fal.ai / seedance', desc:'Generating your production asset from the direction you set.',          tutorial:'https://fal.ai/docs' },
+};
+
+const _cdState = { events:{}, vaultAssets:[], listeners:[], vaultListeners:[] };
+function cdPushEvent(sectionIdx, event) {
+  if (!_cdState.events[sectionIdx]) _cdState.events[sectionIdx] = [];
+  const idx = _cdState.events[sectionIdx].findIndex(e => e.id === event.id);
+  if (idx >= 0) _cdState.events[sectionIdx][idx] = event;
+  else _cdState.events[sectionIdx].push(event);
+  _cdState.listeners.forEach(fn => fn({..._cdState.events}));
+}
+function cdSubscribe(fn) { _cdState.listeners.push(fn); return () => { _cdState.listeners = _cdState.listeners.filter(f=>f!==fn); }; }
+function vaultAdd(asset) { _cdState.vaultAssets.push(asset); _cdState.vaultListeners.forEach(fn => fn([..._cdState.vaultAssets])); }
+function vaultSubscribe(fn) { _cdState.vaultListeners.push(fn); return () => { _cdState.vaultListeners = _cdState.vaultListeners.filter(f=>f!==fn); }; }
+function vaultUpdate(match, patch) {
+  let changed = false;
+  _cdState.vaultAssets = _cdState.vaultAssets.map(a => {
+    if (match(a)) { changed = true; return { ...a, ...patch }; }
+    return a;
+  });
+  if (changed) _cdState.vaultListeners.forEach(fn => fn([..._cdState.vaultAssets]));
+}
+function vaultMergeMany(entries) {
+  entries.forEach(e => {
+    const exists = _cdState.vaultAssets.some(a =>
+      a.buildingId === e.buildingId && a.section === e.section && a.name === e.name && a.type === 'answer'
+    );
+    if (!exists) _cdState.vaultAssets.push(e);
+  });
+  if (entries.length) _cdState.vaultListeners.forEach(fn => fn([..._cdState.vaultAssets]));
+}
+async function vaultLoadFromServer(projectId) {
+  // Hydrates existing captured answers from Supabase on load/reload. Without
+  // this, Vault and Canvas only ever reflect what's been captured live in
+  // the current browser session — everything from a prior session vanishes
+  // on refresh even though it's sitting in fy_vault_entries the whole time.
+  if (!projectId) return;
+  try {
+    const res = await fetch(`${API_URL}/api/vault/list?project_id=${encodeURIComponent(projectId)}`);
+    const d = await res.json();
+    if (d.success && Array.isArray(d.entries)) {
+      const mapped = d.entries.map(row => ({
+        name: row.step_title,
+        type: 'answer',
+        section: row.section_name,
+        buildingId: row.building_slug,
+        lockedAt: row.captured_at ? new Date(row.captured_at).toLocaleDateString() : '',
+        text: row.captured_answer,
+      }));
+      vaultMergeMany(mapped);
+    }
+  } catch (e) { console.warn('[vaultLoadFromServer] failed:', e); }
+}
+
+/* ── Journey Engine + Sections Nav + Canvas Details + Vault ── */
+
+// ── PROJECT MODAL (studio) ──────────────────────────────────────────────────
+function StudioProjectModal({ projects, activeProject, onSwitch, onCreate, onDelete, onClose, email, tier }) {
+  const TIER_ACTIVE_LIMITS = { operator:10, independent:3, player:5 };
+  const tierKey = (tier||'operator').toLowerCase();
+  const activeProjects = (projects||[]).filter(p=>p.status==='active');
+  const atLimit = activeProjects.length >= (TIER_ACTIVE_LIMITS[tierKey]||10);
+  const [confirmId, setConfirmId] = React.useState(null);
+
+  function relativeDate(iso) {
+    if (!iso) return '';
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return days + 'd ago';
+    return Math.floor(days/7) + 'w ago';
+  }
+
+  return ReactDOM.createPortal(
+    <>
+      <div className="proj-modal-backdrop" onClick={()=>{ if(confirmId){setConfirmId(null);return;} onClose(); }}/>
+      <div className="proj-modal">
+        <div className="proj-modal-header">
+          <span className="proj-modal-title">Projects</span>
+          <span className="proj-modal-count">{activeProjects.length} of {TIER_ACTIVE_LIMITS[tierKey]||10} active</span>
+          <button className="proj-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="proj-modal-body">
+          {activeProjects.map((p,i)=>(
+            <div key={p.id}>
+              <div className={"proj-modal-item"+(p.id===(activeProject&&activeProject.id)?" proj-modal-active":"")}
+                onClick={()=>{ if(confirmId) return; if(p.id!==(activeProject&&activeProject.id)){ onSwitch(p); } onClose(); }}>
+                <span className="proj-modal-item-num">{i+1}</span>
+                {p.id===(activeProject&&activeProject.id) && <span className="proj-modal-item-dot"/>}
+                <span className="proj-modal-item-name">{p.name}</span>
+                <span className="proj-modal-item-meta">{confirmId===p.id?'':relativeDate(p.last_accessed)}</span>
+                {confirmId===p.id
+                  ? <div className="proj-confirm-inline" onClick={e=>e.stopPropagation()}>
+                      <span className="proj-confirm-inline-text">Sure?</span>
+                      <button className="proj-confirm-btn danger" onClick={e=>{e.stopPropagation();setConfirmId(null);onDelete(p);}}>Yes</button>
+                      <button className="proj-confirm-btn cancel" onClick={e=>{e.stopPropagation();setConfirmId(null);}}>No</button>
+                    </div>
+                  : <button className="proj-modal-delete-btn" onClick={e=>{e.stopPropagation();setConfirmId(p.id);}}>✕</button>
+                }
+              </div>
+            </div>
+          ))}
+          {activeProjects.length===0 && <div className="proj-modal-item" style={{color:'#7a7c94',cursor:'default'}}>No projects yet</div>}
+        </div>
+        <button className={"proj-modal-new-btn"+(atLimit?" at-limit":"")}
+          onClick={()=>{ if(!atLimit){ onCreate(); } onClose(); }}>
+          {atLimit ? 'PROJECT LIMIT REACHED' : '+ NEW PROJECT'}
+        </button>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+function VaultItemModal({ item, onClose }) {
+  if (!item) return null;
+  const isAnswer = item.type === 'answer';
+  return ReactDOM.createPortal(
+    <>
+      <div className="vault-item-modal-backdrop" onClick={onClose} />
+      <div className="vault-item-modal">
+        <div className="vault-item-modal-header">
+          <div>
+            <div className="vault-item-modal-section">{item.section || 'Canvas'}</div>
+            <div className="vault-item-modal-title">{item.name}</div>
+          </div>
+          <button className="vault-item-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="vault-item-modal-body">
+          {isAnswer && (
+            <div className="vault-item-modal-text">{item.text}</div>
+          )}
+          {!isAnswer && item.outputUrl && item.type === 'video' && (
+            <video className="vault-item-modal-media" src={item.outputUrl} controls preload="metadata" />
+          )}
+          {!isAnswer && item.outputUrl && item.type === 'audio' && (
+            <audio className="vault-item-modal-media" src={item.outputUrl} controls />
+          )}
+          {!isAnswer && item.outputUrl && (item.type === 'image' || !item.type) && (
+            <img className="vault-item-modal-media" src={item.outputUrl} alt={item.name} />
+          )}
+          {!isAnswer && !item.outputUrl && (
+            <div className="vault-item-modal-empty">No preview available for this asset.</div>
+          )}
+          <div className="vault-item-modal-meta">
+            {item.lockedAt && <span>Locked {item.lockedAt}</span>}
+            {item.type && <span>{item.type}</span>}
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, onSectionToggle, projects, activeProject, onProjectSwitch, onProjectCreate, onProjectDelete, email, tier }) {
+  const [cdEvents, setCdEvents] = useState({});
+  const [vaultAssets, setVaultAssets] = useState([]);
+  const [collapsedVaultTypes, setCollapsedVaultTypes] = useState({});
+  const [expandedVaultItem, setExpandedVaultItem] = useState(null);
+  const logRef = useRef(null);
+
+  useEffect(() => cdSubscribe(setCdEvents), []);
+  useEffect(() => vaultSubscribe(setVaultAssets), []);
+
+  const tasks = BUILDING_TASKS[bldg.id] || [];
+  const totalTasks = tasks.reduce((acc, s) => acc + s.tasks.length, 0);
+  const completedTasks = vaultAssets.filter(a => a.buildingId === bldg.id).length;
+  const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const [showProjModal, setShowProjModal] = React.useState(false);
+  const activeSectionName = (activeSection >= 0 && tasks[activeSection]) ? tasks[activeSection].section : bldg.tag;
+  const sectionEvents = cdEvents[activeSection] || [];
+  const buildingVault = vaultAssets.filter(a => a.buildingId === bldg.id);
+
+  useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [sectionEvents]);
+
+  function statusLabel(s) {
+    return {running:'RUNNING', done:'COMPLETE', locked:'LOCKED', error:'ERROR'}[s] || s.toUpperCase();
+  }
+  function assetIcon(t) {
+    return {image:'🖼', script:'📄', audio:'🎵', video:'🎬', answer:'📝'}[t] || '📎';
+  }
+
+  return (
+    <div className="journey-col">
+
+      {/* Journey Engine */}
+      <div className="journey-engine-box">
+        <div className="journey-engine-label">JOURNEY ENGINE</div>
+        <div className="journey-stat-row">
+          <div className="journey-active-row">
+            <span className="journey-active-dot"/>
+            <span className="journey-active-label-text">Active Project</span>
+          </div>
+          <div className="journey-proj-value" onClick={()=>setShowProjModal(true)}>
+            {(localStorage.getItem('sy_active_project_name')||'—').toUpperCase()}
+          </div>
+        </div>
+        <div className="journey-stat-row">
+          <div className="journey-stat-label">Active Building</div>
+          <div className="journey-stat-value">{bldg.icon} {bldg.title}</div>
+        </div>
+        <div className="journey-stat-row">
+          <div className="journey-stat-label">Active Canvas</div>
+          <div className="journey-stat-value">{activeSectionName.toUpperCase()}</div>
+        </div>
+        <div style={{marginTop:'10px'}}>
+          <div className="journey-phase-bar-3d">
+            <div className="journey-phase-bar-track">
+              <div className="journey-phase-bar-fill" style={{width:`${pct}%`}} />
+            </div>
+            <div className="journey-phase-bar-shadow" />
+          </div>
+          <div className="journey-phase-pct">{pct}% complete</div>
+          <button className="je-new-proj-btn" onClick={()=>setShowProjModal(true)}>+ NEW PROJECT</button>
+          {showProjModal && (
+            <StudioProjectModal
+              projects={projects} activeProject={activeProject}
+              onSwitch={p=>{ onProjectSwitch&&onProjectSwitch(p); setShowProjModal(false); }}
+              onCreate={()=>{ onProjectCreate&&onProjectCreate(); setShowProjModal(false); }}
+              onDelete={p=>{ onProjectDelete&&onProjectDelete(p); }}
+              onClose={()=>setShowProjModal(false)}
+              email={email} tier={tier}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Sections nav */}
+      {tasks.length > 0 && (
+        <div className="sections-nav">
+          <div className="sections-nav-header">Sections</div>
+          <div className="sections-nav-list">
+            {tasks.map((sec, si) => {
+              const isActive = si === activeSection;
+              const isRec = recommendedSection >= 0 && si === recommendedSection;
+              const cls = ['sections-nav-item', isActive ? 'active' : '', isRec && !isActive ? 'recommended' : ''].filter(Boolean).join(' ');
+              // Section complete when every step in it has a matching Vault
+              // entry — a captured answer (sticky) or a locked generated asset
+              // (image/video), either satisfies the step. Derived automatically
+              // from Vault state, no separate "mark complete" judgment needed.
+              const isSectionComplete = sec.tasks.every(t => buildingVault.some(a => a.name === t.title));
+              return (
+                <div key={si} className={cls} onClick={() => si === activeSection ? onSectionToggle() : onSectionSelect(si)}>
+                  <div className="sections-nav-num">{si+1}</div>
+                  <div className="sections-nav-name">{sec.section}</div>
+                  {isSectionComplete && <div className="sections-nav-complete" title="Section complete">✓</div>}
+                  <div className="sections-nav-chevron">{isActive ? '›' : ''}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Canvas Details */}
+      <div className="cd-box">
+        <div className="cd-header">
+          <div className="cd-header-label">CANVAS DETAILS</div>
+        </div>
+        <div className="cd-log" ref={logRef}>
+          {sectionEvents.length === 0 ? (
+            <div className="cd-standby">
+              <div className="cd-standby-label">Watching</div>
+              <div className="cd-standby-sub">FY's actions in this section show up here — captures, routing, generation.</div>
+            </div>
+          ) : (
+            sectionEvents.map((ev, i) => (
+              <div key={i} className={`cd-event ${ev.status}`}>
+                <div className="cd-event-tool">
+                  <div className="cd-event-tool-name">{ev.tool}</div>
+                  <div className={`cd-event-status ${ev.status}`}>{statusLabel(ev.status)}</div>
+                </div>
+                <div className="cd-event-desc">{ev.desc}</div>
+                {ev.step && <div className="cd-event-step">{ev.step}</div>}
+                {ev.tutorial && <a className="cd-event-link" href={ev.tutorial} target="_blank" rel="noopener">Learn more about {ev.tool} ↗</a>}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Vault */}
+      <div className="vault-box">
+        <div className="vault-header">
+          <div className="vault-header-left">
+            <div className="vault-header-dot" />
+            <div className="vault-header-label">Vault</div>
+          </div>
+          {buildingVault.length > 0 && <div className="vault-header-count">{buildingVault.length} locked</div>}
+        </div>
+        <div className="vault-body">
+          {buildingVault.length === 0
+            ? <div className="vault-empty">No locked assets yet.</div>
+            : (() => {
+                const isIdeate = bldg.id === 'ideate';
+                const stickies = isIdeate ? buildingVault.filter(a => a.type === 'answer') : [];
+                const plain = isIdeate ? buildingVault.filter(a => a.type !== 'answer') : buildingVault;
+                const typeOrder = ['image', 'video', 'audio', 'script', 'answer'];
+                const typeLabels = {image:'Images', video:'Video', audio:'Audio', script:'Script', answer:'Answers'};
+                const grouped = plain.reduce((acc, a) => { (acc[a.type] = acc[a.type] || []).push(a); return acc; }, {});
+                const types = Object.keys(grouped).sort((a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b));
+                return (
+                  <>
+                    {stickies.length > 0 && (
+                      <div className="vault-stickies">
+                        {stickies.map((asset, i) => {
+                          const parentSection = tasks.find(s => s.section === asset.section);
+                          const sealed = parentSection && parentSection.tasks.every(t => buildingVault.some(a => a.name === t.title));
+                          return (
+                            <div key={i} className={`vault-sticky${sealed ? ' sealed' : ''}`} onClick={() => setExpandedVaultItem(asset)}>
+                              {sealed && <div className="vault-sticky-stamp" title="Section complete">✓</div>}
+                              <div className="vault-sticky-section">{asset.section}</div>
+                              <div className="vault-sticky-step">{asset.name}</div>
+                              <div className="vault-sticky-text">{asset.text}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {types.map(type => {
+                      const items = grouped[type];
+                      const collapsed = !!collapsedVaultTypes[type];
+                      return (
+                        <div key={type} className="vault-type-group">
+                          <div className="vault-type-header" onClick={() => setCollapsedVaultTypes(p => ({...p, [type]: !p[type]}))}>
+                            <span className="vault-type-toggle">{collapsed ? '▸' : '▾'}</span>
+                            <span className="vault-type-icon">{assetIcon(type)}</span>
+                            <span className="vault-type-label">{typeLabels[type] || type}</span>
+                            <span className="vault-type-count">{items.length}</span>
+                          </div>
+                          {!collapsed && items.map((asset, i) => (
+                            <div key={i} className="vault-asset" onClick={() => setExpandedVaultItem(asset)}>
+                              <div className="vault-asset-icon">{assetIcon(asset.type)}</div>
+                              <div>
+                                <div className="vault-asset-name">{asset.name}</div>
+                                <div className="vault-asset-meta">{asset.section} · {asset.lockedAt}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()
+          }
+        </div>
+      </div>
+      <VaultItemModal item={expandedVaultItem} onClose={() => setExpandedVaultItem(null)} />
+    </div>
+  );
+}
+
+/* ── FY Rail ── */
+const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, activeStep, fyCollapsed, onToggleFYCollapse }, ref) {
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [initDone, setInitDone] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+  const [pendingLock, setPendingLock] = useState(null);
+  const [pendingTaskContext, setPendingTaskContext] = useState(null); // task waiting for user input before confirm
+  const bodyRef = useRef(null);
+  const inputRef = useRef(null);
+  const lcRef = useRef(null);
+  const roomRef = useRef(null);
+  const pendingTaskContextRef = useRef(null);
+  const lastSendHiddenRef = useRef(false); // true when the last user msg sent was a hidden system prompt
+  const anyReplyRef = useRef(false); // true once any fy_reply has arrived over the data channel
+  const initDoneRef = useRef(false);
+  const msgsRef = useRef([]);
+  const remoteAudioElsRef = useRef([]); // hidden <audio> els from LiveKit attach — muted in sync with avatar toggle
+  const [lkConnected, setLkConnected] = useState(false);
+  const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
+  const isIndependent = tier !== 'operator';
+  const email = localStorage.getItem('sy_email') || '';
+
+  // Keep ref in sync so DataReceived handler sees current value
+  useEffect(() => { pendingTaskContextRef.current = pendingTaskContext; }, [pendingTaskContext]);
+  useEffect(() => { initDoneRef.current = initDone; }, [initDone]);
+  useEffect(() => { msgsRef.current = msgs; }, [msgs]);
+
+  // Avatar toggle previously only hid the <video> element — remote audio kept
+  // playing regardless, AND the agent kept running Cartesia TTS + Runway
+  // avatar rendering every turn no matter what, burning Runway credits
+  // (billed per 6s of active avatar-session time, not per utterance — muting
+  // playback client-side does nothing to stop that). Mirror the toggle onto
+  // attached audio elements for immediate local silence, AND publish it to
+  // the agent on 'fy_avatar_control' so it can close/reopen the actual
+  // Runway avatar session — that's what stops the billing.
+  useEffect(() => {
+    const applyMute = (on) => {
+      remoteAudioElsRef.current.forEach(el => { el.muted = !on; });
+      if (roomRef.current && lkConnected) {
+        try {
+          const payload = new TextEncoder().encode(JSON.stringify({ type: 'fy_avatar_control', on }));
+          roomRef.current.localParticipant.publishData(payload, { topic: 'fy_avatar_control', reliable: true });
+        } catch (e) {
+          console.warn('[Studio FY] avatar control publish failed:', e);
+        }
+      }
+    };
+    applyMute(_fyVideoState.on);
+    return _fyVideoSubscribe(applyMute);
+  }, [lkConnected]);
+
+  React.useImperativeHandle(ref, () => ({
+    addMonologue(text) {
+      setMsgs(prev => [...prev, { role:'agent', text }]);
+    },
+    triggerTask(task, building, sectionIdx, taskIdx) {
+      const toolMeta = TOOL_REGISTRY[task.title];
+      // Always open with a conversation — gather context before offering to build
+      // Store pending task so user response can trigger confirm
+      const prompt = toolMeta
+        ? [
+            `[TASK ACTIVATED: "${task.title}"]`,
+            `Creator tapped BEGIN on: "${task.level1}" in ${building.title}.`,
+            `You will use ${toolMeta.name} to generate this — but first you need the creator's specific direction.`,
+            `Check the conversation history first — if the premise, logline, or core idea is already established, do not ask for it again, reference it directly.`,
+            `Ask ONE focused question to understand what they have in mind. Make it specific to their archetype and formation. Do NOT mention the tool yet. Do NOT offer to build yet. Under 50 words.`,
+          ].join(' ')
+        : [
+            `[TASK ACTIVATED: "${task.title}"]`,
+            `Creator tapped BEGIN: "${task.level1}" in ${building.title}.`,
+            `Check the conversation history first — if the premise, logline, or core idea is already established, do not ask for it again, reference it directly.`,
+            `Respond as FutureYou — warm, one specific opening question, meet them where they are. Under 60 words.`,
+          ].join(' ');
+      // Store task context for when user replies — confirm fires after first user response (tool steps only)
+      if (toolMeta) {
+        setPendingTaskContext({ task, building, sectionIdx, taskIdx, tool: toolMeta });
+      } else {
+        setPendingTaskContext(null);
+      }
+      sendMsg(prompt, true);
+    },
+    setRecommendedSection(sectionName) {
+      const prompt = [
+        `[SECTION RECOMMENDED: "${sectionName}"]`,
+        `You are FutureYou in ${bldg.title}. Direct the creator to start with the "${sectionName}" section.`,
+        `One sentence, direct, warm. Tell them why this is the right first move. Under 40 words.`,
+      ].join(' ');
+      sendMsg(prompt, true);
+    }
+  }));
+
+  function addMonologue(text) {
+    setMsgs(prev => [...prev, { role:'agent', text }]);
+  }
+
+  function buildSystemPrompt() {
+    const arch = localStorage.getItem('sy_archetype') || '';
+    const ph   = localStorage.getItem('sy_phase') || '';
+    const rec  = localStorage.getItem('sy_recommended_building') || '';
+    const brandStory = localStorage.getItem('sy_brand_story') || '';
+    const b = briefing ? (typeof briefing === 'string' ? JSON.parse(briefing) : briefing) : {};
+    const f = formation ? (typeof formation === 'string' ? JSON.parse(formation) : formation) : [];
+    function normPill(v) { if (!v) return ''; if (Array.isArray(v)) return v.join(', '); if (typeof v==='object') return Object.values(v).filter(Boolean).join(', '); return String(v); }
+    const ctx = Array.isArray(f) ? f.map((a,i)=>`Q${i+1}: ${a||'(skipped)'}`).join('\n') : '';
+    const modeNote = isIndependent
+      ? 'DIRECTIVE MODE: You initiate. Always propose the next concrete action. Lead — do not wait to be asked.'
+      : 'PEER MODE: The creator drives. You are available, sharp, never preachy. Respond when called upon.';
+    const sections = BUILDING_TASKS[bldg.id] || [];
+    const buildingMap = sections.length
+      ? [
+          `--- ${bldg.title} MAP ---`,
+          sections.map((s, si) => [
+            `Section ${si + 1}: ${s.section}`,
+            ...s.tasks.map((t, ti) => `  ${si + 1}.${ti + 1} ${t.title}`),
+          ].join('\n')).join('\n'),
+          'This is the complete structure of this building. When you refer to any section or step by name, use the exact titles above — never invent or paraphrase one.',
+        ].join('\n')
+      : '';
+    let stepBlock = '';
+    if (activeStep) {
+      const { si, ti, task } = activeStep;
+      const section = sections[si];
+      stepBlock = [
+        '--- ACTIVE STEP ---',
+        `Currently on Step ${si + 1}.${ti + 1}: ${task.title}`,
+        task.level1 ? `Purpose: ${task.level1}` : '',
+        task.level2 ? `Context: ${task.level2}` : '',
+        'Stay anchored to the current step. Do not move the creator forward until it is complete.',
+        'Before asking anything, check the conversation history above (including the dashboard triage summary) for whether this is already answered — the premise, logline, or core idea especially. If it is, reference it directly instead of asking again. Only ask what is genuinely still missing for this step.',
+      ].filter(Boolean).join('\n');
+    }
+    return [
+      `You are FutureYou — ${firstName||'this creator'}'s future self, back to guide the build. You already built the studio, made the mistakes, and know exactly what needs to happen next.`,
+      '',
+      `Studio: ${studioName||'(unnamed)'} | Archetype: ${arch} | Phase: ${ph}`,
+      `Active building: ${bldg.title} (${bldg.tag}) — ${bldg.desc}`,
+      `Your insight on this building: "${bldg.fyq}"`,
+      `Arsenal: ${normPill(b.arsenal)} | Roadblock: ${normPill(b.roadblock)} | Creator Type: ${normPill(b.creator_type)}`,
+      brandStory ? `Brand story: ${brandStory}` : '',
+      rec ? `Recommended building: ${rec}` : '',
+      ctx ? `Formation Q&A:\n${ctx}` : '',
+      buildingMap,
+      stepBlock,
+      '',
+      modeNote,
+      '',
+      'VOICE: Sovereign. Anti-gatekeeper. You do not hedge. You are not a therapist — you are a strategist who already won. Speak in short sentences, directly. No bullet points. No lists.',
+      '',
+      'RULES:',
+      '- Never start a response with "I". Start with the insight.',
+      '- Under 40 words unless the creator explicitly asks for depth.',
+      '- End with a question or a directive — never a summary.',
+      '- Never say "great question", "absolutely", "certainly", "amazing", "that\'s solid".',
+      '- Never evaluate their creative output. Use additive language only: "let\'s build on this" / "let this breathe".',
+      '- Never perform enthusiasm. Act. "Got it. Here\'s the move."',
+      '- The creator wandering into another building is not a tangent — it is a piece of the active project. Connect it, do not redirect.',
+      '- If three exchanges pass with no clear direction, synthesize once: state the move, get a yes/no, then proceed.',
+      '- The only thing that breaks the active thread is the creator saying they want something else.',
+    ].filter(Boolean).join('\n');
+  }
+
+  // Direct TTS via session.say() on the agent side, same fy_say_verbatim
+  // convention as dashboard.html — bypasses the LLM turn entirely so the line
+  // is guaranteed spoken exactly as written. No-op when the room isn't live.
+  function speakLine(line) {
+    if (!roomRef.current || roomRef.current.state !== 'connected') return;
+    try {
+      const p = new TextEncoder().encode(JSON.stringify({ type: 'fy_say_verbatim', text: line }));
+      roomRef.current.localParticipant.publishData(p, { topic: 'fy_chat', reliable: true });
+    } catch (e) {}
+  }
+
+  async function connectLiveKit(onReady) {
+    if (roomRef.current) { if (onReady) onReady(); return; }
+    try {
+      // Reuse existing dashboard LiveKit session if valid (same room, agent already warm)
+      const existingToken = localStorage.getItem('sy_lk_token');
+      const existingTs = localStorage.getItem('sy_lk_ts');
+      const existingUrl = localStorage.getItem('sy_lk_url');
+      const tokenValid = existingToken && existingTs && (Date.now() - parseInt(existingTs) < 50 * 60 * 1000);
+
+      let token, livekit_url;
+      if (tokenValid) {
+        token = existingToken;
+        livekit_url = existingUrl;
+        console.log('[Studio FY] Reusing dashboard LiveKit session');
+      } else {
+        const convHistory = JSON.parse(localStorage.getItem('sy_fy_conversation') || '[]');
+        const res = await fetch(API_URL + '/api/avatar/livekit-session', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email, conversation_thread: convHistory.slice(-10), surface: 'studio' })
+        });
+        const data = await res.json();
+        if (!data.token || !data.livekit_url) throw new Error('no token');
+        token = data.token;
+        livekit_url = data.livekit_url;
+      }
+      const LC = lcRef.current;
+      const room = new LC.Room();
+      room.on(LC.RoomEvent.DataReceived, (payload, participant, kind, topic) => {
+        if (topic !== 'fy_directive') return;
+        try {
+          const msg = JSON.parse(new TextDecoder().decode(payload));
+          if (msg.type === 'fy_vault_capture') {
+            const projectId = localStorage.getItem('sy_active_project_id');
+            const capturedAt = new Date().toISOString();
+            // Recent thread for this step as context — last 8 messages is enough
+            // to show the refinement path without carrying the whole session.
+            const rawThread = msgsRef.current.slice(-8).map(m => ({
+              role: m.role, content: m.text
+            }));
+            vaultAdd({
+              name: msg.step_title,
+              type: 'answer',
+              section: msg.section_name,
+              buildingId: msg.building_slug,
+              lockedAt: new Date().toLocaleDateString(),
+              text: msg.captured_answer,
+            });
+            // Surface this in Canvas Details so the creator can see FY's
+            // activity, not just the chat reply — this event log was built
+            // for image-gen tool calls only and never reflected capture or
+            // routing decisions, which are FY's actual visible work in most
+            // sessions so far.
+            {
+              const secTasks = BUILDING_TASKS[bldg.id] || [];
+              const secIdx = secTasks.findIndex(s => s.section === msg.section_name);
+              if (secIdx >= 0) {
+                cdPushEvent(secIdx, {
+                  id: 'capture-' + msg.building_slug + '-' + msg.section_name + '-' + msg.step_title,
+                  tool: 'Vault',
+                  desc: `Captured: ${msg.step_title}`,
+                  step: `${msg.section_name} · ${msg.step_title}`,
+                  status: 'done',
+                });
+              }
+            }
+            if (projectId) {
+              fetch(`${API_URL}/api/vault/capture`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  project_id: projectId,
+                  building_slug: msg.building_slug,
+                  section_name: msg.section_name,
+                  step_title: msg.step_title,
+                  captured_answer: msg.captured_answer,
+                  raw_thread: rawThread,
+                })
+              }).catch(() => {});
+            }
+            return;
+          }
+          if (msg.type === 'fy_section_recommendation' && msg.section_id) {
+            if (onSectionRecommendation) onSectionRecommendation(msg.section_id);
+            return;
+          }
+          if (msg.type === 'fy_generate_visual' && msg.task_title) {
+            // Agent-triggered generation — mirrors the manual BEGIN-tap ->
+            // triggerTask() -> BUILD IT button path, but fired directly from
+            // the live conversation instead of requiring a UI tap first.
+            // Without this case, generate_visual calls had nowhere to land:
+            // the tool existed on the agent side with no listener here.
+            const secTasks = BUILDING_TASKS[bldg.id] || [];
+            let foundTask = null, foundSectionIdx = -1, foundTaskIdx = -1;
+            secTasks.forEach((sec, si) => {
+              (sec.tasks || []).forEach((t, ti) => {
+                if (t.title === msg.task_title) { foundTask = t; foundSectionIdx = si; foundTaskIdx = ti; }
+              });
+            });
+            const tool = TOOL_REGISTRY[msg.task_title];
+            if (foundTask && tool) {
+              runGeneration(foundTask, bldg, foundSectionIdx, foundTaskIdx, tool, msg.visual_prompt || null);
+            } else {
+              console.warn('[Studio FY] generate_visual: no matching task/tool for', msg.task_title);
+            }
+            return;
+          }
+          if (msg.type !== 'fy_reply') return;
+          anyReplyRef.current = true;
+          const text = msg.text;
+          setMsgs(prev => {
+            const updated = [...prev, { role:'fy', text }];
+            localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
+            return updated;
+          });
+          setLoading(false);
+          if (onDirective) onDirective(text);
+          if (bodyRef.current) setTimeout(() => { if(bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, 50);
+          // Fire confirm flow only if this reply answers a VISIBLE user message —
+          // never on replies to hidden activation prompts (creator hasn't answered yet).
+          // Mirrors the !hidden guard already present on the REST path.
+          const ptc = pendingTaskContextRef.current;
+          if (ptc && ptc.tool && !lastSendHiddenRef.current) {
+            const { task, building, sectionIdx, taskIdx, tool } = ptc;
+            const confirmDesc = `I have what I need. Ready to build your ${task.title.toLowerCase()} with ${tool.name}?`;
+            setPendingTaskContext(null);
+            setPendingConfirm({ task, building, sectionIdx, taskIdx, tool, confirmDesc });
+            addMonologue(`Preparing ${tool.name} — ${tool.desc}`);
+          }
+        } catch(e) {}
+      });
+
+      // Activation gate — two conditions, in order of strictness:
+      //   agent joined + video attached  → fire immediately (clean speech + render)
+      //   agent joined, no video in 6s   → fire anyway (replies + TTS work; video
+      //                                    attaches whenever Runway finishes booting)
+      //   25s absolute                   → fire regardless; initFY's REST watchdog
+      //                                    keeps chat alive even with no agent.
+      // Never activate into an agentless room before the absolute timeout — a
+      // published opening prompt with no agent listening never gets a reply and
+      // permanently locks the panel in loading.
+      let fired = false;
+      let agentJoined = false;
+      let videoSeen = false;
+      let agentVideoGrace = null;
+      const absoluteTimeout = setTimeout(() => {
+        if (!fired) {
+          fired = true;
+          console.warn('[Studio FY] Activation timeout — agent never joined, REST watchdog will cover');
+          if (onReady) onReady();
+        }
+      }, 25000);
+      const fireReady = () => {
+        if (fired) return;
+        fired = true;
+        clearTimeout(absoluteTimeout);
+        if (agentVideoGrace) clearTimeout(agentVideoGrace);
+        setTimeout(() => { if (onReady) onReady(); }, 600);
+      };
+      const maybeFire = () => {
+        if (fired) return;
+        if (agentJoined && videoSeen) { fireReady(); return; }
+        if (agentJoined && !agentVideoGrace) {
+          agentVideoGrace = setTimeout(() => {
+            console.warn('[Studio FY] Agent joined, video slow — activating without render');
+            fireReady();
+          }, 6000);
+        }
+      };
+      room.on(LC.RoomEvent.ParticipantConnected, () => { agentJoined = true; maybeFire(); });
+      room.on(LC.RoomEvent.Disconnected, () => { roomRef.current = null; setLkConnected(false); });
+      room.on(LC.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === 'video') { setRemoteVideoTrack(track); videoSeen = true; maybeFire(); }
+        if (track.kind === 'audio') {
+          const audioEl = track.attach();
+          audioEl.style.display = 'none';
+          audioEl.muted = !_fyVideoState.on;
+          remoteAudioElsRef.current.push(audioEl);
+          document.body.appendChild(audioEl);
+        }
+      });
+      room.on(LC.RoomEvent.TrackUnsubscribed, (track) => {
+        if (track.kind === 'video') setRemoteVideoTrack(null);
+        if (track.kind === 'audio') {
+          const removed = track.detach();
+          removed.forEach(el => el.remove());
+          remoteAudioElsRef.current = remoteAudioElsRef.current.filter(el => !removed.includes(el));
+        }
+      });
+      // Browser autoplay policy: studio loads via navigation, so no user gesture has
+      // occurred on this page yet — audio playback may be blocked until first click.
+      room.on(LC.RoomEvent.AudioPlaybackStatusChanged, () => {
+        if (!room.canPlaybackAudio) {
+          const resume = () => { room.startAudio().catch(()=>{}); document.removeEventListener('click', resume); };
+          document.addEventListener('click', resume);
+        }
+      });
+
+      await room.connect(livekit_url, token);
+      await room.localParticipant.setMicrophoneEnabled(false);
+      roomRef.current = room;
+      setLkConnected(true);
+
+      // Warm-room path: agent and avatar worker may already be present — feed
+      // the gate so a fully-warm room activates immediately.
+      if (room.remoteParticipants.size > 0) { agentJoined = true; }
+      room.remoteParticipants.forEach((participant) => {
+        participant.trackPublications.forEach((pub) => {
+          if (pub.track && pub.track.kind === 'video') {
+            setRemoteVideoTrack(pub.track);
+            videoSeen = true;
+          }
+          if (pub.track && pub.track.kind === 'audio') {
+            const audioEl = pub.track.attach();
+            audioEl.style.display = 'none';
+            audioEl.muted = !_fyVideoState.on;
+            remoteAudioElsRef.current.push(audioEl);
+            document.body.appendChild(audioEl);
+          }
+        });
+      });
+      maybeFire();
+
+    } catch(e) {
+      console.warn('[Studio FY] LiveKit connect failed, REST fallback active:', e);
+      if (onReady) onReady();
+    }
+  }
+
+  // Load LC on mount, connect, fire initFY when agent joins
+  useEffect(() => {
+    async function loadAndConnect() {
+      const prevConv = localStorage.getItem('sy_fy_conversation');
+      if (prevConv) {
+        try {
+          const hist = JSON.parse(prevConv).filter(m => !m.hidden).slice(-20);
+          if (hist.length) setMsgs(hist);
+        } catch(e) {}
+      }
+      if (!window.LivekitClient) {
+        await new Promise(resolve => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/livekit-client@2.9.9/dist/livekit-client.umd.min.js';
+          s.onload = resolve;
+          document.head.appendChild(s);
+        });
+      }
+      lcRef.current = window.LivekitClient;
+      await connectLiveKit(() => {
+        const line = ARRIVAL_LINES[bldg.id];
+        if (line && !hasVisitedBuilding(bldg.id)) {
+          setMsgs(prev => [...prev, { role: 'fy', text: line }]);
+          speakLine(line);
+          markBuildingVisited(bldg.id);
+        }
+        initFY();
+      });
+    }
+    loadAndConnect();
+    return () => { if (roomRef.current) { roomRef.current.disconnect(); roomRef.current = null; } };
+  }, []);
+
+  async function sendViaRest(newMsgs, hidden) {
+    try {
+      const res = await fetch(API_URL + '/api/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          system: buildSystemPrompt(),
+          messages: newMsgs.map(m => ({ role: m.role==='user' ? 'user' : 'assistant', content: m.text }))
+        })
+      });
+      const data = await res.json();
+      const reply = data.message || (data.content&&data.content[0]&&data.content[0].text) || 'Something went wrong.';
+      setMsgs(prev => {
+        const updated = [...prev, { role:'fy', text:reply }];
+        localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
+        return updated;
+      });
+      if (onDirective) onDirective(reply);
+      if (!hidden && pendingTaskContextRef.current && pendingTaskContextRef.current.tool) {
+        const { task, building, sectionIdx, taskIdx, tool } = pendingTaskContextRef.current;
+        const confirmDesc = `I have what I need. Ready to build your ${task.title.toLowerCase()} with ${tool.name}?`;
+        setPendingTaskContext(null);
+        setPendingConfirm({ task, building, sectionIdx, taskIdx, tool, confirmDesc });
+        addMonologue(`Preparing ${tool.name} — ${tool.desc}`);
+      }
+    } catch(e) {
+      setMsgs(prev => [...prev, { role:'fy', text:'Something went sideways. Try again.' }]);
+    }
+    setLoading(false);
+    if (bodyRef.current) setTimeout(() => { if(bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, 50);
+  }
+
+  async function sendMsg(userText, hidden=false) {
+    lastSendHiddenRef.current = hidden;
+    const newMsgs = hidden
+      ? [...msgs, { role:'user', text:userText, hidden:true }]
+      : [...msgs, { role:'user', text:userText }];
+    setMsgs(newMsgs);
+    if (!hidden) localStorage.setItem('sy_fy_conversation', JSON.stringify(newMsgs));
+    setLoading(true);
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+
+    if (roomRef.current && lkConnected) {
+      try {
+        const payload = new TextEncoder().encode(JSON.stringify({ type: 'fy_chat', text: userText }));
+        await roomRef.current.localParticipant.publishData(payload, { topic: 'fy_chat', reliable: true });
+        // Reply arrives via DataReceived handler — sets loading false there
+        return;
+      } catch(e) {
+        console.warn('[Studio FY] publishData failed, falling back to REST:', e);
+      }
+    }
+    await sendViaRest(newMsgs, hidden);
+  }
+
+  async function initFY() {
+    if (initDoneRef.current) return;
+    setInitDone(true);
+    initDoneRef.current = true;
+    setLoading(true);
+
+    // Build context-aware opening prompt
+    const sections = (BUILDING_TASKS[bldg.id] || []).map(s => s.section);
+    const sectionList = sections.join(', ');
+    const recentHistory = msgs.filter(m => !m.hidden).slice(-6);
+    const convSummary = recentHistory.length
+      ? recentHistory.map(m => `${m.role === 'user' ? 'CREATOR' : 'FY'}: ${m.text}`).join('\n')
+      : '';
+
+    // Read nav destination written by dashboard pill, then clear
+    const navSection = localStorage.getItem('sy_nav_section') || '';
+    const navStep = localStorage.getItem('sy_nav_step') || '';
+    if (navSection) localStorage.removeItem('sy_nav_section');
+    if (navStep) localStorage.removeItem('sy_nav_step');
+
+    const openingPrompt = [
+      `You are FutureYou. Creator has arrived in ${bldg.title} (${bldg.tag}).`,
+      `This is the creator's FIRST time inside a studio building — they have never seen this layout. Sections live in the SECTIONS list on the left rail; clicking a section reveals its numbered steps.`,
+      navSection ? `They were routed here to section: "${navSection}"${navStep ? `, step: "${navStep}"` : ''} — that section is pulsing on the left rail right now.` : '',
+      convSummary ? `Recent conversation:\n${convSummary}` : '',
+      `Sections in ${bldg.title}: ${sectionList}.`,
+      navSection
+        ? `Open by walking them to the exact spot: tell them to select "${navSection}" on the left${navStep ? `, then choose the step "${navStep}"` : ''} — and that you'll work through it together. One sentence on why this is where their answer starts. Under 45 words. No preamble. End with the instruction to click it.`
+        : `Direct them to the right section by name and tell them to select it on the left rail. If the conversation didn't point anywhere specific, pick the logical first section. Under 40 words. No preamble. End with the instruction to click it.`
+    ].filter(Boolean).join('\n');
+
+    if (roomRef.current) {
+      try {
+        lastSendHiddenRef.current = true; // opening prompt is a system message, not a creator answer
+        anyReplyRef.current = false;
+        const payload = new TextEncoder().encode(JSON.stringify({ type: 'fy_chat', text: openingPrompt }));
+        await roomRef.current.localParticipant.publishData(payload, { topic: 'fy_chat', reliable: true });
+        // Reply arrives via DataReceived — sets loading false, updates msgs.
+        // Watchdog: a publish into a room where the agent isn't actually
+        // listening never produces a reply — that permanently locks the panel
+        // in loading. If nothing arrives in 12s, run the REST opening instead.
+        setTimeout(() => {
+          if (!anyReplyRef.current) {
+            console.warn('[Studio FY] No agent reply to opening prompt in 12s — REST fallback');
+            restInit(openingPrompt);
+          }
+        }, 12000);
+        return;
+      } catch(e) {
+        console.warn('[Studio FY] initFY via LiveKit failed, falling back:', e);
+      }
+    }
+    await restInit(openingPrompt);
+  }
+
+  async function restInit(openingPrompt) {
+    try {
+      const res = await fetch(API_URL + '/api/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ system: buildSystemPrompt(), messages:[{ role:'user', content: openingPrompt }] })
+      });
+      const data = await res.json();
+      const reply = data.message || (data.content&&data.content[0]&&data.content[0].text) || `You are in ${bldg.title}. Let's build.`;
+      setMsgs(prev => [...prev, { role:'fy', text:reply }]);
+      if (onDirective) onDirective(reply);
+    } catch(e) {
+      setMsgs(prev => [...prev, { role:'fy', text:`You are inside ${bldg.title}. ${bldg.fyq}` }]);
+    }
+    setLoading(false);
+  }
+
+
+  // Clear chat and reinit FY on every building switch (skip mount — loadAndConnect handles that)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    setMsgs([]);
+    setInput('');
+    setPendingConfirm(null);
+    setPendingLock(null);
+    setPendingTaskContext(null);
+    pendingTaskContextRef.current = null;
+    setInitDone(false);
+    const line = ARRIVAL_LINES[bldg.id];
+    if (line && !hasVisitedBuilding(bldg.id)) {
+      setMsgs(prev => [...prev, { role: 'fy', text: line }]);
+      speakLine(line);
+      markBuildingVisited(bldg.id);
+    }
+    const t = setTimeout(() => initFY(), 80);
+    return () => clearTimeout(t);
+  }, [bldg.id]);
+  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, loading]);
+
+  function handleKey(e) {
+    if (e.key==='Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const val = input.trim();
+      if (val && !loading) { setInput(''); sendMsg(val); }
+    }
+  }
+
+  function handleReset() {
+    setMsgs([]); setInitDone(false);
+    setPendingConfirm(null); setPendingLock(null); setPendingTaskContext(null);
+    pendingTaskContextRef.current = null;
+    // Disconnect and reconnect LiveKit so agent gets fresh context
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
+      setLkConnected(false);
+    }
+    setTimeout(async () => {
+      await connectLiveKit(() => initFY());
+    }, 200);
+  }
+
+  // Confirmation: user approved — fire model, push to Canvas Details
+  // Synthesize the generation prompt from the actual conversation. Chain:
+  // (1) FY brain distills the creator's stated visual via /api/chat,
+  // (2) fallback: creator's own recent words verbatim,
+  // (3) final fallback: null -> buildModelParams uses the static step template.
+  async function buildConversationPrompt(taskTitle) {
+    const visible = msgs.filter(m => !m.hidden);
+    const conv = visible.slice(-12).map(m => (m.role === 'user' ? 'CREATOR: ' : 'FY: ') + m.text).join('\n');
+    const creatorWords = visible.filter(m => m.role === 'user').slice(-4).map(m => m.text).join('. ');
+    if (!conv) return null;
+    try {
+      const res = await fetch(API_URL + '/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You convert creative conversations into generation prompts for image/video models. Output ONLY the prompt text — no preamble, no quotes, no commentary.',
+          messages: [{ role: 'user', content: 'Conversation:\n' + conv + '\n\nWrite ONE generation prompt, under 80 words, for the asset "' + taskTitle + '". Describe exactly the visual the creator stated — subject, setting, mood, lighting, style. Use only what the creator actually said; do not invent a different scene. Return only the prompt.' }]
+        })
+      });
+      const data = await res.json();
+      const p = ((data.message || (data.content && data.content[0] && data.content[0].text) || '') + '').trim();
+      if (p && p.length > 15 && p.length < 900 && !/^(i |sorry|unable)/i.test(p)) return p;
+    } catch (e) {}
+    return creatorWords || null;
+  }
+
+  async function runGeneration(task, building, sectionIdx, taskIdx, tool, visualDesc) {
+    const eventId = `${building.id}-${sectionIdx}-${taskIdx}`;
+
+    window.dispatchEvent(new CustomEvent('sy:canvasGenerating', { detail: { eventId, taskTitle: task.title, tool: tool.name, cardType: tool.cardType || 'image' } }));
+
+    cdPushEvent(sectionIdx, {
+      id: eventId, tool: tool.name,
+      desc: tool.desc,
+      step: `STEP ${taskIdx+1} · ${task.title}`,
+      status: 'running', tutorial: tool.tutorial,
+    });
+
+    addMonologue("Building now — watch the Canvas Details for progress.");
+
+    // Animate progress bar via DOM
+    let prog = 0;
+    const progInterval = setInterval(() => {
+      prog = Math.min(prog + Math.random()*15 + 8, 90);
+      const el = document.getElementById(`cprog-${eventId}`);
+      if (el) el.style.width = `${prog}%`;
+    }, 450);
+
+    const result = await invokeModel({
+      task: tool.task || 'image_generate', building: building.id, tier,
+      params: buildModelParams(tool.task || 'image_generate', task, visualDesc),
+      email,
+    });
+
+    clearInterval(progInterval);
+    const el = document.getElementById(`cprog-${eventId}`);
+    if (el) el.style.width = '100%';
+
+    if (result.success) {
+      const outputUrl = result.output?.images?.[0]?.url || result.output?.video?.url || result.output?.url || null;
+      cdPushEvent(sectionIdx, { id: eventId, tool: tool.name, desc: tool.desc, step: `STEP ${taskIdx+1} · ${task.title}`, status:'done', tutorial: tool.tutorial });
+      // Push result to canvas via event
+      const canvasEvent = new CustomEvent('sy:canvasOutput', { detail: { eventId, outputUrl, taskTitle: task.title, model: result.model, cardType: tool.cardType || 'image' } });
+      window.dispatchEvent(canvasEvent);
+      addMonologue(`Your ${task.title.toLowerCase()} is on the canvas.`);
+      setTimeout(() => {
+        setPendingLock({ assetName: task.title, assetType:'image', section:`Section ${sectionIdx+1}`, outputUrl });
+        addMonologue("If you're satisfied with this result, save it to the Vault and we'll move on.");
+      }, 800);
+    } else {
+      cdPushEvent(sectionIdx, { id: eventId, tool: tool.name, desc:'Something went wrong generating this asset.', step:`STEP ${taskIdx+1} · ${task.title}`, status:'error', tutorial: tool.tutorial });
+      addMonologue("That didn\'t come through. Try again or let\'s adjust the direction.");
+    }
+  }
+
+  async function handleConfirm() {
+    if (!pendingConfirm) return;
+    const { task, building, sectionIdx, taskIdx, tool } = pendingConfirm;
+    setPendingConfirm(null);
+    const visualDesc = await buildConversationPrompt(task.title);
+    await runGeneration(task, building, sectionIdx, taskIdx, tool, visualDesc);
+  }
+
+  function handleConfirmCancel() {
+    setPendingConfirm(null);
+    addMonologue("No problem. Let me know when you\'re ready.");
+  }
+
+  function handleLock() {
+    if (!pendingLock) return;
+    const { assetName, assetType, section, outputUrl } = pendingLock;
+    setPendingLock(null);
+    const lockedAt = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    vaultAdd({ name: assetName, type: assetType, section, buildingId: bldg.id, lockedAt, outputUrl: outputUrl || null });
+    addMonologue(`Locked. ${assetName} is in your Vault.`);
+  }
+
+  function handleLockKeep() {
+    setPendingLock(null);
+    addMonologue("Still on the canvas whenever you\'re ready.");
+  }
+
+  return (
+    <div className={"fy-col" + (fyCollapsed ? " fy-collapsed" : "")}>
+      <div className="fy-rail-collapse-btn" onClick={onToggleFYCollapse}>{fyCollapsed ? "<" : ">"}</div>
+      <FYAvatarSlot tier={tier} firstName={firstName} videoTrack={remoteVideoTrack} />
+      <div className="fy-rail-header">
+        <div className="fy-rail-header-left">
+          <div className="fy-rail-dot" />
+          <div className="fy-rail-label">FUTUREYOU</div>
+        </div>
+        <FYVideoToggle />
+        <button className="fy-rail-reset" onClick={handleReset}>RESET</button>
+      </div>
+      <div className="fy-chat-section">
+        <div className="fy-chat-body" ref={bodyRef}>
+          {msgs.filter(m => !m.hidden).map((m,i) => {
+            if (m.role === 'agent') return (
+              <div key={i} className="fy-msg-agent">
+                <div className="fy-msg-agent-text">{m.text}</div>
+              </div>
+            );
+            return (
+              <div key={i} className={`fy-msg fy-msg-${m.role}`}>
+                <div className="fy-msg-sender">{m.role==='user' ? (firstName||'YOU') : 'FUTUREYOU'}</div>
+                <div className="fy-msg-bubble">{m.text}</div>
+              </div>
+            );
+          })}
+          {loading && (
+            <div className="fy-msg fy-msg-fy">
+              <div className="fy-msg-sender">FUTUREYOU</div>
+              <div className="fy-msg-bubble fy-typing"><span/><span/><span/></div>
+            </div>
+          )}
+        </div>
+
+        {pendingConfirm && (
+          <div className="fy-confirm-bar">
+            <div className="fy-confirm-desc">{pendingConfirm.confirmDesc}</div>
+            <div className="fy-confirm-actions">
+              <button className="fy-confirm-btn confirm" onClick={handleConfirm}>BUILD IT</button>
+              <button className="fy-confirm-btn cancel" onClick={handleConfirmCancel}>NOT YET</button>
+            </div>
+          </div>
+        )}
+        {pendingLock && (
+          <div className="fy-lock-bar">
+            <div className="fy-lock-desc"><strong>{pendingLock.assetName}</strong> is ready. Save it to your Vault and we'll move on.</div>
+            <div className="fy-lock-actions">
+              <button className="fy-lock-btn lock" onClick={handleLock}>LOCK IT</button>
+              <button className="fy-lock-btn keep" onClick={handleLockKeep}>KEEP OPEN</button>
+            </div>
+          </div>
+        )}
+
+        <div className="fy-mode-label">{isIndependent ? 'DIRECTIVE MODE' : 'PEER MODE'}</div>
+        <div className="fy-input-area">
+          <div className="fy-input-row">
+            <textarea
+              ref={inputRef}
+              className="fy-input"
+              rows="1"
+              placeholder={`Ask FutureYou about ${bldg.title.charAt(0)+bldg.title.slice(1).toLowerCase()}...`}
+              value={input}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={handleKey}
+            />
+            <button
+              className="fy-send"
+              onClick={()=>{ const v=input.trim(); if(v&&!loading){setInput('');sendMsg(v);} }}
+              disabled={!input.trim()||loading}
+            >SEND</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/* ── Output Card ── */
+function OutputCard({ card, onVault }) {
+  const ext = card.cardType === 'video' ? '.mp4' : card.cardType === 'audio' ? '.mp3' : '.png';
+  return (
+    <div className="canvas-card-wrap">
+      <div className="canvas-card-controls">
+        <button className="canvas-ctrl" title="Regenerate">&#x21BA;</button>
+        <button className="canvas-ctrl" title="Download" onClick={() => {
+          if (card.outputUrl) { const a = document.createElement('a'); a.href = card.outputUrl; a.download = card.title + ext; a.click(); }
+        }}>&#x2193;</button>
+        <button className="canvas-ctrl" title="Fullscreen" onClick={() => { if (card.outputUrl) window.open(card.outputUrl, '_blank'); }}>&#x29C9;</button>
+        <button className="canvas-ctrl lock-ctrl" title="Vault" onClick={() => onVault(card.id)}>&#x2B21;</button>
+      </div>
+      <div className="canvas-card-label">
+        <span className="canvas-card-label-title">{card.title}</span>
+        {card.tool && <span className="canvas-card-label-tool">{card.tool}</span>}
+      </div>
+      <div className={["canvas-card", card.state === 'vaulted' ? 'vaulted' : '', card.state === 'generating' ? 'generating' : ''].filter(Boolean).join(' ')}>
+        {card.state === 'vaulted' && <div className="canvas-card-vault-badge">VAULTED</div>}
+        {card.state === 'generating' && (
+          <React.Fragment>
+            <div className="canvas-card-gen-icon">&#x2B21;</div>
+            <div className="canvas-card-gen-label">GENERATING</div>
+            <div className="canvas-card-gen-sub">{card.title.toLowerCase()}&hellip;</div>
+            <div className="canvas-card-gen-bar"><div className="canvas-card-gen-fill" id={"cprog-" + card.id} /></div>
+          </React.Fragment>
+        )}
+        {card.state !== 'generating' && card.outputUrl && card.cardType === 'video' && (
+          <video className="canvas-card-video" src={card.outputUrl} controls preload="metadata" />
+        )}
+        {card.state !== 'generating' && card.outputUrl && card.cardType === 'audio' && (
+          <audio className="canvas-card-audio" src={card.outputUrl} controls />
+        )}
+        {card.state !== 'generating' && card.outputUrl && (card.cardType === 'image' || !card.cardType) && (
+          <img className="canvas-card-img" src={card.outputUrl} alt={card.title} />
+        )}
+        {card.state !== 'generating' && !card.outputUrl && (
+          <div style={{padding:'16px 14px', fontSize:'11px', color:'var(--fg3)', fontFamily:'"Playfair Display",serif', fontStyle:'italic', lineHeight:'1.6'}}>Output not available.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Canvas ── */
+function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionToggle, recommendedStep, onSectionChange, onBuildingSwitch, onStepActivate, onSectionVisit }) {
+  const [activeStep, setActiveStep] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [canvasCards, setCanvasCards] = useState([]);
+  const [vaultAssets, setVaultAssets] = useState([]);
+  const [editingStepKey, setEditingStepKey] = useState(null);
+  const [editText, setEditText] = useState('');
+  useEffect(() => vaultSubscribe(setVaultAssets), []);
+  const tasks = BUILDING_TASKS[bldg.id] || [];
+  const isIndependent = tier !== 'operator';
+  const isFYRecommended = (localStorage.getItem('sy_recommended_building')||'') === bldg.id;
+  const normStepTitle = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const isRecommendedStep = task => {
+    if (!recommendedStep) return false;
+    const a = normStepTitle(task.title), b = normStepTitle(recommendedStep);
+    return a === b || a.includes(b) || b.includes(a);
+  };
+  const spatialRef = useRef(null);
+  const prevSection = useRef(-2);
+
+  useEffect(() => {
+    setActiveStep(null);
+    setDrawerOpen(false);
+    setCanvasCards([]);
+    onSectionChange(-1);
+    prevSection.current = -2;
+  }, [bldg.id]);
+
+  useEffect(() => {
+    if (activeSection >= 0 && activeSection !== prevSection.current) {
+      prevSection.current = activeSection;
+      setDrawerOpen(true);
+      setActiveStep(null);
+      if (activeSection >= 0) onSectionVisit(activeSection);
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    function onGenerating(e) {
+      const { eventId, taskTitle, tool, cardType } = e.detail;
+      setCanvasCards(prev => {
+        if (prev.find(c => c.id === eventId)) return prev;
+        return [...prev, { id: eventId, title: taskTitle, tool, cardType: cardType || 'image', outputUrl: null, state: 'generating' }];
+      });
+      setTimeout(() => { if (spatialRef.current) spatialRef.current.scrollTop = spatialRef.current.scrollHeight; }, 50);
+    }
+    window.addEventListener('sy:canvasGenerating', onGenerating);
+    return () => window.removeEventListener('sy:canvasGenerating', onGenerating);
+  }, []);
+
+  useEffect(() => {
+    function onOutput(e) {
+      const { eventId, outputUrl, taskTitle, model, cardType } = e.detail;
+      setCanvasCards(prev => {
+        const exists = prev.find(c => c.id === eventId);
+        if (exists) return prev.map(c => c.id === eventId ? { ...c, outputUrl, cardType: cardType || c.cardType || 'image', state: 'done', tool: model || c.tool } : c);
+        return [...prev, { id: eventId, title: taskTitle, tool: model || '', cardType: cardType || 'image', outputUrl, state: 'done' }];
+      });
+      setTimeout(() => { if (spatialRef.current) spatialRef.current.scrollTop = spatialRef.current.scrollHeight; }, 50);
+    }
+    window.addEventListener('sy:canvasOutput', onOutput);
+    return () => window.removeEventListener('sy:canvasOutput', onOutput);
+  }, []);
+
+  useEffect(() => {
+    if (sectionToggle === 0) return;
+    if (activeStep) {
+      setActiveStep(null);
+      setDrawerOpen(true);
+    } else if (drawerOpen) {
+      setDrawerOpen(false);
+      onSectionChange(-1);
+    } else {
+      setDrawerOpen(true);
+    }
+  }, [sectionToggle]);
+
+  function handleSectionSelect(si) {
+    onSectionChange(si);
+    onSectionVisit(si);
+    setActiveStep(null);
+    setDrawerOpen(true);
+  }
+
+  function handleStepSelect(si, ti, task) {
+    if (activeStep && activeStep.si === si && activeStep.ti === ti) {
+      setActiveStep(null);
+      setDrawerOpen(true);
+      return;
+    }
+    setActiveStep({ si, ti, task });
+    setDrawerOpen(false);
+    onStepActivate({ si, ti, task });
+    if (isIndependent && fyRailRef && fyRailRef.current) {
+      fyRailRef.current.triggerTask(task, bldg, si, ti);
+    }
+  }
+
+  function handleVaultCard(cardId) {
+    const card = canvasCards.find(c => c.id === cardId);
+    if (!card || card.state === 'vaulted') return;
+    setCanvasCards(prev => prev.map(c => c.id === cardId ? { ...c, state: 'vaulted' } : c));
+    vaultAdd({
+      name: card.title, type: card.cardType || 'image',
+      section: activeStep ? 'Section ' + (activeStep.si + 1) : 'Canvas',
+      buildingId: bldg.id,
+      lockedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      outputUrl: card.outputUrl || null
+    });
+    if (fyRailRef && fyRailRef.current) {
+      fyRailRef.current.addMonologue('Locked. ' + card.title + ' is in your Vault.');
+    }
+  }
+
+  const currentSection = tasks[activeSection];
+  const buildingVault = vaultAssets.filter(a => a.buildingId === bldg.id && a.type === 'answer');
+  function answerFor(task) {
+    return currentSection ? buildingVault.find(a => a.section === currentSection.section && a.name === task.title) : null;
+  }
+  function startEdit(task, existing) {
+    setEditingStepKey(task.title);
+    setEditText(existing ? existing.text : '');
+  }
+  function cancelEdit() {
+    setEditingStepKey(null);
+    setEditText('');
+  }
+  async function saveStepEdit(task) {
+    if (!currentSection) return;
+    const text = editText.trim();
+    if (!text) { cancelEdit(); return; }
+    const lockedAt = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    vaultUpdate(
+      a => a.buildingId === bldg.id && a.section === currentSection.section && a.name === task.title && a.type === 'answer',
+      { text, lockedAt }
+    );
+    // If this step had no prior answer, the vaultUpdate above matches nothing —
+    // add it fresh so it shows immediately instead of waiting on a round trip.
+    const alreadyExists = buildingVault.some(a => a.section === currentSection.section && a.name === task.title);
+    if (!alreadyExists) {
+      vaultAdd({ name: task.title, type: 'answer', section: currentSection.section, buildingId: bldg.id, lockedAt, text });
+    }
+    setEditingStepKey(null);
+    const projectId = localStorage.getItem('sy_active_project_id');
+    if (projectId) {
+      fetch(`${API_URL}/api/vault/capture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          building_slug: bldg.id,
+          section_name: currentSection.section,
+          step_title: task.title,
+          captured_answer: text,
+        })
+      }).catch(() => {});
+    }
+  }
+
+  return (
+    <div className="canvas-col" style={{position:'relative'}}>
+
+      {/* Canvas header */}
+      <div className={`canvas-header${activeStep ? ' workspace-mode' : ''}`}>
+        <div className="canvas-header-left">
+          <div className="canvas-building-eyebrow">{bldg.tag.toUpperCase()}</div>
+          <div className="canvas-building-title">{bldg.title}</div>
+          <div className="canvas-building-fy-quote">"{bldg.fyq}"</div>
+        </div>
+        <div className="canvas-header-right">
+          {bldg.gif && <img src={bldg.gif} alt="" className="canvas-bldg-gif" />}
+          {activeStep ? (
+            <div className="canvas-workspace-badge">CANVAS ACTIVE</div>
+          ) : (
+            <div className={`canvas-state-badge${isIndependent ? ' active' : ''}`}>
+              {isIndependent ? 'FY DIRECTING' : 'OPERATOR MODE'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Building tab strip */}
+      <div className="building-tab-strip">
+        <span className="canvas-strip-label">Canvas</span>
+        {BUILDINGS.map(b => (
+          <div key={b.id}
+            className={`building-tab${b.id === bldg.id ? ' active' : ''}`}
+            onClick={() => { if (b.id !== bldg.id) onBuildingSwitch(b.id); }}
+          >
+            <span className="building-tab-icon">{b.icon}</span>{b.title}
+          </div>
+        ))}
+      </div>
+
+      {/* Step drawer */}
+      {drawerOpen && currentSection && (
+        <div className="step-drawer">
+          <div className="step-drawer-header">
+            <div className="step-drawer-section">{currentSection.section}</div>
+            <div className="step-drawer-sub">Section {activeSection + 1} &middot; {currentSection.tasks.length} steps</div>
+            <button className="step-drawer-close" onClick={() => setDrawerOpen(false)}>&#x2715;</button>
+          </div>
+          <div className="step-drawer-list">
+            {currentSection.tasks.map((task, ti) => (
+              <div key={ti}
+                className={`step-drawer-item${isRecommendedStep(task) ? ' recommended' : ''}`}
+                onClick={() => handleStepSelect(activeSection, ti, task)}
+              >
+                <div className="step-drawer-num">STEP {ti + 1}</div>
+                <div>
+                  <div className="step-drawer-title">{task.title}</div>
+                  <div className="step-drawer-desc">{task.level1}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spatial canvas — always visible */}
+      <div className="canvas-spatial" ref={spatialRef}>
+
+        {/* Active step chip */}
+        {activeStep && (
+          <div className="canvas-step-chip">
+            <div className="canvas-step-chip-dot" />
+            <span className="canvas-step-chip-text">STEP {activeStep.ti + 1}</span>
+            <span style={{color:'rgba(0,200,255,0.25)',margin:'0 4px'}}>&#xB7;</span>
+            <span className="canvas-step-chip-title">{activeStep.task.title}</span>
+          </div>
+        )}
+
+        {/* Live step answers — one sticky per step in the active section.
+            Filled steps show the captured answer, click to edit in place.
+            Open steps show an empty slot so the whole section's shape is
+            visible at a glance, not just what's been answered so far. */}
+        {currentSection && (
+          <div className="canvas-step-answers">
+            {currentSection.tasks.map((task, ti) => {
+              const existing = answerFor(task);
+              const editing = editingStepKey === task.title;
+              if (editing) {
+                return (
+                  <div key={ti} className="canvas-answer-sticky editing">
+                    <div className="canvas-answer-sticky-header">
+                      <span className="canvas-answer-sticky-section">{currentSection.section} · Step {ti + 1}</span>
+                      <span className="canvas-answer-sticky-title">{task.title}</span>
+                    </div>
+                    <textarea
+                      className="canvas-answer-sticky-textarea"
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="canvas-answer-sticky-actions">
+                      <button className="canvas-answer-sticky-save" onClick={() => saveStepEdit(task)}>Save</button>
+                      <button className="canvas-answer-sticky-cancel" onClick={cancelEdit}>Cancel</button>
+                    </div>
+                  </div>
+                );
+              }
+              if (existing) {
+                return (
+                  <div key={ti} className="canvas-answer-sticky filled" onClick={() => startEdit(task, existing)}>
+                    <div className="canvas-answer-sticky-header">
+                      <span className="canvas-answer-sticky-section">{currentSection.section} · Step {ti + 1}</span>
+                      <span className="canvas-answer-sticky-title">{task.title}</span>
+                    </div>
+                    <div className="canvas-answer-sticky-text">{existing.text}</div>
+                    <div className="canvas-answer-sticky-edit-hint">Click to edit</div>
+                  </div>
+                );
+              }
+              return (
+                <div key={ti} className="canvas-answer-sticky open">
+                  <div className="canvas-answer-sticky-header">
+                    <span className="canvas-answer-sticky-section">{currentSection.section} · Step {ti + 1}</span>
+                    <span className="canvas-answer-sticky-title">{task.title}</span>
+                  </div>
+                  <div className="canvas-answer-sticky-waiting">Awaiting answer</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Empty state — only when no section selected and nothing generated yet */}
+        {!currentSection && canvasCards.length === 0 && (
+          <div className="canvas-spatial-empty">
+            <div className="canvas-spatial-empty-icon">{bldg.icon}</div>
+            <div className="canvas-spatial-empty-label">{bldg.title}</div>
+            <div className="canvas-spatial-empty-sub">
+              {tasks.length > 0
+                ? 'Select a section from the left. FutureYou will guide you from there.'
+                : 'This building is being configured.'}
+            </div>
+          </div>
+        )}
+
+        {/* Output cards — FY sequenced */}
+        {canvasCards.map(card => (
+          <OutputCard key={card.id} card={card} onVault={handleVaultCard} />
+        ))}
+
+      </div>
+    </div>
+  );
+}
+
+/* ── Logo Button with dropdown menu ── */
+// ABOUT MODAL
+function AboutModal({ onClose }) {
+  React.useEffect(() => {
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, background:'rgba(2,4,14,0.88)',
+      backdropFilter:'blur(12px)', zIndex:10000,
+      display:'flex', alignItems:'center', justifyContent:'center'
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background:'rgba(8,11,28,0.98)', border:'1px solid rgba(240,242,255,0.08)',
+        width:'440px', maxWidth:'90vw', padding:'40px',
+        position:'relative'
+      }}>
+        <button onClick={onClose} style={{
+          position:'absolute', top:16, right:16, background:'none', border:'none',
+          color:'rgba(240,242,255,0.35)', fontSize:'18px', cursor:'pointer', lineHeight:1,
+          padding:'4px 8px'
+        }}>✕</button>
+        <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" style={{height:32, marginBottom:24, display:'block'}} />
+        <p style={{fontFamily:"'Outfit',sans-serif", fontSize:'13px', color:'rgba(240,242,255,0.6)', lineHeight:1.7, marginBottom:24}}>
+          StudioYou is a creator studio OS — complete production infrastructure
+          for independent creators and filmmakers. No permission required.
+          No barriers. Brain to screen.
+        </p>
+        <div style={{
+          borderTop:'1px solid rgba(240,242,255,0.06)',
+          paddingTop:20, marginBottom:20,
+          display:'flex', alignItems:'center', gap:10
+        }}>
+          <img src="assets/CLAUDE_LOGO.png" width="18" height="18" alt="Claude" style={{opacity:0.7, flexShrink:0, objectFit:'contain'}} />
+          <span style={{fontFamily:"'Outfit',sans-serif", fontSize:'11px', letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(240,242,255,0.3)'}}>
+            Built with <span style={{color:'#d97757'}}>Claude</span>. Powered by <span style={{color:'#d97757'}}>Claude</span>.
+          </span>
+        </div>
+        <div style={{display:'flex', gap:20, alignItems:'center'}}>
+          <a href="/bill-of-rights.html" target="_blank" style={{
+            fontFamily:"'Outfit',sans-serif", fontSize:'10px', letterSpacing:'0.16em',
+            textTransform:'uppercase', color:'rgba(0,200,255,0.5)', textDecoration:'none'
+          }}>Creator Bill of Rights →</a>
+          <span style={{fontFamily:"'Outfit',sans-serif", fontSize:'10px', letterSpacing:'0.12em', color:'rgba(240,242,255,0.2)'}}>
+            © 2026 SuperCreativePeople, Inc.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LogoButton({ onShowAbout }) {
+  const [open, setOpen] = useState(false);
+
+  function signOut() {
+    ['sy_email','sy_first_name','sy_last_name','sy_studio_name','sy_formation',
+     'sy_briefing','sy_first_words','sy_fresh_formation','sy_archetype',
+     'sy_phase','sy_recommended_building','sy_tier'].forEach(k=>localStorage.removeItem(k));
+    window.location.href = '/';
+  }
+
+  // Portal: backdrop + menu render into document.body, bypassing topbar stacking context
+  const portal = open ? ReactDOM.createPortal(
+    <>
+      <div style={{position:'fixed',inset:0,zIndex:9999,background:'transparent',cursor:'default'}}
+           onClick={e=>{e.stopPropagation();setOpen(false);}} />
+      <div className="logo-menu" style={{position:'fixed',top:'54px',left:'0',zIndex:10000}}
+           onClick={e=>e.stopPropagation()}>
+        <div className="logo-menu-section-label">Studio</div>
+        <div className="logo-menu-item" onClick={()=>{setOpen(false);window.location.href='/dashboard.html';}}><span className="logo-menu-icon">🏛</span>The Lot</div>
+        <div className="logo-menu-divider" />
+        <div className="logo-menu-section-label">Account</div>
+        <div className="logo-menu-item" onClick={()=>{setOpen(false);window.location.href='/subscribe.html';}}><span className="logo-menu-icon">⭐</span>Subscribe Now</div>
+        <div className="logo-menu-item" onClick={()=>{setOpen(false);window.location.href='/';}}><span className="logo-menu-icon">🏠</span>StudioYou Home</div>
+        <div className="logo-menu-item danger" onClick={signOut}><span className="logo-menu-icon">↩</span>Switch User / Sign Out</div>
+        <div className="logo-menu-divider" />
+        <div className="logo-menu-item" onClick={()=>{setOpen(false);window.open('/bill-of-rights.html','_blank');}}><span className="logo-menu-icon">📋</span>Creator Bill of Rights</div>
+        <div className="logo-menu-item" onClick={()=>{setOpen(false);onShowAbout();}}><span className="logo-menu-icon">ℹ</span>About StudioYou</div>
+      </div>
+    </>,
+    document.body
+  ) : null;
+
+  return (
+    <div className="topbar-logo-wrap" onClick={e=>{e.stopPropagation();setOpen(p=>!p);}}>
+      <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" />
+      {portal}
+    </div>
+  );
+}
+
+/* ── Studio Root ── */
+function Studio() {
+  const [slug, setSlug] = useState(getSlugFromURL);
+  const [bldg, setBldg] = useState(() => getBuildingById(getSlugFromURL()));
+  const [directive, setDirective] = useState('');
+  const [activeSection, setActiveSection] = useState(-1);
+  const [activeStep, setActiveStep] = useState(null);
+  const [visitedSections, setVisitedSections] = useState([]);
+  const [recommendedSection, setRecommendedSection] = useState(-1);
+  const [navStepTitle, setNavStepTitle] = useState('');
+  const [sectionToggle, setSectionToggle] = useState(0);
+  const [showAbout, setShowAbout] = useState(false);
+  const [fyCollapsed, setFYCollapsed] = useState(false);
+  const fyRailRef = useRef(null);
+
+  const firstName  = localStorage.getItem('sy_first_name') || '';
+  const studioName = localStorage.getItem('sy_studio_name') || 'YOUR STUDIO';
+  const tier       = localStorage.getItem('sy_tier') || 'independent';
+  const formation  = localStorage.getItem('sy_formation') || '[]';
+  const briefing   = localStorage.getItem('sy_briefing') || '{}';
+  const email      = localStorage.getItem('sy_email') || '';
+  const [projects, setProjects] = React.useState([]);
+  const [activeProject, setActiveProject] = React.useState(null);
+
+  useEffect(() => {
+    if (activeProject && activeProject.id) vaultLoadFromServer(activeProject.id);
+  }, [activeProject && activeProject.id]);
+
+  async function loadProjects() {
+    if (!email) return;
+    try {
+      const res = await fetch(`${API_URL}/api/projects/list?email=${encodeURIComponent(email)}`);
+      const d = await res.json();
+      if (d.success && d.projects && d.projects.length) {
+        setProjects(d.projects);
+        const storedId = localStorage.getItem('sy_active_project_id');
+        const preferred = storedId && d.projects.find(p=>p.id===storedId);
+        const active = preferred || d.projects[0];
+        setActiveProject(active);
+        localStorage.setItem('sy_active_project_id', active.id);
+        localStorage.setItem('sy_active_project_name', active.name || '');
+      }
+    } catch(e) { console.warn('[Studio] projects load failed:', e); }
+  }
+
+  async function handleProjectSwitch(project) {
+    setActiveProject(project);
+    localStorage.setItem('sy_active_project_id', project.id);
+    localStorage.setItem('sy_active_project_name', project.name || '');
+    fetch(API_URL+'/api/projects/set-active', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ project_id: project.id, email })
+    }).catch(()=>{});
+  }
+
+  async function handleProjectCreate() {
+    try {
+      const res = await fetch(API_URL+'/api/projects/create', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, tier })
+      });
+      const d = await res.json();
+      if (d.success) await loadProjects();
+    } catch(e) { console.warn('[Studio] project create failed:', e); }
+  }
+
+  async function handleProjectDelete(project) {
+    try {
+      const res = await fetch(API_URL+'/api/projects/delete', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ project_id: project.id, email })
+      });
+      const d = await res.json();
+      if (d.success) {
+        await loadProjects();
+        if (activeProject && activeProject.id === project.id) {
+          setActiveProject(null);
+          localStorage.removeItem('sy_active_project_id');
+          localStorage.removeItem('sy_active_project_name');
+        }
+      }
+    } catch(e) { console.warn('[Studio] project delete failed:', e); }
+  }
+
+  // Seed Section 1 in path and apply building bg on building load
+  useEffect(() => {
+    setVisitedSections([]);
+    if (bldg.bg) {
+      document.body.style.backgroundImage = `url(${bldg.bg})`;
+    } else {
+      document.body.style.backgroundImage = '';
+    }
+    return () => { document.body.style.backgroundImage = ''; };
+  }, [bldg.id]);
+
+  // On mount: read FY nav destination from dashboard pill and flash section + step
+  useEffect(() => {
+    const navSection = localStorage.getItem('sy_nav_section');
+    const navStep = localStorage.getItem('sy_nav_step');
+    if (navSection) {
+      const tasks = BUILDING_TASKS[bldg.id] || [];
+      const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const target = norm(navSection);
+      let si = tasks.findIndex(s => norm(s.section) === target);
+      if (si < 0) si = tasks.findIndex(s => norm(s.section).includes(target) || target.includes(norm(s.section)));
+      // Backend named a destination but it didn't match any known section title —
+      // still flash the first section rather than silently show nothing.
+      if (si < 0 && tasks.length > 0) si = 0;
+      if (si >= 0) setRecommendedSection(si);
+    }
+    if (navStep) setNavStepTitle(navStep);
+    // localStorage cleared by initFY after it reads them for the opening prompt
+  }, []);
+
+  // Redirect to home if no session
+  useEffect(() => {
+    if (!email) { window.location.href = '/'; }
+    else { loadProjects(); }
+  }, []);
+
+  // Redirect to subscribe if no tier
+  useEffect(() => {
+    if (email && !localStorage.getItem('sy_tier')) {
+      window.location.href = '/subscribe.html';
+    }
+  }, []);
+
+  function switchBuilding(newSlug) {
+    const b = getBuildingById(newSlug);
+    setSlug(newSlug);
+    setBldg(b);
+    setDirective('');
+    setActiveStep(null);
+    setRecommendedSection(-1);
+    setActiveSection(-1);
+    setVisitedSections([]);
+    const url = new URL(window.location.href);
+    url.searchParams.set('building', newSlug);
+    window.history.pushState({}, '', url.toString());
+  }
+
+  function handleLotClick() { window.location.href = '/dashboard.html'; }
+
+  return (
+    <div className="studio-shell">
+      {showAbout && ReactDOM.createPortal(
+        <AboutModal onClose={() => setShowAbout(false)} />,
+        document.body
+      )}
+      {/* Top bar — 3-zone: left nav / center studio name / right user info */}
+      <div className="studio-topbar">
+        {/* Left: menu + breadcrumb path */}
+        <div className="topbar-left">
+          <LogoButton onShowAbout={() => setShowAbout(true)} />
+          <div className="topbar-sep" />
+          <div className="topbar-path">
+            <div className="topbar-path-seg" onClick={handleLotClick}>THE LOT</div>
+            <div className="topbar-path-arrow">›</div>
+            <div className="topbar-path-seg" onClick={() => { setActiveSection(0); setVisitedSections([0]); }}>{bldg.title}</div>
+            {visitedSections.map((si, idx) => {
+              const isCurrent = idx === visitedSections.length - 1;
+              return (
+                <React.Fragment key={si}>
+                  <div className="topbar-path-arrow">›</div>
+                  <div
+                    className={`topbar-path-seg${isCurrent ? ' current' : ''}`}
+                    onClick={isCurrent ? undefined : () => setActiveSection(si)}
+                    style={isCurrent ? {} : {cursor:'pointer'}}
+                  >
+                    SECTION {si + 1}
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Center: studio name */}
+        <div className="topbar-center">
+          <div className="topbar-studio-name">{studioName.toUpperCase()}</div>
+        </div>
+
+        {/* Right: user info — mirrors dashboard exactly */}
+        <div className="topbar-right">
+          {firstName && <span className="topbar-welcome">Welcome back, {firstName}</span>}
+          {firstName && <div className="topbar-sep" />}
+          {email && (
+            <>
+              <span className="topbar-signed-label">Signed In</span>
+              <span className="topbar-user-email">{email}</span>
+            </>
+          )}
+          {email && <div className="topbar-sep" />}
+          {tier && (
+            <div className={`sy-badge-3d ${tier === 'operator' ? 'sy-badge-3d-gold' : 'sy-badge-3d-cyan'}`} style={{fontSize:'8px',padding:'4px 10px'}}>
+              <div className="sy-badge-3d-dot" style={{width:'4px',height:'4px'}} />
+              {tier.charAt(0).toUpperCase()+tier.slice(1)}
+            </div>
+          )}
+          {tier && <div className="topbar-sep" />}
+          <div className="sy-badge-3d sy-badge-3d-green" style={{fontSize:'7px',padding:'4px 10px'}}>
+            <div className="sy-badge-3d-dot" style={{width:'4px',height:'4px',animation:'pg 2s infinite'}} />
+            FUTUREYOU LIVE
+          </div>
+        </div>
+      </div>
+
+      {/* Three-column body */}
+      <div className="studio-body">
+        <JourneyCol
+          bldg={bldg}
+          activeSection={activeSection}
+          recommendedSection={recommendedSection}
+          onSectionSelect={(si) => {
+            setActiveSection(si);
+            setVisitedSections(prev => prev.includes(si) ? prev : [...prev, si]);
+          }}
+          onSectionToggle={() => setSectionToggle(t => t+1)}
+          projects={projects}
+          activeProject={activeProject}
+          onProjectSwitch={handleProjectSwitch}
+          onProjectCreate={handleProjectCreate}
+          onProjectDelete={handleProjectDelete}
+          email={email}
+          tier={tier}
+        />
+        <CanvasCol
+          bldg={bldg} tier={tier} directive={directive} fyRailRef={fyRailRef}
+          activeSection={activeSection}
+          sectionToggle={sectionToggle}
+          recommendedStep={navStepTitle}
+          onSectionChange={setActiveSection}
+          onBuildingSwitch={switchBuilding}
+          onStepActivate={setActiveStep}
+          onSectionVisit={(si) => setVisitedSections(prev => prev.includes(si) ? prev : [...prev, si])}
+        />
+        <FYRail
+          ref={fyRailRef}
+          bldg={bldg} tier={tier} firstName={firstName}
+          studioName={studioName} formation={formation} briefing={briefing}
+          activeStep={activeStep}
+          fyCollapsed={fyCollapsed}
+          onToggleFYCollapse={() => setFYCollapsed(c => !c)}
+          onDirective={d => {
+            setDirective(d);
+            // Parse FY directive for section recommendation — normalize & match
+            const bldgTasks = BUILDING_TASKS[bldg.id] || [];
+            const dLower = d.toLowerCase().replace(/[*_]/g, ''); // strip markdown bold/italic
+            // Try exact section name match first, then first-word match
+            let match = bldgTasks.findIndex(s => dLower.includes(s.section.toLowerCase()));
+            if (match < 0) {
+              match = bldgTasks.findIndex(s => dLower.includes(s.section.split(' ')[0].toLowerCase()));
+            }
+            if (match >= 0) setRecommendedSection(match);
+          }}
+          onSectionRecommendation={sectionId => {
+            // Live recommend_section tool call from the agent (distinct from the
+            // onDirective text-sniff above). section_id is the backend's Supabase
+            // key for the section, which doesn't necessarily match the frontend's
+            // display title string, so normalize both sides the same way the
+            // mount-time sy_nav_section matcher already does and compare.
+            const bldgTasks = BUILDING_TASKS[bldg.id] || [];
+            const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const target = norm(sectionId);
+            let si = bldgTasks.findIndex(s => norm(s.section) === target);
+            if (si < 0) si = bldgTasks.findIndex(s => norm(s.section).includes(target) || target.includes(norm(s.section)));
+            if (si >= 0) {
+              setRecommendedSection(si);
+              cdPushEvent(si, {
+                id: 'route-' + bldg.id + '-' + sectionId + '-' + Date.now(),
+                tool: 'Routing',
+                desc: `FY moved you here — ${bldgTasks[si].section}`,
+                status: 'done',
+              });
+            }
+          }}
+        />
+      </div>
+
+      {/* Process indicator */}
+      <div className="shutter-indicator" id="shutterInd">
+        <img src="assets/shutter1.gif" alt="" />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<Studio />, document.getElementById('root'));
+</script>
+<script src="assets/sy-3d.js" defer></script>
+<script defer>
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() { if (window.SY3D) window.SY3D.init(); }, 300);
+  });
+</script>
+
+<!-- CLAUDE FOOTER -->
+
+</body>
+</html>

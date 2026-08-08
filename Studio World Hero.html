@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — Studio World Hero</title>
+<link rel="icon" type="image/gif" href="assets/SY_SHUTTER_FAVICON.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #06091a; --navy: #0b0d1a; --white: #f0f2ff;
+    --cyan: #00c8ff; --purple: #7b35d4; --green: #4cff91; --gold: #e8c97a; --red: #ff6b6b; --violet: #a06be8;
+    --grad: linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+    --gradT: linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+    --border: rgba(0,200,255,0.08); --border-mid: rgba(0,200,255,0.14); --border-h: rgba(0,200,255,0.22);
+    --ghost: rgba(240,242,255,0.06); --fg2: #c8cadc; --fg3: #7a7c94;
+    --sidebar-w: 248px;
+  }
+  html, body, #root { height: 100%; }
+  body { background: var(--black); color: var(--white); font-family: 'Outfit',sans-serif; font-weight: 300; overflow: hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E"); background-size:256px; pointer-events:none; z-index:9999; }
+  .amb { position:fixed; border-radius:50%; pointer-events:none; z-index:0; }
+  .amb-1 { top:-20vh; left:-10vw; width:70vw; height:70vh; background:radial-gradient(ellipse,rgba(0,200,255,0.03) 0%,transparent 70%); }
+  .amb-2 { bottom:-10vh; right:-15vw; width:60vw; height:60vh; background:radial-gradient(ellipse,rgba(123,53,212,0.04) 0%,transparent 70%); }
+
+  /* ── LAYOUT ── */
+  .dashboard { display:flex; height:100vh; position:relative; z-index:10; }
+  .sidebar { width:var(--sidebar-w); flex-shrink:0; background:rgba(11,13,26,0.88); backdrop-filter:blur(14px); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+  .sb-logo { padding:18px 18px 14px; border-bottom:1px solid var(--border); }
+  .sb-logo img { height:26px; }
+  .sb-scroll { flex:1; overflow-y:auto; scrollbar-width:none; }
+  .sb-scroll::-webkit-scrollbar { display:none; }
+  .sb-section { padding:12px 0 6px; }
+  .sb-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); padding:0 16px 7px; }
+  .sb-item { display:flex; align-items:center; gap:9px; padding:7px 16px; font-size:12px; color:var(--fg2); cursor:pointer; transition:all 0.15s; border-left:2px solid transparent; }
+  .sb-item:hover { color:var(--white); background:var(--ghost); }
+  .sb-item.active { color:var(--cyan); border-left-color:var(--cyan); background:rgba(0,200,255,0.05); }
+  .sb-dot { width:4px; height:4px; border-radius:50%; background:var(--fg3); }
+  .sb-item.active .sb-dot { background:var(--cyan); box-shadow:0 0 6px rgba(0,200,255,0.5); }
+
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+  .topbar { height:54px; flex-shrink:0; background:rgba(11,13,26,0.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); padding:0 28px; display:flex; align-items:center; justify-content:space-between; }
+  .studio-name { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.05em; background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .topbar-sep { width:1px; height:14px; background:var(--border-mid); }
+  .topbar-tag { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); }
+  .topbar-l { display:flex; align-items:center; gap:12px; }
+  .topbar-r { display:flex; align-items:center; gap:14px; }
+  .fy-live { display:flex; align-items:center; gap:6px; font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--green); }
+  @keyframes pg { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,255,145,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(76,255,145,0)} }
+  @keyframes pgCyan { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,200,255,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(0,200,255,0)} }
+  @keyframes pgGold { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(232,201,122,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(232,201,122,0)} }
+  .dot-g { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pg 2s infinite; }
+  .dot-c { width:5px; height:5px; border-radius:50%; background:var(--cyan); animation:pgCyan 2s infinite; }
+  .dot-gold { width:5px; height:5px; border-radius:50%; background:var(--gold); animation:pgGold 2s infinite; }
+
+  .main-body { flex:1; display:flex; overflow:hidden; min-width:0; }
+  .main-canvas { flex:1; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:rgba(0,200,255,0.12) transparent; }
+  .main-canvas::-webkit-scrollbar { width:3px; }
+  .main-canvas::-webkit-scrollbar-thumb { background:rgba(0,200,255,0.12); }
+  .content { padding:22px 24px 60px; }
+
+  .fy-rail { width:292px; flex-shrink:0; background:rgba(11,13,26,0.85); backdrop-filter:blur(14px); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .fy-rail-header { padding:11px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .fy-rail-label { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--green); }
+  .fy-thread { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; scrollbar-width:none; }
+  .fy-msg { font-family:'Playfair Display',serif; font-style:italic; font-size:13px; line-height:1.75; color:var(--white); }
+  .fy-input-row { display:flex; margin:10px 12px 12px; border:1px solid var(--border-mid); background:rgba(0,200,255,0.02); transition:border-color 0.2s; flex-shrink:0; }
+  .fy-input-row:focus-within { border-color:rgba(76,255,145,0.3); }
+  .fy-input { flex:1; background:transparent; border:none; color:var(--white); font-family:'Outfit',sans-serif; font-size:13px; font-weight:300; padding:10px 12px; outline:none; resize:none; min-height:40px; max-height:80px; caret-color:var(--green) !important; }
+  .fy-input::placeholder { color:var(--fg3); }
+  .fy-send { background:transparent; border:none; border-left:1px solid var(--border); color:var(--green); font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.08em; padding:0 14px; cursor:pointer; transition:background 0.15s; align-self:flex-end; height:40px; }
+  .fy-send:hover { background:rgba(76,255,145,0.06); }
+
+  /* ── BUILDINGS GRID ── */
+  .buildings-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); }
+  .building-card { background:rgba(14,16,32,0.72); backdrop-filter:blur(8px); padding:20px 20px 16px; cursor:pointer; position:relative; min-height:155px; display:flex; flex-direction:column; transition:background 0.2s; overflow:hidden; }
+  .building-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--grad); opacity:0; transition:opacity 0.2s; }
+  .building-card:hover { background:rgba(11,13,26,0.9); }
+  .building-card:hover::before { opacity:1; }
+  .card-icon { font-size:16px; margin-bottom:9px; opacity:0.65; }
+  .card-title { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:0.06em; margin-bottom:5px; color:var(--white); }
+  .card-desc { font-size:10px; color:var(--fg3); line-height:1.6; flex:1; }
+  .card-cta { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--cyan); margin-top:10px; }
+
+  /* ══════════════════════════════════════════════
+     STUDIO WORLD HERO — The Feature
+  ══════════════════════════════════════════════ */
+  .swh {
+    position: relative;
+    height: 284px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(0,200,255,0.12);
+  }
+  /* Lot background — Ken Burns */
+  .swh-bg {
+    position: absolute; inset: 0;
+    background-image: url('assets/SY_LOT1_MWS_V1.jpg');
+    background-size: 135%;
+    background-position: 52% 68%;
+    animation: swKb 40s ease-out forwards;
+  }
+  @keyframes swKb {
+    from { background-size:135%; background-position:52% 68%; }
+    to   { background-size:145%; background-position:56% 64%; }
+  }
+  /* Gradient overlays */
+  .swh-grad-l { position:absolute; inset:0; background:linear-gradient(to right,rgba(6,9,26,0.97) 0%,rgba(6,9,26,0.88) 28%,rgba(6,9,26,0.55) 55%,rgba(6,9,26,0.75) 100%); }
+  .swh-grad-b { position:absolute; bottom:0; left:0; right:0; height:80px; background:linear-gradient(to bottom,transparent,rgba(6,9,26,0.98)); }
+  .swh-grad-t { position:absolute; top:0; left:0; right:0; height:50px; background:linear-gradient(to bottom,rgba(6,9,26,0.5),transparent); }
+
+  /* Content layout: left info + right tower card */
+  .swh-content {
+    position: relative; z-index: 2;
+    height: calc(100% - 42px);
+    display: flex; align-items: center;
+    padding: 0 28px; gap: 0;
+    justify-content: space-between;
+  }
+  /* LEFT ZONE */
+  .swh-left { flex:1; padding-right:24px; max-width:480px; }
+  .swh-archetype-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .swh-arch-badge {
+    font-size:9px; letter-spacing:0.26em; text-transform:uppercase; font-weight:500;
+    padding:4px 12px; border:1px solid; transition:all 0.5s ease;
+  }
+  .swh-arch-conclude-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); }
+  .swh-lot-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(32px,3.5vw,52px);
+    letter-spacing:0.04em; line-height:1;
+    color:var(--white); margin-bottom:7px;
+  }
+  .swh-lot-meta { font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--fg3); margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .swh-lot-meta-sep { width:1px; height:10px; background:var(--border-mid); }
+  .swh-prompt {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:12px; line-height:1.75; color:rgba(240,242,255,0.5);
+    max-width:380px;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+
+  /* RIGHT ZONE — tower card */
+  .swh-right { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .swh-tower-label { font-size:8px; letter-spacing:0.26em; text-transform:uppercase; color:rgba(0,200,255,0.45); text-align:right; }
+
+  /* The water tower MCU card */
+  .tower-card {
+    position: relative;
+    width: 244px;
+    height: 190px;
+    overflow: hidden;
+    border: 1px solid rgba(232,201,122,0.2);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 16px 48px rgba(0,0,0,0.75), 0 0 32px rgba(232,201,122,0.06);
+    transition: border-color 0.6s ease;
+  }
+  .tower-card.live { border-color:rgba(76,255,145,0.25); box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 16px 48px rgba(0,0,0,0.75),0 0 24px rgba(76,255,145,0.08); }
+  .tower-img {
+    width:100%; height:100%;
+    object-fit:cover;
+    object-position: center 38%;
+    display:block;
+    transition:filter 0.8s ease;
+  }
+  .tower-card.generating .tower-img { filter:brightness(0.96) saturate(0.85); }
+  .tower-card.live .tower-img { filter:brightness(1) saturate(1.08); }
+
+  /* Cream band overlay on the cylindrical text zone — covers existing STUDIOYOU text */
+  .tower-name-band {
+    position: absolute;
+    left: 0; right: 0;
+    top: 23%; height: 40%;
+    background: rgba(230,214,192,0.9);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.7s ease;
+  }
+  .tower-name-band.hidden { opacity: 0; }
+  .tower-studio-name {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.04em;
+    color: #14080100;
+    line-height: 0.86;
+    text-align: center;
+    padding: 0 9%;
+    word-break: break-word;
+    transition: color 0.5s ease, opacity 0.5s ease;
+  }
+  .tower-studio-name.pending { opacity: 0.3; color: #14080140; }
+  .tower-studio-name.ready { color: #140801; opacity: 1; }
+
+  /* Helios scan line animation on the card during generation */
+  .tower-scan { position:absolute; left:0; right:0; height:2px; background:linear-gradient(to right,transparent,rgba(0,200,255,0.5),transparent); pointer-events:none; animation:towerScan 2.8s ease-in-out infinite; opacity:0; transition:opacity 0.4s; }
+  .tower-card.generating .tower-scan { opacity:1; }
+  @keyframes towerScan { 0%{top:0;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{top:100%;opacity:0} }
+
+  /* HELIOS badge corner of tower card */
+  .tower-helios-tag {
+    position: absolute; top: 0; right: 0;
+    font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 3px 7px; background: rgba(6,9,26,0.85);
+    border-left: 1px solid; border-bottom: 1px solid;
+    transition: all 0.4s;
+  }
+
+  /* STATUS BAR */
+  .swh-statusbar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 42px; border-top: 1px solid var(--border);
+    background: rgba(6,9,26,0.82); backdrop-filter: blur(10px);
+    z-index: 3; display: flex; align-items: center;
+    padding: 0 28px; gap: 0;
+  }
+  .swh-status-pill { display:flex; align-items:center; gap:7px; padding-right:18px; border-right:1px solid var(--border); margin-right:18px; }
+  .swh-status-text { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; font-weight:500; transition:color 0.4s; }
+  .swh-sep { width:1px; height:12px; background:var(--border-mid); margin:0 16px; }
+  .swh-seed { font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--fg3); white-space:nowrap; }
+  .swh-prompt-bar { font-size:10px; font-style:italic; color:rgba(240,242,255,0.35); font-family:'Playfair Display',serif; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-left:4px; }
+  .swh-reactor-tag { font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--fg3); padding:3px 10px; border:1px solid var(--border); margin-left:14px; white-space:nowrap; flex-shrink:0; }
+
+  /* ARCHETYPE CONCLUDE PANEL */
+  .arch-conclude-panel {
+    position:absolute; top:14px; right:270px;
+    background:rgba(11,13,26,0.92); backdrop-filter:blur(12px);
+    border:1px solid var(--border-mid); padding:12px 16px; z-index:4;
+    min-width:200px;
+    animation:fadeSlideIn 0.4s ease both;
+  }
+  @keyframes fadeSlideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+  .acp-label { font-size:8px; letter-spacing:0.26em; text-transform:uppercase; color:var(--fg3); margin-bottom:10px; }
+  .acp-bar-row { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+  .acp-bar-name { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--fg2); width:90px; flex-shrink:0; font-weight:400; }
+  .acp-bar { flex:1; height:2px; background:rgba(240,242,255,0.06); overflow:hidden; }
+  .acp-bar-fill { height:100%; transition:width 0.8s ease; }
+  .acp-bar-pct { font-size:9px; color:var(--fg3); width:28px; text-align:right; flex-shrink:0; }
+  .acp-concluded-label { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+  .acp-concluded-value { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.08em; margin-top:2px; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation:fadeUp 0.5s ease both; }
+  .d1{animation-delay:0.1s} .d2{animation-delay:0.2s} .d3{animation-delay:0.3s}
+  * { caret-color:transparent !important; }
+  textarea { caret-color:var(--green) !important; }
+</style>
+</head>
+<body>
+<div class="amb amb-1"></div>
+<div class="amb amb-2"></div>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── PREBUILT ARCHETYPE LIST ──────────────────────────────────────────────────
+const ARCHETYPES = [
+  {
+    id: 'documentary',
+    label: 'DOCUMENTARY',
+    color: '#e8c97a',
+    keywords: ['documentary','investigative','long-form','film','broadcast','journalism','truth','archive','research','history'],
+    heliosEnv: 'A cinematic documentary production studio at golden hour. Archive film reels, professional cameras on tripods, editing suites with timeline displays visible through glass walls. Warm amber light casting long shadows across the lot. A place where truth is built frame by frame.',
+    mood: 'Investigative · Cinematic · Archival',
+  },
+  {
+    id: 'social-creator',
+    label: 'SOCIAL CREATOR',
+    color: '#00c8ff',
+    keywords: ['social','tiktok','instagram','reels','short-form','viral','audience','creator economy','content','growth','trends'],
+    heliosEnv: 'A modern creator campus at blue hour. Ring lights glowing across multiple setups, studio walls showing live audience metrics and trending dashboards. Kinetic, forward-leaning, built for velocity.',
+    mood: 'Dynamic · Live · Audience-First',
+  },
+  {
+    id: 'youtube-creator',
+    label: 'YOUTUBE CREATOR',
+    color: '#ff6b6b',
+    keywords: ['youtube','channel','subscriber','video','series','niche','thumbnails','watch time','monetize'],
+    heliosEnv: 'A premium YouTube production studio, late afternoon light. Cinema camera on rails, precisely curated background wall, professional monitors displaying color grade. Polished and aspirational.',
+    mood: 'Narrative · Premium · Channel-Driven',
+  },
+  {
+    id: 'podcast-host',
+    label: 'PODCAST HOST',
+    color: '#4cff91',
+    keywords: ['podcast','audio','interview','conversation','voice','episodes','microphone','radio','talk show','host'],
+    heliosEnv: 'An intimate podcast studio at evening warmth. Acoustic foam panels absorbing every ambience. Professional condenser microphones, soft directional lighting. Quiet authority. Built for depth.',
+    mood: 'Intimate · Conversational · Authoritative',
+  },
+  {
+    id: 'multi-format',
+    label: 'MULTI-FORMAT',
+    color: '#a06be8',
+    keywords: ['multi-format','production company','all formats','diverse','full studio','everything','empire','scale'],
+    heliosEnv: 'A sprawling multi-purpose production complex from above. Sound stages lit at dusk, outdoor shooting areas prepped for morning, editing tower windows glowing. An empire actively being built.',
+    mood: 'Expansive · Versatile · Empire-Scale',
+  },
+];
+
+// ── ARCHETYPE ENGINE ─────────────────────────────────────────────────────────
+function scoreArchetypes(briefing, formation) {
+  const text = [
+    ...(Array.isArray(briefing.arsenal) ? briefing.arsenal : []),
+    ...(Array.isArray(briefing.roadblock) ? briefing.roadblock : []),
+    ...(Array.isArray(briefing.horizon) ? briefing.horizon : []),
+    ...(Array.isArray(formation) ? formation : []),
+  ].join(' ').toLowerCase();
+
+  return ARCHETYPES.map(a => {
+    const matches = a.keywords.filter(kw => text.includes(kw)).length;
+    const base = matches > 0 ? Math.min(55 + matches * 12, 94) : Math.floor(Math.random() * 28 + 20);
+    return { archetype: a, score: base };
+  }).sort((a, b) => b.score - a.score);
+}
+
+function concludeArchetype(briefing, formation) {
+  const stored = localStorage.getItem('sy_archetype');
+  if (stored) {
+    const found = ARCHETYPES.find(a => a.id === stored);
+    if (found) return found;
+  }
+  const scored = scoreArchetypes(briefing, formation);
+  return scored[0].archetype;
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function generateSeed(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = (h * 33) ^ str.charCodeAt(i);
+  return (h >>> 0) % 99999;
+}
+
+function towerFontSize(name) {
+  const chars = name.replace(/\s/g, '').length;
+  if (chars <= 4) return 46;
+  if (chars <= 7) return 38;
+  if (chars <= 10) return 30;
+  if (chars <= 14) return 24;
+  return 20;
+}
+
+// ── WATER TOWER CARD ─────────────────────────────────────────────────────────
+function WaterTowerCard({ studioName, heliosState, archColor }) {
+  const isGenerating = heliosState === 'generating';
+  const isLive = heliosState === 'live';
+  const showName = heliosState !== 'initializing';
+  const nameReady = isGenerating || isLive;
+  const fs = towerFontSize(studioName);
+
+  // Two-line split for multi-word names
+  const words = studioName.trim().toUpperCase().split(' ');
+  const nameDisplay = words.length > 1
+    ? words.slice(0, Math.ceil(words.length / 2)).join(' ') + '\n' + words.slice(Math.ceil(words.length / 2)).join(' ')
+    : studioName.toUpperCase();
+
+  const tagColor = isLive ? '#4cff91' : isGenerating ? '#e8c97a' : 'rgba(0,200,255,0.5)';
+  const tagText  = isLive ? 'HELIOS LIVE' : isGenerating ? 'GENERATING' : 'INITIALIZING';
+
+  return (
+    <div className={`tower-card ${isLive ? 'live' : isGenerating ? 'generating' : ''}`}>
+      <img
+        src="assets/SY_WATER_TOWER_MCU.jpg"
+        alt="Studio water tower"
+        className="tower-img"
+      />
+
+      {/* Cream name band — covers existing STUDIOYOU text, shows user's studio name */}
+      <div className={`tower-name-band ${showName ? '' : 'hidden'}`}>
+        <div
+          className={`tower-studio-name ${nameReady ? 'ready' : 'pending'}`}
+          style={{ fontSize: fs, whiteSpace: 'pre-line' }}
+        >
+          {nameDisplay}
+        </div>
+      </div>
+
+      {/* Helios scan animation during generation */}
+      <div className="tower-scan" />
+
+      {/* Helios state badge */}
+      <div
+        className="tower-helios-tag"
+        style={{ color: tagColor, borderColor: `${tagColor}50` }}
+      >
+        {tagText}
+      </div>
+
+      {/* Live indicator dot when streaming */}
+      {isLive && (
+        <div style={{position:'absolute',bottom:8,right:10,display:'flex',alignItems:'center',gap:5}}>
+          <div style={{width:4,height:4,borderRadius:'50%',background:'#4cff91',animation:'pg 2s infinite'}} />
+          <div style={{fontSize:8,letterSpacing:'0.16em',textTransform:'uppercase',color:'#4cff91'}}>LIVE</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ARCHETYPE CONCLUDE PANEL ─────────────────────────────────────────────────
+function ArchetypeConcludePanel({ briefing, formation, concluded }) {
+  const scores = scoreArchetypes(briefing, formation);
+  const top3 = scores.slice(0, 4);
+  return (
+    <div className="arch-conclude-panel">
+      <div className="acp-label">ARCHETYPE ENGINE — BRIEFING ANALYSIS</div>
+      {top3.map((s, i) => (
+        <div key={s.archetype.id} className="acp-bar-row">
+          <div className="acp-bar-name" style={{color: i===0 ? s.archetype.color : 'var(--fg3)', fontWeight: i===0 ? 500 : 300}}>
+            {s.archetype.label.split(' ')[0]}
+          </div>
+          <div className="acp-bar">
+            <div
+              className="acp-bar-fill"
+              style={{width:`${s.score}%`, background: i===0 ? s.archetype.color : 'rgba(240,242,255,0.12)'}}
+            />
+          </div>
+          <div className="acp-bar-pct">{s.score}%</div>
+        </div>
+      ))}
+      <div className="acp-concluded-label">CONCLUDED</div>
+      <div className="acp-concluded-value" style={{color: concluded.color}}>{concluded.label}</div>
+    </div>
+  );
+}
+
+// ── STUDIO WORLD HERO ─────────────────────────────────────────────────────────
+function StudioWorldHero({ studioName, archetype, phase, seed, briefing, formation }) {
+  // helios state machine: initializing → archetype_concluded → generating → live
+  const [heliosState, setHeliosState] = useState('initializing');
+  const [showConclude, setShowConclude] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => { setHeliosState('archetype_concluded'); setShowConclude(true); }, 1400);
+    const t2 = setTimeout(() => setShowConclude(false), 4200);
+    const t3 = setTimeout(() => setHeliosState('generating'), 4500);
+    const t4 = setTimeout(() => setHeliosState('live'), 7800);
+    return () => [t1,t2,t3,t4].forEach(clearTimeout);
+  }, [archetype.id]);
+
+  const statusConfig = {
+    initializing:       { dot:'dot-c',  text:'READING BRIEFING',      textColor:'var(--fg3)' },
+    archetype_concluded:{ dot:'dot-c',  text:'ARCHETYPE CONCLUDED',    textColor:'var(--cyan)' },
+    generating:         { dot:'dot-gold',text:'GENERATING WORLD',      textColor:'var(--gold)' },
+    live:               { dot:'dot-g',  text:'HELIOS LIVE',            textColor:'var(--green)' },
+  };
+  const sc = statusConfig[heliosState] || statusConfig.initializing;
+  const promptShort = archetype.heliosEnv.slice(0, 90) + '…';
+
+  return (
+    <div className="swh">
+      <div className="swh-bg" />
+      <div className="swh-grad-l" />
+      <div className="swh-grad-b" />
+      <div className="swh-grad-t" />
+
+      {/* Archetype conclude panel — appears briefly after analysis */}
+      {showConclude && (
+        <ArchetypeConcludePanel briefing={briefing} formation={formation} concluded={archetype} />
+      )}
+
+      <div className="swh-content">
+        {/* ── LEFT: lot identity + archetype + Helios prompt ── */}
+        <div className="swh-left">
+          <div className="swh-archetype-row">
+            <div
+              className="swh-arch-badge fade-up"
+              style={{
+                color: archetype.color,
+                borderColor: `${archetype.color}45`,
+                background: `${archetype.color}0d`,
+                opacity: heliosState === 'initializing' ? 0.4 : 1,
+                transition: 'opacity 0.6s ease',
+              }}
+            >
+              {archetype.label}
+            </div>
+            <div className="swh-arch-conclude-label">{archetype.mood}</div>
+          </div>
+
+          <div className="swh-lot-title fade-up d1">THE LOT</div>
+
+          <div className="swh-lot-meta fade-up d2">
+            <span>Los Angeles</span>
+            <div className="swh-lot-meta-sep" />
+            <span>Phase {phase}</span>
+            <div className="swh-lot-meta-sep" />
+            <span>12 Buildings</span>
+            <div className="swh-lot-meta-sep" />
+            <span>{studioName.toUpperCase()}</span>
+          </div>
+
+          <div
+            className="swh-prompt fade-up d3"
+            style={{opacity: heliosState === 'initializing' ? 0.3 : 0.55, transition: 'opacity 0.8s ease'}}
+          >
+            {archetype.heliosEnv}
+          </div>
+        </div>
+
+        {/* ── RIGHT: water tower MCU card ── */}
+        <div className="swh-right">
+          <div className="swh-tower-label">YOUR TOWER · HELIOS GENERATED</div>
+          <WaterTowerCard
+            studioName={studioName}
+            heliosState={heliosState}
+            archColor={archetype.color}
+          />
+        </div>
+      </div>
+
+      {/* ── STATUS BAR ── */}
+      <div className="swh-statusbar">
+        <div className="swh-status-pill">
+          <div className={sc.dot} />
+          <div className="swh-status-text" style={{color: sc.textColor}}>{sc.text}</div>
+        </div>
+        <div className="swh-seed">SEED #{seed}</div>
+        <div className="swh-sep" />
+        <div className="swh-prompt-bar">"{promptShort}"</div>
+        <div className="swh-reactor-tag">REACTOR · HELIOS</div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIDEBAR ──────────────────────────────────────────────────────────────────
+function Sidebar({ archetype }) {
+  const NAV = [
+    { label:'THE LOT', active: true },
+    { label:'IDEATE' }, { label:'DEVELOP' }, { label:'FUND' },
+    { label:'CAST' }, { label:'PLAN' }, { label:'PRODUCE' },
+    { label:'POST' }, { label:'LICENSING' }, { label:'DISTRIBUTE' },
+    { label:'BRAND' }, { label:'MARKET' }, { label:'MONETIZE' },
+  ];
+  return (
+    <div className="sidebar">
+      <div className="sb-logo"><img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" /></div>
+      <div className="sb-scroll">
+        <div className="sb-section">
+          <div className="sb-label">STUDIO</div>
+          {NAV.map(n => (
+            <div key={n.label} className={`sb-item ${n.active ? 'active' : ''}`}>
+              <div className="sb-dot" />{n.label}
+            </div>
+          ))}
+        </div>
+        {/* Archetype badge in sidebar */}
+        <div style={{margin:'14px 14px 0',padding:'12px 14px',border:'1px solid var(--border)',background:'rgba(0,200,255,0.02)'}}>
+          <div style={{fontSize:8,letterSpacing:'0.22em',textTransform:'uppercase',color:'var(--fg3)',marginBottom:6}}>ARCHETYPE</div>
+          <div style={{fontFamily:'\'Bebas Neue\',sans-serif',fontSize:16,letterSpacing:'0.08em',color: archetype.color}}>
+            {archetype.label}
+          </div>
+          <div style={{fontSize:9,color:'var(--fg3)',marginTop:3,lineHeight:1.5}}>{archetype.mood}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FY RAIL ──────────────────────────────────────────────────────────────────
+function FYRail({ studioName, archetype }) {
+  return (
+    <div className="fy-rail">
+      <div className="fy-rail-header">
+        <div className="dot-g" />
+        <div className="fy-rail-label">FUTUREYOU</div>
+      </div>
+      <div className="fy-thread">
+        <div className="fy-msg">
+          Your lot is live. {archetype.label === 'DOCUMENTARY' ? 'The archive wing is where you should start. That is where your strongest IP is going to come from.' : `Your ${archetype.label.toLowerCase()} world is generating. The lot is open.`}
+        </div>
+        <div className="fy-msg" style={{marginTop:4}}>
+          The water tower has your name on it now. That is not cosmetic — it means you have a lot. Protect it like one.
+        </div>
+      </div>
+      <div className="fy-input-row">
+        <textarea className="fy-input" rows={1} placeholder="Talk to FutureYou..." autoComplete="off" spellCheck={false} />
+        <button className="fy-send">SEND</button>
+      </div>
+    </div>
+  );
+}
+
+// ── BUILDINGS GRID (simplified) ───────────────────────────────────────────────
+const BUILDINGS = [
+  {icon:'💡',title:'IDEATE',    desc:'Content strategy, concept development.',   cta:'Start a Brief'},
+  {icon:'🎬',title:'DEVELOP',   desc:'Scripting, storyboarding, pitch prep.',    cta:'Develop a Project'},
+  {icon:'💰',title:'FUND',      desc:'Capital raise, budgeting, pitch materials.',cta:'Plan Your Funding'},
+  {icon:'🎭',title:'CAST',      desc:'Talent identification, booking.',           cta:'Talk to FutureYou'},
+  {icon:'📋',title:'PLAN',      desc:'Production scheduling, crew hiring.',       cta:'Plan Production'},
+  {icon:'🎥',title:'PRODUCE',   desc:'Shoot, capture, on-set workflow.',         cta:'Open Production'},
+  {icon:'✂️',title:'POST',      desc:'Edit, mix, color, VFX, finishing.',        cta:'Open Post'},
+  {icon:'🛡️',title:'LICENSING', desc:'Rights clearance, IP protection.',         cta:'Clear Content'},
+  {icon:'📡',title:'DISTRIBUTE',desc:'Platform publishing, release strategy.',   cta:'Plan a Release'},
+];
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard() {
+  const studioName = (localStorage.getItem('sy_studio_name') || '').trim() || 'APEX STUDIOS';
+  const phase      = localStorage.getItem('sy_phase') || '1';
+  const firstName  = localStorage.getItem('sy_first_name') || 'Creator';
+  const tier       = localStorage.getItem('sy_tier') || 'independent';
+  const email      = localStorage.getItem('sy_email') || '';
+
+  const briefing   = (() => { try { return JSON.parse(localStorage.getItem('sy_briefing') || '{}'); } catch { return {}; } })();
+  const formation  = (() => { try { const v = JSON.parse(localStorage.getItem('sy_formation') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } })();
+
+  const archetype  = concludeArchetype(briefing, formation);
+  const seed       = generateSeed(email || studioName);
+  const rec        = localStorage.getItem('sy_recommended_building') || 'ideate';
+
+  function getBuildingStatus(b) {
+    if (b.id === rec) return 'strategic';
+    const adjacent = ['develop','fund','brand'];
+    if (adjacent.includes(b.id)) return 'advisory';
+    return 'open';
+  }
+
+  return (
+    <div className="dashboard">
+      <Sidebar archetype={archetype} />
+      <div className="main">
+        {/* TOPBAR */}
+        <div className="topbar">
+          <div className="topbar-l">
+            <div className="studio-name">{studioName.toUpperCase()}</div>
+            <div className="topbar-sep" />
+            <div className="topbar-tag">The Lot</div>
+            <div className="topbar-sep" />
+            <div className="topbar-tag">Phase {phase} — Established</div>
+            <div className="topbar-sep" />
+            <div className="topbar-tag">12 Buildings Open</div>
+          </div>
+          <div className="topbar-r">
+            {firstName && <div style={{fontSize:11,color:'#d4af37',letterSpacing:'0.08em',fontWeight:500}}>Welcome back, {firstName}</div>}
+            {firstName && <div className="topbar-sep" />}
+            <div className="fy-live">
+              <div className="dot-g" style={{width:5,height:5}} />FutureYou Live
+            </div>
+            {tier && <><div className="topbar-sep" /><div style={{padding:'3px 10px',fontSize:9,letterSpacing:'0.18em',textTransform:'uppercase',fontWeight:500,border:'1px solid rgba(0,200,255,0.3)',color:'var(--cyan)',background:'rgba(0,200,255,0.07)'}}>{tier.charAt(0).toUpperCase()+tier.slice(1)}</div></>}
+          </div>
+        </div>
+
+        {/* ═══ STUDIO WORLD HERO — lives between topbar and main-body ═══ */}
+        <StudioWorldHero
+          studioName={studioName}
+          archetype={archetype}
+          phase={phase}
+          seed={seed}
+          briefing={briefing}
+          formation={formation}
+        />
+
+        {/* MAIN BODY: sidebar scroll + canvas + FY rail */}
+        <div className="main-body">
+          <div className="main-canvas">
+            <div className="content">
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+                <div style={{fontSize:9,letterSpacing:'0.26em',textTransform:'uppercase',color:'var(--fg3)'}}>THE BUILDINGS</div>
+                <div style={{flex:1,height:1,background:'var(--border)'}} />
+                <div style={{fontSize:9,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--fg3)',opacity:0.7}}>12 ACTIVE</div>
+              </div>
+              <div className="buildings-grid">
+                {BUILDINGS.map((b, i) => {
+                  const status = getBuildingStatus(b);
+                  const tagColor = status==='strategic' ? 'var(--green)' : status==='advisory' ? 'var(--cyan)' : 'var(--fg3)';
+                  const tagBg    = status==='strategic' ? 'rgba(76,255,145,0.07)' : status==='advisory' ? 'rgba(0,200,255,0.07)' : 'transparent';
+                  const tagBdr   = status==='strategic' ? 'rgba(76,255,145,0.35)' : status==='advisory' ? 'rgba(0,200,255,0.35)' : 'rgba(240,242,255,0.1)';
+                  const tagLabel = status==='strategic' ? 'FY STRATEGIC' : status==='advisory' ? 'FY ADVISORY' : 'OPEN';
+                  return (
+                    <div key={b.title} className="building-card fade-up" style={{animationDelay:`${i*0.03}s`}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+                        <div className="card-icon">{b.icon}</div>
+                        <div style={{fontSize:8,letterSpacing:'0.14em',textTransform:'uppercase',padding:'2px 7px',border:`1px solid ${tagBdr}`,color:tagColor,background:tagBg}}>{tagLabel}</div>
+                      </div>
+                      <div className="card-title">{b.title}</div>
+                      <div className="card-desc">{b.desc}</div>
+                      <div className="card-cta">{b.cta} →</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <FYRail studioName={studioName} archetype={archetype} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Dashboard />);
+</script>
+</body>
+</html>

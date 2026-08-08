@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudioYou — 3D System Integration Map</title>
+<link rel="icon" type="image/gif" href="assets/SY_SHUTTER_FAVICON.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sy-3d.css">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --black:#06091a; --navy:#0b0d1a; --white:#f0f2ff;
+    --cyan:#00c8ff; --green:#4cff91; --gold:#e8c97a; --red:#ff6b6b; --violet:#a06be8;
+    --grad:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+    --gradT:linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+    --border:rgba(0,200,255,0.08); --border-mid:rgba(0,200,255,0.14);
+    --ghost:rgba(240,242,255,0.05); --fg2:#c8cadc; --fg3:#7a7c94;
+    --col-card:#7b35d4; --col-badge:#e8c97a; --col-toggle:#4cff91; --col-input:#00c8ff;
+  }
+  html,body { background:var(--black); color:var(--white); font-family:'Outfit',sans-serif; font-weight:300; min-height:100%; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E"); background-size:256px; pointer-events:none; z-index:9999; }
+
+  .page { max-width:1100px; margin:0 auto; padding:56px 44px 120px; position:relative; z-index:1; }
+
+  /* HEADER */
+  .hd-eyebrow { font-size:9px; letter-spacing:0.32em; text-transform:uppercase; color:var(--fg3); display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .hd-eyebrow::before { content:''; width:24px; height:1px; background:var(--fg3); opacity:0.35; }
+  .hd-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,6vw,80px); letter-spacing:0.04em; line-height:1; background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:12px; }
+  .hd-sub { font-family:'Playfair Display',serif; font-style:italic; font-size:17px; color:var(--fg2); line-height:1.7; max-width:620px; margin-bottom:56px; }
+
+  /* COMPONENT INDEX PILLS */
+  .comp-index { display:flex; gap:1px; margin-bottom:64px; }
+  .comp-pill { flex:1; padding:14px 16px; background:rgba(14,16,32,0.7); border:1px solid var(--border); display:flex; flex-direction:column; gap:7px; transition:background 0.2s; cursor:default; }
+  .comp-pill-icon { font-size:20px; }
+  .comp-pill-name { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.08em; }
+  .comp-pill-count { font-size:10px; letter-spacing:0.16em; text-transform:uppercase; }
+
+  /* SECTION */
+  .section { margin-bottom:72px; }
+  .section-stripe { height:3px; width:100%; margin-bottom:0; }
+  .section-header { display:flex; align-items:center; gap:16px; padding:18px 0 20px; border-bottom:1px solid var(--border-mid); margin-bottom:28px; }
+  .section-num { font-size:9px; letter-spacing:0.24em; text-transform:uppercase; color:var(--fg3); }
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:0.06em; }
+  .section-principle { font-size:11px; color:var(--fg3); font-style:italic; margin-left:auto; max-width:320px; text-align:right; line-height:1.5; }
+
+  /* PLACEMENT ROW */
+  .placement-grid { display:flex; flex-direction:column; gap:1px; }
+  .placement-row {
+    display:grid;
+    grid-template-columns:220px 1fr 200px;
+    border:1px solid var(--border);
+    border-bottom:none;
+    background:rgba(14,16,32,0.55);
+    transition:background 0.15s;
+    overflow:hidden;
+  }
+  .placement-row:last-child { border-bottom:1px solid var(--border); }
+  .placement-row:hover { background:rgba(14,16,32,0.9); }
+  .placement-row.highlight { background:rgba(14,16,32,0.75); border-color:var(--border-mid); }
+
+  .pl-location { padding:18px 20px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:6px; justify-content:center; }
+  .pl-file { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg3); font-family:'Courier New',monospace; }
+  .pl-where { font-size:12px; color:var(--white); font-weight:400; line-height:1.4; }
+  .pl-selector { font-family:'Courier New',monospace; font-size:9px; color:var(--cyan); opacity:0.7; margin-top:2px; }
+
+  .pl-body { padding:18px 24px; display:flex; flex-direction:column; gap:8px; justify-content:center; }
+  .pl-reason { font-size:12px; color:var(--fg2); line-height:1.65; }
+  .pl-impl { font-family:'Courier New',monospace; font-size:10px; color:rgba(0,200,255,0.65); background:rgba(0,200,255,0.04); border:1px solid rgba(0,200,255,0.1); padding:5px 10px; margin-top:4px; display:inline-block; width:fit-content; }
+
+  .pl-demo { padding:18px 20px; border-left:1px solid var(--border); display:flex; align-items:center; justify-content:center; background:rgba(6,9,26,0.4); }
+
+  /* IMPACT TAGS */
+  .impact { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; padding:3px 8px; border:1px solid; display:inline-block; width:fit-content; margin-top:5px; }
+  .impact-high { color:var(--green); border-color:rgba(76,255,145,0.3); }
+  .impact-med  { color:var(--gold);  border-color:rgba(232,201,122,0.3); }
+  .impact-low  { color:var(--fg3);   border-color:rgba(240,242,255,0.12); }
+
+  /* ── LIVE COMPONENT DEMOS ── */
+
+  /* Flat mini building card (before) */
+  .demo-building-flat { width:130px; background:rgba(14,16,32,0.72); border:1px solid var(--border); padding:12px 14px; cursor:pointer; }
+  .demo-building-flat .card-icon { font-size:14px; margin-bottom:7px; opacity:0.6; }
+  .demo-building-flat .card-title { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.06em; }
+  .demo-building-flat .card-tag { font-size:7px; letter-spacing:0.14em; text-transform:uppercase; padding:2px 6px; border:1px solid rgba(0,200,255,0.3); color:var(--cyan); margin-top:5px; display:inline-block; }
+
+  /* 3D building card (after) */
+  .demo-building-3d { width:130px; background:rgba(14,16,32,0.72); border:1px solid var(--border); padding:12px 14px; cursor:pointer; position:relative; overflow:hidden; }
+  .demo-building-3d::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gradT); }
+  .demo-building-3d .card-icon { font-size:14px; margin-bottom:7px; opacity:0.6; position:relative; }
+  .demo-building-3d .card-title { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.06em; position:relative; }
+
+  /* Mini FY input */
+  .demo-input-wrap { width:150px; display:flex; flex-direction:column; gap:6px; }
+  .demo-input-label { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:var(--fg3); }
+  .demo-input { width:100%; padding:8px 10px; font-family:'Outfit',sans-serif; font-size:11px; font-weight:300; color:var(--white); }
+
+  /* Mini subscribe billing toggle */
+  .demo-billing { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .demo-billing-label { font-size:8px; letter-spacing:0.2em; text-transform:uppercase; color:var(--fg3); }
+
+  /* Connector card demo */
+  .demo-connector { width:150px; background:rgba(14,16,32,0.72); border:1px solid var(--border); padding:10px 12px; position:relative; overflow:hidden; }
+  .demo-connector::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,var(--green),transparent); }
+  .demo-conn-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .demo-conn-logo { width:22px; height:22px; border:1px solid rgba(76,255,145,0.3); display:flex; align-items:center; justify-content:center; font-size:9px; font-family:'Bebas Neue',sans-serif; color:var(--green); }
+  .demo-conn-name { font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:0.06em; }
+  .demo-conn-port { font-size:8px; color:var(--fg3); margin-top:5px; display:flex; align-items:center; justify-content:space-between; }
+
+  /* Topbar tier badge demo */
+  .demo-topbar { display:flex; align-items:center; gap:8px; padding:6px 12px; background:rgba(11,13,26,0.9); border:1px solid var(--border); }
+  .demo-studio-name { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.05em; background:var(--gradT); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .demo-sep { width:1px; height:10px; background:var(--border-mid); }
+
+  /* FY live pill demo */
+  .demo-fy-live { display:flex; align-items:center; gap:6px; }
+
+  /* Task status demo */
+  .demo-task { display:flex; flex-direction:column; gap:5px; width:160px; }
+  .demo-task-row { display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(11,13,26,0.8); border:1px solid var(--border); }
+  .demo-task-name { font-size:9px; color:var(--fg2); flex:1; }
+
+  /* Avatar control demo */
+  .demo-av-controls { display:flex; flex-direction:column; gap:6px; width:160px; }
+  .demo-av-row { display:flex; align-items:center; gap:10px; }
+  .demo-av-label { font-size:9px; color:var(--fg2); letter-spacing:0.08em; width:44px; }
+
+  /* Sidebar FY recommends */
+  .demo-sb-rec { width:160px; background:rgba(0,200,255,0.03); border:1px solid var(--border-mid); padding:10px 12px; }
+  .demo-sb-rec-label { font-size:7px; letter-spacing:0.22em; text-transform:uppercase; color:var(--fg3); margin-bottom:6px; }
+  .demo-sb-building { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:0.06em; color:var(--white); margin-bottom:3px; }
+  .demo-sb-desc { font-size:9px; color:var(--fg3); line-height:1.5; }
+
+  /* DIVIDER */
+  .divider { height:1px; background:var(--border); margin:60px 0; }
+
+  /* PRINCIPLE BLOCK */
+  .principle-block { border:1px solid var(--border-mid); background:rgba(11,13,26,0.6); padding:28px 32px; margin-bottom:52px; position:relative; overflow:hidden; }
+  .principle-block::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--grad); }
+  .pb-label { font-size:8px; letter-spacing:0.28em; text-transform:uppercase; color:var(--fg3); margin-bottom:12px; }
+  .pb-rules { display:flex; flex-direction:column; gap:10px; }
+  .pb-rule { display:flex; gap:14px; align-items:baseline; }
+  .pb-rule-num { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.1em; color:var(--cyan); flex-shrink:0; width:20px; }
+  .pb-rule-text { font-size:12px; color:var(--fg2); line-height:1.6; }
+  .pb-rule-text strong { color:var(--white); font-weight:400; }
+
+  /* IMPL BLOCK */
+  .impl-block { background:rgba(6,9,26,0.8); border:1px solid var(--border); padding:22px 26px; margin-top:16px; }
+  .impl-title { font-size:8px; letter-spacing:0.26em; text-transform:uppercase; color:var(--fg3); margin-bottom:14px; }
+  .impl-step { display:flex; gap:14px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--border); font-size:11px; color:var(--fg2); line-height:1.5; }
+  .impl-step:last-child { border-bottom:none; }
+  .impl-step-n { font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:0.12em; color:var(--cyan); flex-shrink:0; width:18px; }
+  code { font-family:'Courier New',monospace; font-size:10px; color:var(--cyan); background:rgba(0,200,255,0.07); padding:1px 5px; border:1px solid rgba(0,200,255,0.14); }
+
+  /* PULSE ANIMS */
+  @keyframes pg { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,255,145,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(76,255,145,0)} }
+  @keyframes pgC { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,200,255,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(0,200,255,0)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation:fadeUp 0.5s ease both; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body class="sy-3d">
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hd-eyebrow">STUDIOYOU — 3D DESIGN SYSTEM</div>
+  <div class="hd-title">3D INTEGRATION<br/>MAP</div>
+  <div class="hd-sub">Where each component lives, why it belongs there, and the semantic principle behind every placement. Every choice is tied to a specific moment, action, or status — not decoration.</div>
+
+  <!-- COMPONENT INDEX -->
+  <div class="comp-index">
+    <div class="comp-pill">
+      <div class="comp-pill-icon" style="color:var(--violet)">⬡</div>
+      <div class="comp-pill-name" style="color:var(--violet)">PERSPECTIVE CARDS</div>
+      <div class="comp-pill-count" style="color:var(--violet)">5 placements</div>
+    </div>
+    <div class="comp-pill" style="border-color:rgba(232,201,122,0.14)">
+      <div class="comp-pill-icon" style="color:var(--gold)">◈</div>
+      <div class="comp-pill-name" style="color:var(--gold)">EXTRUDED BADGES</div>
+      <div class="comp-pill-count" style="color:var(--gold)">8 placements</div>
+    </div>
+    <div class="comp-pill" style="border-color:rgba(76,255,145,0.1)">
+      <div class="comp-pill-icon" style="color:var(--green)">◎</div>
+      <div class="comp-pill-name" style="color:var(--green)">PHYSICAL TOGGLES</div>
+      <div class="comp-pill-count" style="color:var(--green)">4 placements</div>
+    </div>
+    <div class="comp-pill" style="border-color:rgba(0,200,255,0.12)">
+      <div class="comp-pill-icon" style="color:var(--cyan)">▣</div>
+      <div class="comp-pill-name" style="color:var(--cyan)">DEPTH INPUTS</div>
+      <div class="comp-pill-count" style="color:var(--cyan)">5 placements</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 1 — PERSPECTIVE CARDS
+  ═══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--violet),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div class="section-title" style="color:var(--violet)">PERSPECTIVE CARDS</div>
+      <div class="section-principle">Tilt on hover. Reserved for primary interactive surfaces — things you "enter", "choose", or "connect". The tilt says: this has depth. Something is on the other side.</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Building cards -->
+      <div class="placement-row highlight">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">The Lot — Building Cards</div>
+          <div class="pl-selector">.building-card → .sy-card-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The highest-value surface in the entire app. A building is a space you enter — 3D tilt makes the card feel like a door. The perspective parallax on hover communicates depth before the click. The shine highlight follows your cursor like light hitting a real surface. Stack the <code>.sy-layer-2</code> class on the title and CTA to make them float above the card face on hover.</div>
+          <div class="pl-impl">wrap: sy-card-3d-wrap &nbsp;|&nbsp; card: sy-card-3d &nbsp;|&nbsp; add: sy-card-3d-shine div</div>
+          <div class="impact impact-high">HIGHEST IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="sy-card-3d-wrap">
+            <div class="sy-card-3d demo-building-3d">
+              <div class="sy-card-3d-shine"></div>
+              <div class="card-icon sy-layer-1">💡</div>
+              <div class="card-title sy-layer-2">IDEATE</div>
+              <div class="sy-badge-3d sy-badge-3d-cyan sy-layer-2" style="margin-top:8px;font-size:7px;padding:3px 8px;">
+                <div class="sy-badge-3d-dot"></div>FY STRATEGIC
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscribe tier cards -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Subscribe Modal — Tier Cards</div>
+          <div class="pl-selector">.sub-card → .sy-card-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The user is choosing between two studio tiers — likely the most financially significant decision in the app. 3D tilt on the tier cards makes the choice feel weighty and physical. As you hover INDEPENDENT vs OPERATOR, they tilt toward you — the one you're considering leans in. The "FUTUREYOU RECOMMENDED" tag should use <code>.sy-badge-3d-cyan</code> to match.</div>
+          <div class="pl-impl">Add sy-card-3d-wrap + sy-card-3d to each .sub-card div</div>
+          <div class="impact impact-high">HIGH IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+            <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:7px;padding:3px 8px;">
+              <div class="sy-badge-3d-dot"></div>RECOMMENDED
+            </div>
+            <div style="font-size:9px;color:var(--fg3);letter-spacing:0.12em;">hover a card →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform connector cards -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Building Overlay — Platform Connector Cards</div>
+          <div class="pl-selector">.connector → .sy-card-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The Operator-tier platform hub shows connector cards for Notion, Miro, Final Draft, etc. These are things you click to connect an external tool — exactly the same "enter/choose" metaphor as buildings. Gentle tilt (reduce <code>tiltMax</code> to 10 via <code>CONFIG.card.tiltMax</code>) since these are smaller cards in a tighter grid.</div>
+          <div class="pl-impl">sy-card-3d-wrap + sy-card-3d + shine &nbsp;|&nbsp; tiltMax: 10</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="sy-card-3d-wrap">
+            <div class="sy-card-3d demo-connector">
+              <div class="sy-card-3d-shine"></div>
+              <div class="demo-conn-header">
+                <div class="demo-conn-logo">NT</div>
+                <div class="sy-badge-3d sy-badge-3d-green" style="font-size:6px;padding:2px 6px;">
+                  <div class="sy-badge-3d-dot" style="width:4px;height:4px;"></div>ON
+                </div>
+              </div>
+              <div class="demo-conn-name sy-layer-1">NOTION</div>
+              <div class="demo-conn-port">
+                <span style="color:var(--fg3)">↔ Concepts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar FY Recommends -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Sidebar — FY Recommends Card</div>
+          <div class="pl-selector">.sb-rec-card → .sy-card-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The recommended building card in the sidebar is the one place FY physically points the user somewhere. It should feel distinct from everything else in the sidebar — a subtle 3D tilt on hover gives it presence without competing with the topbar or canvas. Reduce tilt significantly (tiltMax: 8) to keep it sidebar-appropriate.</div>
+          <div class="pl-impl">sy-card-3d-wrap + sy-card-3d &nbsp;|&nbsp; tiltMax: 8 on init</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="sy-card-3d-wrap">
+            <div class="sy-card-3d demo-sb-rec">
+              <div class="sy-card-3d-shine"></div>
+              <div class="demo-sb-rec-label">FY RECOMMENDS</div>
+              <div class="demo-sb-building sy-layer-1">IDEATE</div>
+              <div class="demo-sb-desc">Start with your strongest IP concept</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archetype cards (onboarding) -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">index.html / archetypes.html</div>
+          <div class="pl-where">Formation — Archetype Selection Cards</div>
+          <div class="pl-selector">.archetype-card → .sy-card-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">When a user selects their creator archetype during onboarding, they are choosing their studio identity. This is the most identity-defining moment in the formation flow. 3D tilt with a tinted shine overlay (tinted to each archetype's accent color) makes each card feel genuinely different — like stepping into different worlds.</div>
+          <div class="pl-impl">sy-card-3d-wrap + sy-card-3d + tinted sy-card-3d-shine per archetype</div>
+          <div class="impact impact-high">HIGH IMPACT — onboarding</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;gap:5px;">
+            <div class="sy-card-3d-wrap">
+              <div class="sy-card-3d" style="width:56px;height:56px;background:rgba(14,16,32,0.8);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                <div class="sy-card-3d-shine"></div>
+                <div style="font-size:14px;">🎬</div>
+                <div style="font-size:7px;letter-spacing:0.1em;color:var(--gold)">DOC</div>
+              </div>
+            </div>
+            <div class="sy-card-3d-wrap">
+              <div class="sy-card-3d" style="width:56px;height:56px;background:rgba(14,16,32,0.8);border:1px solid rgba(0,200,255,0.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                <div class="sy-card-3d-shine"></div>
+                <div style="font-size:14px;">📱</div>
+                <div style="font-size:7px;letter-spacing:0.1em;color:var(--cyan)">SOCIAL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 2 — EXTRUDED BADGES
+  ═══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--gold),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div class="section-title" style="color:var(--gold)">EXTRUDED BADGES</div>
+      <div class="section-principle">Status at a glance, physically rendered. Each badge color is semantic — not decorative. Green = active/live/strategic. Cyan = informational/advisory. Gold = premium/founding. Red = warning/danger.</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Card status tags -->
+      <div class="placement-row highlight">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Building Cards — Status Tags</div>
+          <div class="pl-selector">.card-status-tag</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Currently flat CSS strings. The three states map perfectly to badge colors: <strong>FY STRATEGIC</strong> → green (FY is actively steering you here), <strong>FY ADVISORY</strong> → cyan (FY has something to say), <strong>OPEN</strong> → keep flat/ghost (intentional contrast — it's available, not special). The extruded badges make the FY-tagged buildings visually pop off the card surface before the tilt effect even fires.</div>
+          <div class="pl-impl">sy-badge-3d-green, sy-badge-3d-cyan &nbsp;|&nbsp; OPEN stays flat tag-open</div>
+          <div class="impact impact-high">HIGHEST IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-start;">
+            <div class="sy-badge-3d sy-badge-3d-green" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="width:4px;height:4px;"></div>FY STRATEGIC
+            </div>
+            <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="width:4px;height:4px;"></div>FY ADVISORY
+            </div>
+            <div style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;padding:3px 9px;border:1px solid rgba(240,242,255,0.1);color:var(--fg3)">OPEN</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tier badge topbar -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Topbar — Tier Badge</div>
+          <div class="pl-selector">.tier-badge</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The tier badge sits in the topbar and identifies the user's studio tier at all times. <strong>INDEPENDENT</strong> → <code>sy-badge-3d-cyan</code>. <strong>OPERATOR</strong> → <code>sy-badge-3d-gold</code>. The physical extrusion makes the tier badge feel like a real credential — a physical card pinned to the interface. It also distinguishes it cleanly from the flat topbar metadata text around it.</div>
+          <div class="pl-impl">Replace .tier-badge with sy-badge-3d + color variant per tier</div>
+          <div class="impact impact-high">HIGH IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-topbar">
+            <div class="demo-studio-name">APEX</div>
+            <div class="demo-sep"></div>
+            <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:7px;padding:3px 9px;">INDEPENDENT</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FY LIVE global indicator -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Topbar — FutureYou Live Indicator</div>
+          <div class="pl-selector">.fy-live-global</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Currently just text + dot. <code>sy-badge-3d-green</code> with the animated dot embedded makes "FUTUREYOU LIVE" feel like a system status indicator — the green extrusion communicates that something is genuinely active and generating. The physical depth separates it from topbar metadata and signals that FY is present and online at all times.</div>
+          <div class="pl-impl">sy-badge-3d sy-badge-3d-green + animated dot child</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="sy-badge-3d sy-badge-3d-green" style="font-size:7px;padding:4px 10px;">
+            <div class="sy-badge-3d-dot" style="animation:pg 2s infinite;"></div>FUTUREYOU LIVE
+          </div>
+        </div>
+      </div>
+
+      <!-- Founding Member -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Subscribe Modal — Founding Member Tag</div>
+          <div class="pl-selector">.sub-rec-tag, .sub-founding-label</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">"FOUNDING MEMBER" and "FUTUREYOU RECOMMENDED" are the two highest-prestige labels in the subscribe modal. Gold extrusion is exactly the right treatment — it reads as an honor, not a UI label. The physical depth makes it feel like something has been granted to the user, not merely displayed.</div>
+          <div class="pl-impl">sy-badge-3d sy-badge-3d-gold on both .sub-rec-tag and founding label</div>
+          <div class="impact impact-high">HIGH IMPACT — conversion</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-start;">
+            <div class="sy-badge-3d sy-badge-3d-gold" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="width:4px;height:4px;background:var(--gold);box-shadow:0 0 6px rgba(232,201,122,0.7);"></div>FOUNDING MEMBER
+            </div>
+            <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="width:4px;height:4px;"></div>FY RECOMMENDED
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Helios / Avatar live status -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">Studio World Hero.html / FutureYou Avatar.html</div>
+          <div class="pl-where">Hero Panel + Avatar Rail — State Badges</div>
+          <div class="pl-selector">.swh-status-text, .avatar-live-badge</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">HELIOS LIVE → green. GENERATING → gold. ARCHETYPE CONCLUDED → cyan. INITIALIZING → flat (not yet a status worth announcing). AVATAR LIVE → green. These state transitions are cinematic moments — the badge should feel like it's switching on, not just changing text color. The physical extrusion punctuates each state change.</div>
+          <div class="pl-impl">Replace status text spans with sy-badge-3d variants per state</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-start;">
+            <div class="sy-badge-3d sy-badge-3d-green" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="animation:pg 2s infinite;width:4px;height:4px;"></div>HELIOS LIVE
+            </div>
+            <div class="sy-badge-3d sy-badge-3d-gold" style="font-size:7px;padding:3px 9px;">
+              <div class="sy-badge-3d-dot" style="width:4px;height:4px;background:var(--gold);box-shadow:0 0 6px rgba(232,201,122,0.7);"></div>GENERATING
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Building overlay task status -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Building Overlay — Task Stage Labels</div>
+          <div class="pl-selector">.task-stage</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Task rows inside buildings show stage labels ("Draft 2 / Act II", "Ready for Notes", "Brief Submitted"). These are tiny but frequent — replacing them with micro-badges (font-size: 7px, compact padding) adds physical consistency without visual noise. Green = complete/ready, cyan = in-progress, gold = needs review.</div>
+          <div class="pl-impl">sy-badge-3d variants at 7px, padding 2px 7px — micro scale</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-task">
+            <div class="demo-task-row">
+              <div class="demo-task-name">Feature Script</div>
+              <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:6px;padding:2px 6px;">IN PROGRESS</div>
+            </div>
+            <div class="demo-task-row">
+              <div class="demo-task-name">Series Bible</div>
+              <div class="sy-badge-3d sy-badge-3d-gold" style="font-size:6px;padding:2px 6px;">REVIEW</div>
+            </div>
+            <div class="demo-task-row">
+              <div class="demo-task-name">Short Film</div>
+              <div class="sy-badge-3d sy-badge-3d-green" style="font-size:6px;padding:2px 6px;">READY</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector state badges -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Platform Hub — Connector State Badges</div>
+          <div class="pl-selector">.cn-state-badge</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">CONNECTED → green, AVAILABLE → cyan, LOCKED → gold. The connector cards already have left-border color coding — the badge in the top-right corner confirms the state at a glance. Physical extrusion on the badge makes the "CONNECTED" state feel like a real indicator light, not a text label.</div>
+          <div class="pl-impl">Replace .cn-state-badge with sy-badge-3d variants per connector.state</div>
+          <div class="impact impact-low">LOW IMPACT — Operator only</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+            <div class="sy-badge-3d sy-badge-3d-green" style="font-size:6px;padding:2px 7px;">CONNECTED</div>
+            <div class="sy-badge-3d sy-badge-3d-cyan" style="font-size:6px;padding:2px 7px;">AVAILABLE</div>
+            <div class="sy-badge-3d sy-badge-3d-gold" style="font-size:6px;padding:2px 7px;">LOCKED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archetype badge dashboard sidebar -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Sidebar — Archetype Identity</div>
+          <div class="pl-selector">.sb-archetype (future component)</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The archetype identity block in the sidebar should eventually carry a 3D badge for the archetype name — tinted to the archetype color (gold for documentary, cyan for social creator, etc.). This makes the archetype feel like a credential the user has earned through the formation, not just a label stored in localStorage.</div>
+          <div class="pl-impl">Dynamic sy-badge-3d color class keyed to sy_archetype localStorage value</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="sy-badge-3d sy-badge-3d-gold" style="font-size:8px;padding:4px 11px;">
+            <div class="sy-badge-3d-dot" style="width:4px;height:4px;background:var(--gold);box-shadow:0 0 6px rgba(232,201,122,0.7);"></div>DOCUMENTARY
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 3 — PHYSICAL TOGGLES
+  ═══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div class="section-title" style="color:var(--green)">PHYSICAL TOGGLES</div>
+      <div class="section-principle">Binary states that deserve physicality. Not every on/off needs a toggle — only choices where the two states are genuinely different modes of use, not just preferences.</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- Billing toggle -->
+      <div class="placement-row highlight">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Subscribe Modal — Billing Cycle</div>
+          <div class="pl-selector">.sub-toggle → .sy-toggle-3d</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The MONTHLY ↔ ANNUAL toggle is the highest-stakes binary choice in the app — it directly changes the price shown on both tier cards. A physical toggle with real inertia (the thumb slides, the track glows) makes the choice feel consequential. The "SAVE 35%" badge should appear as a <code>sy-badge-3d-green</code> that only materializes when the toggle snaps to ANNUAL — reward the click physically.</div>
+          <div class="pl-impl">Replace .sub-toggle div + buttons with .sy-toggle-3d structure &amp; js bind</div>
+          <div class="impact impact-high">HIGHEST IMPACT — conversion</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-billing">
+            <div class="demo-billing-label">BILLING</div>
+            <div class="sy-toggle-3d is-on">
+              <span class="sy-toggle-3d-label" style="font-size:10px;color:var(--fg3)">MO</span>
+              <div class="sy-toggle-3d-track">
+                <div class="sy-toggle-3d-thumb"></div>
+              </div>
+              <span class="sy-toggle-3d-label" style="font-size:10px;color:var(--cyan)">YR</span>
+            </div>
+            <div class="sy-badge-3d sy-badge-3d-green" style="font-size:7px;padding:2px 7px;">SAVE 35%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avatar / text mode toggle -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html / FutureYou Avatar.html</div>
+          <div class="pl-where">FY Rail Header — Avatar / Text Mode</div>
+          <div class="pl-selector">.fy-rail-header mode switch</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">When the FutureYou avatar is live, the user can switch between watching the video face and reading text responses. This is a genuine mode change — the interface restructures around it. A physical toggle in the rail header communicates that you're switching between two real states, not just toggling a preference. Only renders when <code>sy_avatar_ready</code> is true.</div>
+          <div class="pl-impl">Render sy-toggle-3d in .fy-rail-header when sy_avatar_ready=true</div>
+          <div class="impact impact-high">HIGH IMPACT — avatar feature</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="demo-fy-live">
+              <div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:pg 2s infinite;"></div>
+              <span style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);">FUTUREYOU</span>
+            </div>
+            <div class="sy-toggle-3d">
+              <span class="sy-toggle-3d-label" style="font-size:9px;">TEXT</span>
+              <div class="sy-toggle-3d-track">
+                <div class="sy-toggle-3d-thumb"></div>
+              </div>
+              <span class="sy-toggle-3d-label" style="font-size:9px;">AVATAR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mute/unmute in avatar zone -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">FutureYou Avatar.html</div>
+          <div class="pl-where">Avatar Video Zone — Audio Control</div>
+          <div class="pl-selector">.avatar-ctrl-btn (audio)</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The mute/unmute control in the avatar rail is currently a styled button with emoji. A physical toggle is far more appropriate — muting a live conversation is a deliberate, binary mode change. The track going dark (off) vs glowing cyan (on) mirrors the microphone state intuitively. No label text needed — the track state is self-explanatory in context.</div>
+          <div class="pl-impl">Replace mute .avatar-ctrl-btn with compact sy-toggle-3d (no label)</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-av-controls">
+            <div class="demo-av-row">
+              <div class="demo-av-label" style="font-size:9px;color:var(--fg3);">AUDIO</div>
+              <div class="sy-toggle-3d is-on" style="gap:8px;">
+                <div class="sy-toggle-3d-track" style="width:38px;height:22px;">
+                  <div class="sy-toggle-3d-thumb" style="width:16px;height:16px;top:2px;left:2px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="demo-av-row">
+              <div class="demo-av-label" style="font-size:9px;color:var(--fg3);">VIDEO</div>
+              <div class="sy-toggle-3d" style="gap:8px;">
+                <div class="sy-toggle-3d-track" style="width:38px;height:22px;">
+                  <div class="sy-toggle-3d-thumb" style="width:16px;height:16px;top:2px;left:2px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector enable/disable -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Platform Hub — Connector Enable/Disable</div>
+          <div class="pl-selector">.connector (connected state)</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Connected platform cards could carry an inline toggle to temporarily disable a connection without fully disconnecting it. This is an Operator-tier power feature. A mini toggle (compact size) in the connector card footer lets the user pause a data flow without going through a full disconnect/reconnect cycle. Track goes dark = paused, glowing = active.</div>
+          <div class="pl-impl">Add sy-toggle-3d inside .cn-cta for connected connectors only</div>
+          <div class="impact impact-low">LOW IMPACT — Operator only, future</div>
+        </div>
+        <div class="pl-demo">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:8px;color:var(--fg3);letter-spacing:0.1em;text-transform:uppercase;">SYNC</div>
+            <div class="sy-toggle-3d is-on" style="gap:0;">
+              <div class="sy-toggle-3d-track" style="width:36px;height:20px;">
+                <div class="sy-toggle-3d-thumb" style="width:14px;height:14px;top:2px;left:2px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 4 — DEPTH INPUTS
+  ═══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-stripe" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div class="section-title" style="color:var(--cyan)">DEPTH INPUTS</div>
+      <div class="section-principle">The recessed well. Every text input is a place where the user puts something of themselves — a question, an idea, a name. The sunken depth says: this is where things go in, not come out. Reserve for inputs tied to identity or conversation.</div>
+    </div>
+
+    <div class="placement-grid">
+
+      <!-- FY chat input -->
+      <div class="placement-row highlight">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">FY Rail — Main Chat Input</div>
+          <div class="pl-selector">.fy-input</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The primary FY conversation input is the most used text field in the entire app. <code>sy-input-3d</code> makes typing feel like writing into a physical well — the sunken shadow says your words are going somewhere. The focus glow (cyan ring + inner shadow deepens) signals that FutureYou is now listening. This is the single highest-value input in the product.</div>
+          <div class="pl-impl">Add class sy-input-3d to .fy-input textarea</div>
+          <div class="impact impact-high">HIGHEST IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-input-wrap">
+            <div class="demo-input-label">TALK TO FUTUREYOU</div>
+            <textarea class="demo-input sy-input-3d" rows="2" placeholder="Ask FutureYou anything..." style="resize:none;border-radius:0;padding:10px 12px;font-size:11px;font-weight:300;caret-color:var(--green) !important;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Studio naming input -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">index.html + dashboard.html</div>
+          <div class="pl-where">Studio Name — Custom Input Field</div>
+          <div class="pl-selector">.name-custom-input, studio_name phase input</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Naming your studio is the most identity-defining moment in the formation flow. The input field where the user types their studio name should feel like carving something into stone — the deep shadow, the focused glow, the green caret pulsing. Every character typed should feel deliberate. This is the one place where depth input is not just aesthetic — it's semantic.</div>
+          <div class="pl-impl">Add sy-input-3d to .name-custom-input and studio_name phase input</div>
+          <div class="impact impact-high">HIGH IMPACT — formation</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-input-wrap">
+            <div class="demo-input-label">STUDIO NAME</div>
+            <input class="demo-input sy-input-3d" type="text" placeholder="Name your studio..." style="border-radius:0;padding:10px 12px;font-size:12px;font-family:'Bebas Neue',sans-serif;letter-spacing:0.08em;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscribe modal step 2 fields -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Subscribe Modal Step 2 — Name + Email Fields</div>
+          <div class="pl-selector">.sub2-field</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">The name and email fields in subscribe step 2 are the final handshake — the user is committing to the platform. Depth inputs here communicate that what they're entering is being received and held. The focused glow + sunken depth creates a small moment of ceremony around submitting your identity to the studio.</div>
+          <div class="pl-impl">Add sy-input-3d to all .sub2-field inputs</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-input-wrap">
+            <div class="demo-input-label">FULL NAME</div>
+            <input class="demo-input sy-input-3d" type="text" placeholder="Your name" style="border-radius:0;padding:9px 12px;font-size:11px;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Building overlay FY input -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Building Overlay — FY Conversation Input</div>
+          <div class="pl-selector">.bldg-fy-input</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">Inside each building, FY has a dedicated context-aware conversation panel. The input here is narrower and more focused than the main FY rail — the user is asking FY about a specific task or decision. Depth input reinforces that they're querying a system with real context, not just typing into a chatbox. The building-specific context makes this input especially meaningful.</div>
+          <div class="pl-impl">Add sy-input-3d to .bldg-fy-input textarea</div>
+          <div class="impact impact-med">MEDIUM IMPACT</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-input-wrap">
+            <div class="demo-input-label">ASK FY · IDEATE</div>
+            <textarea class="demo-input sy-input-3d" rows="2" placeholder="What should I develop next?" style="resize:none;border-radius:0;padding:9px 12px;font-size:10px;font-weight:300;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscribe modal FY chat -->
+      <div class="placement-row">
+        <div class="pl-location">
+          <div class="pl-file">dashboard.html</div>
+          <div class="pl-where">Subscribe Modal — FY Chat Input</div>
+          <div class="pl-selector">.sub-chat-input</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-reason">At the bottom of the subscribe modal, there's a live FY conversation where the user can ask questions about the tiers before committing. This input is already styled similarly to the main FY input — depth treatment creates visual consistency and signals that this is the same FutureYou system answering, not a different chatbot. Reinforces trust at the highest-friction moment.</div>
+          <div class="pl-impl">Add sy-input-3d to .sub-chat-input textarea</div>
+          <div class="impact impact-med">MEDIUM IMPACT — conversion</div>
+        </div>
+        <div class="pl-demo">
+          <div class="demo-input-wrap">
+            <div class="demo-input-label">QUESTION FOR FY</div>
+            <textarea class="demo-input sy-input-3d" rows="2" placeholder="What's the real difference?" style="resize:none;border-radius:0;padding:9px 12px;font-size:10px;font-weight:300;"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PRINCIPLE BLOCK -->
+  <div class="principle-block">
+    <div class="pb-label">DESIGN PRINCIPLE — WHEN TO USE EACH COMPONENT</div>
+    <div class="pb-rules">
+      <div class="pb-rule">
+        <div class="pb-rule-num" style="color:var(--violet)">⬡</div>
+        <div class="pb-rule-text"><strong>Perspective cards</strong> — only on things you enter, choose, or connect. Buildings, tier selection, archetype cards, connector cards. Never on static information displays or sidebar nav items.</div>
+      </div>
+      <div class="pb-rule">
+        <div class="pb-rule-num" style="color:var(--gold)">◈</div>
+        <div class="pb-rule-text"><strong>Extruded badges</strong> — status that matters. FY tags, tier identity, system live states, task stages. Green = active/live/go, cyan = informational, gold = premium/earned, red = warning. Never use flat text where a badge belongs. Never use a badge where flat text is sufficient.</div>
+      </div>
+      <div class="pb-rule">
+        <div class="pb-rule-num" style="color:var(--green)">◎</div>
+        <div class="pb-rule-text"><strong>Physical toggles</strong> — binary mode switches only. Billing cycle, avatar/text mode, audio on/off, sync on/off. Not for filters, not for settings, not for anything with more than two states. The thumb sliding is a commitment — reserve it for choices that feel like one.</div>
+      </div>
+      <div class="pb-rule">
+        <div class="pb-rule-num" style="color:var(--cyan)">▣</div>
+        <div class="pb-rule-text"><strong>Depth inputs</strong> — conversation and identity only. FY chat, studio naming, formation answers, subscribe commitment. Not for search, not for filters, not for utility inputs. The sunken well says: what you put here matters.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPLEMENTATION BLOCK -->
+  <div class="impl-block">
+    <div class="impl-title">IMPLEMENTATION ORDER — HIGHEST RETURN FIRST</div>
+    <div class="impl-step">
+      <div class="impl-step-n">1</div>
+      <div>Add <code>sy-input-3d</code> to <code>.fy-input</code> in dashboard.html. Single class addition, zero structural change, immediate impact on the most-used field.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">2</div>
+      <div>Wrap all 12 <code>.building-card</code> divs in <code>.sy-card-3d-wrap</code>, add <code>.sy-card-3d</code> + <code>.sy-card-3d-shine</code>. Move card title and CTA to <code>.sy-layer-2</code>. <code>SY3D.init()</code> already runs on dashboard load — no JS changes needed.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">3</div>
+      <div>Replace <code>.card-status-tag.tag-fy-strategic</code> with <code>.sy-badge-3d.sy-badge-3d-green</code> and <code>.tag-fy-advisory</code> with <code>.sy-badge-3d-cyan</code>. Keep <code>.tag-open</code> flat.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">4</div>
+      <div>Replace <code>.sub-toggle</code> with <code>.sy-toggle-3d</code> in the subscribe modal billing row. Wire the <code>is-on</code> class toggle to update pricing display. Attach "SAVE 35%" as <code>sy-badge-3d-green</code> that shows on annual.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">5</div>
+      <div>Replace <code>.tier-badge</code> in the topbar and <code>.fy-live-global</code> with their <code>sy-badge-3d</code> equivalents. Dynamic class: <code>sy-badge-3d-cyan</code> for Independent, <code>sy-badge-3d-gold</code> for Operator.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">6</div>
+      <div>Add <code>sy-input-3d</code> to all remaining priority inputs: <code>.name-custom-input</code>, <code>.sub2-field</code>, <code>.bldg-fy-input</code>, <code>.sub-chat-input</code>.</div>
+    </div>
+    <div class="impl-step">
+      <div class="impl-step-n">7</div>
+      <div>Wrap subscribe tier cards in <code>.sy-card-3d-wrap</code>. Wire avatar/text mode toggle in FY rail header (gated on <code>sy_avatar_ready</code>). Add task stage <code>sy-badge-3d</code> micro-badges inside building overlays.</div>
+    </div>
+  </div>
+
+</div>
+<script src="assets/sy-3d.js"></script>
+</body>
+</html>

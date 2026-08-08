@@ -1,0 +1,624 @@
+/* ═══════════════════════════════════════════════════════════════
+   sy-3d.css  —  StudioYou 3D Component Extension
+   Version 1.0
+
+   USAGE
+   ─────
+   1. Import AFTER colors_and_type.css:
+        <link rel="stylesheet" href="colors_and_type.css">
+        <link rel="stylesheet" href="sy-3d.css">
+
+   2. Add class="sy-3d" to <body> (or any container) to activate
+      button overrides. Remove it to revert to the flat system.
+
+   3. Load sy-3d.js at the bottom of <body> for interactive effects
+      (card tilt, prism buttons, toggle clicks).
+
+   WHAT THIS FILE DOES
+   ───────────────────
+   A. Overrides --sy-fg-2 and --sy-fg-3 globally to fixed hex values
+      (Treatment E). No more near-invisible opacity-based descriptor
+      text, and fully consistent contrast over photo backgrounds.
+
+   B. Inside body.sy-3d, upgrades the four existing button tiers:
+      .syb-grad    →  Neon Extrude  (marquee CTA, one per screen)
+      .syb-primary →  Chrome Bevel  (standard action)
+      .syb-ghost   →  Chrome Bevel  (secondary / cancel)
+      .syb-gold    →  Chrome Bevel  (founding tier)
+      .syb-danger  →  Chrome Bevel  (destructive)
+
+   C. Provides new opt-in classes for cards, inputs, badges, toggles.
+      These are applied by class name — no body class needed.
+
+   CLASS REFERENCE
+   ───────────────
+   Cards:     .sy-card-3d-wrap > .sy-card-3d > .sy-card-3d-shine
+              Content layers: .sy-layer-1 / .sy-layer-2 / .sy-layer-3
+
+   Inputs:    .sy-input-3d       on <input>, <textarea>
+              .sy-select-3d      on <select>
+
+   Badges:    .sy-badge-3d  +  .sy-badge-3d-cyan / -gold / -green / -red
+              Status dot:  .sy-badge-3d-dot inside the badge
+
+   Toggles:   .sy-toggle-3d  >  .sy-toggle-3d-track  >  .sy-toggle-3d-thumb
+              Toggle ON state: add .is-on to .sy-toggle-3d
+              sy-3d.js handles click toggling automatically.
+
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ── A. TYPE TOKENS — global, always active ────────────────────
+   Replaces rgba opacity fog with fixed hex.
+   Consistent on any surface: --sy-black, --sy-navy, photo overlay.
+   ─────────────────────────────────────────────────────────────── */
+
+:root {
+  --sy-fg-2: #c8cadc;   /* was rgba(240,242,255,0.65) — body paragraphs    */
+  --sy-fg-3: #7a7c94;   /* was rgba(240,242,255,0.32) — labels, descriptors */
+  /* --sy-fg-1 and --sy-fg-4 are unchanged                                  */
+}
+
+
+/* ── B. BUTTON OVERRIDES — scoped to body.sy-3d ───────────────── */
+
+/* Shared transition for all 3D buttons */
+.sy-3d .syb {
+  transition: transform 90ms ease,
+              box-shadow 90ms ease,
+              background 90ms ease,
+              color 90ms ease,
+              border-color 90ms ease,
+              text-shadow 200ms ease;
+  overflow: visible; /* allow shadow/glow to escape button bounds */
+}
+
+
+/* ── NEON EXTRUDE — .syb-grad ────────────────────────────────────
+   The single marquee CTA per screen. Void face, glowing border,
+   coloured side walls. Presses down on active.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-3d .syb-grad {
+  background: transparent;
+  color: var(--sy-cyan);
+  border: 1px solid rgba(0, 200, 255, 0.80);
+  text-shadow: 0 0 12px rgba(0, 200, 255, 0.50);
+  box-shadow:
+    inset 0 0 16px rgba(0, 200, 255, 0.04),
+    0 6px 0 #004a64,
+    0 8px 0 #002c3d,
+    0 9px 0 rgba(0, 200, 255, 0.12),
+    0 0 20px rgba(0, 200, 255, 0.14),
+    0 14px 28px rgba(0, 0, 0, 0.55);
+  transform: translateY(0);
+}
+.sy-3d .syb-grad:hover {
+  text-shadow: 0 0 22px rgba(0, 200, 255, 0.90);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 24px rgba(0, 200, 255, 0.08),
+    0 6px 0 #00607a,
+    0 8px 0 #003a52,
+    0 9px 0 rgba(0, 200, 255, 0.20),
+    0 0 32px rgba(0, 200, 255, 0.28),
+    0 0 72px rgba(0, 200, 255, 0.12),
+    0 16px 32px rgba(0, 0, 0, 0.55);
+}
+.sy-3d .syb-grad:active {
+  transform: translateY(7px);
+  transition-duration: 40ms;
+  text-shadow: 0 0 8px rgba(0, 200, 255, 0.40);
+  box-shadow:
+    inset 0 0 16px rgba(0, 200, 255, 0.10),
+    0 1px 0 #004a64,
+    0 2px 0 rgba(0, 200, 255, 0.10),
+    0 0 18px rgba(0, 200, 255, 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* Gold neon — for founding-tier marquee CTAs */
+.sy-3d .syb-grad.syb-gold,
+.sy-3d .syb-neon-gold {
+  background: transparent;
+  color: var(--sy-gold);
+  border-color: rgba(232, 201, 122, 0.75);
+  text-shadow: 0 0 10px rgba(232, 201, 122, 0.45);
+  box-shadow:
+    inset 0 0 16px rgba(232, 201, 122, 0.04),
+    0 6px 0 #523c00,
+    0 8px 0 #342600,
+    0 0 18px rgba(232, 201, 122, 0.12),
+    0 14px 28px rgba(0, 0, 0, 0.55);
+}
+.sy-3d .syb-grad.syb-gold:hover,
+.sy-3d .syb-neon-gold:hover {
+  text-shadow: 0 0 18px rgba(232, 201, 122, 0.80);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 24px rgba(232, 201, 122, 0.07),
+    0 6px 0 #6b5000,
+    0 8px 0 #483600,
+    0 0 28px rgba(232, 201, 122, 0.26),
+    0 0 64px rgba(232, 201, 122, 0.10),
+    0 16px 32px rgba(0, 0, 0, 0.55);
+}
+.sy-3d .syb-grad.syb-gold:active,
+.sy-3d .syb-neon-gold:active {
+  transform: translateY(7px);
+  transition-duration: 40ms;
+}
+
+
+/* ── CHROME BEVEL — .syb-primary ─────────────────────────────────
+   Polished dark metal. Light source top-left.
+   Bright inset edge on top-left; deep shadow on bottom-right.
+   Active state inverts the bevel (pressed in).
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-3d .syb-primary {
+  background: linear-gradient(155deg, #182240 0%, #0e1530 50%, #090d1e 100%);
+  color: var(--sy-cyan);
+  border: 1px solid rgba(0, 200, 255, 0.14);
+  box-shadow:
+    inset 1px 1px 0 rgba(0, 200, 255, 0.32),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85),
+    inset 0 0 28px rgba(0, 200, 255, 0.03),
+    0 5px 18px rgba(0, 0, 0, 0.45),
+    0 10px 36px rgba(0, 0, 0, 0.28);
+  /* Nullify CSS-variable overrides from base .syb */
+  --bg: initial;
+  --fg: initial;
+  --bd: initial;
+}
+.sy-3d .syb-primary:hover {
+  color: #38ecff;
+  border-color: rgba(0, 200, 255, 0.28);
+  background: linear-gradient(155deg, #1e2c50 0%, #111e3c 50%, #0c1028 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(0, 200, 255, 0.52),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.90),
+    inset 0 0 36px rgba(0, 200, 255, 0.055),
+    0 0 0 1px rgba(0, 200, 255, 0.06),
+    0 8px 28px rgba(0, 0, 0, 0.50),
+    0 0 40px rgba(0, 200, 255, 0.13),
+    0 16px 40px rgba(0, 0, 0, 0.28);
+}
+.sy-3d .syb-primary:active {
+  background: linear-gradient(155deg, #050810 0%, #0a0e1c 100%);
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.85),
+    inset -1px -1px 0 rgba(0, 200, 255, 0.10),
+    inset 0 0 16px rgba(0, 0, 0, 0.60),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+
+/* ── CHROME BEVEL — .syb-ghost ───────────────────────────────────
+   Subtle bevel ghost. Nearly invisible at rest; edge catches light
+   on hover.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-3d .syb-ghost {
+  background: linear-gradient(155deg,
+    rgba(240, 242, 255, 0.05) 0%,
+    rgba(240, 242, 255, 0.015) 100%);
+  border: 1px solid rgba(240, 242, 255, 0.07);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.09),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.30);
+  --bg: initial;
+  --bd: initial;
+}
+.sy-3d .syb-ghost:hover {
+  color: var(--sy-white);
+  border-color: rgba(240, 242, 255, 0.14);
+  background: linear-gradient(155deg,
+    rgba(240, 242, 255, 0.075) 0%,
+    rgba(240, 242, 255, 0.03) 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.16),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.75),
+    0 8px 28px rgba(0, 0, 0, 0.40);
+}
+.sy-3d .syb-ghost:active {
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+
+/* ── CHROME BEVEL — .syb-gold ────────────────────────────────────
+   Gold-tinted bevel. Founding tier only.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-3d .syb-gold:not(.syb-grad) {
+  background: linear-gradient(155deg,
+    rgba(232, 201, 122, 0.13) 0%,
+    rgba(201, 168, 76, 0.06) 100%);
+  color: var(--sy-gold);
+  border: 1px solid rgba(232, 201, 122, 0.17);
+  box-shadow:
+    inset 1px 1px 0 rgba(232, 201, 122, 0.38),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85),
+    0 5px 18px rgba(0, 0, 0, 0.45);
+  --bg: initial;
+  --bd: initial;
+  --fg: initial;
+}
+.sy-3d .syb-gold:not(.syb-grad):hover {
+  color: #f4d888;
+  border-color: rgba(232, 201, 122, 0.32);
+  box-shadow:
+    inset 1px 1px 0 rgba(232, 201, 122, 0.55),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.90),
+    0 0 40px rgba(232, 201, 122, 0.10),
+    0 8px 28px rgba(0, 0, 0, 0.45);
+}
+.sy-3d .syb-gold:not(.syb-grad):active {
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.80),
+    inset -1px -1px 0 rgba(232, 201, 122, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.30);
+}
+
+
+/* ── CHROME BEVEL — .syb-danger ──────────────────────────────────
+   Red bevel. Destructive actions only.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-3d .syb-danger {
+  background: linear-gradient(155deg,
+    rgba(255, 107, 107, 0.10) 0%,
+    rgba(255, 107, 107, 0.04) 100%);
+  color: var(--sy-red);
+  border: 1px solid rgba(255, 107, 107, 0.20);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 107, 107, 0.30),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.80),
+    0 4px 16px rgba(0, 0, 0, 0.40);
+  --bg: initial;
+  --bd: initial;
+  --fg: initial;
+}
+.sy-3d .syb-danger:hover {
+  border-color: rgba(255, 107, 107, 0.38);
+  background: linear-gradient(155deg,
+    rgba(255, 107, 107, 0.15) 0%,
+    rgba(255, 107, 107, 0.07) 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 107, 107, 0.48),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85),
+    0 0 32px rgba(255, 107, 107, 0.10),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.sy-3d .syb-danger:active {
+  transform: translateY(1px);
+  transition-duration: 50ms;
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.75),
+    inset -1px -1px 0 rgba(255, 107, 107, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.30);
+}
+
+/* Disabled state — restore opacity treatment for both systems */
+.sy-3d .syb[disabled],
+.sy-3d .syb.is-disabled {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+
+/* ── C. PERSPECTIVE CARDS ──────────────────────────────────────
+   Wrap your existing card in .sy-card-3d-wrap > .sy-card-3d.
+   Add .sy-card-3d-shine as a first child (empty div).
+   Add .sy-layer-1/2/3 to child elements for Z-depth parallax.
+
+   NOTE: card must have an opaque (non-transparent) background
+   for 3D tilt to look correct. Semi-transparent cards over photos
+   will show edge bleed on rotate — use a solid navy shell instead.
+
+   sy-3d.js binds the mouse tracking automatically.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-card-3d-wrap {
+  perspective: 950px;
+  display: inline-block; /* or block depending on context */
+}
+.sy-card-3d {
+  transform-style: preserve-3d;
+  transform: rotateX(0deg) rotateY(0deg);
+  transition:
+    transform 450ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 450ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  will-change: transform;
+}
+.sy-card-3d:hover {
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(0, 200, 255, 0.08);
+}
+
+/* Specular shine — tracks mouse position via JS */
+.sy-card-3d-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms;
+  background: radial-gradient(
+    ellipse at 35% 30%,
+    rgba(255, 255, 255, 0.065),
+    transparent 68%
+  );
+  z-index: 1;
+}
+.sy-card-3d:hover .sy-card-3d-shine {
+  opacity: 1;
+}
+
+/* Content depth layers — add to child elements */
+.sy-layer-1 { transform: translateZ(4px); }
+.sy-layer-2 { transform: translateZ(12px); }
+.sy-layer-3 { transform: translateZ(20px); }
+
+
+/* ── D. DEPTH INPUTS ───────────────────────────────────────────
+   Apply .sy-input-3d directly to <input> or <textarea>.
+   Apply .sy-select-3d directly to <select>.
+   Pair your existing padding/sizing tokens — this file only
+   overrides background, border, and box-shadow.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-input-3d {
+  background: linear-gradient(180deg, #020407 0%, #050810 60%, #08091a 100%);
+  border: 1px solid rgba(0, 200, 255, 0.09);
+  color: var(--sy-fg-1);
+  outline: none;
+  transition:
+    border-color 230ms var(--sy-ease),
+    box-shadow 230ms var(--sy-ease),
+    background 230ms var(--sy-ease);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.75),
+    inset 0 1px 3px rgba(0, 0, 0, 0.90),
+    inset 0 -1px 0 rgba(0, 200, 255, 0.04),
+    0 1px 0 rgba(255, 255, 255, 0.02),
+    0 2px 8px rgba(0, 0, 0, 0.20);
+}
+.sy-input-3d::placeholder {
+  color: var(--sy-fg-4);
+}
+.sy-input-3d:focus {
+  border-color: rgba(0, 200, 255, 0.28);
+  background: linear-gradient(180deg, #010205 0%, #040712 100%);
+  box-shadow:
+    inset 0 4px 12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 3px rgba(0, 0, 0, 0.90),
+    inset 0 -1px 0 rgba(0, 200, 255, 0.09),
+    0 0 0 2px rgba(0, 200, 255, 0.14),
+    0 0 28px rgba(0, 200, 255, 0.07),
+    0 2px 8px rgba(0, 0, 0, 0.30);
+}
+
+.sy-select-3d {
+  appearance: none;
+  -webkit-appearance: none;
+  background: linear-gradient(155deg, #121828 0%, #0a0e18 100%);
+  border: 1px solid rgba(0, 200, 255, 0.09);
+  color: var(--sy-fg-1);
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 230ms var(--sy-ease),
+    box-shadow 230ms var(--sy-ease);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.04),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.75),
+    0 4px 12px rgba(0, 0, 0, 0.32);
+}
+.sy-select-3d:hover {
+  border-color: rgba(0, 200, 255, 0.18);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.06),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.80),
+    0 8px 24px rgba(0, 0, 0, 0.40),
+    0 0 20px rgba(0, 200, 255, 0.06);
+}
+.sy-select-3d:focus {
+  border-color: rgba(0, 200, 255, 0.28);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.06),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.80),
+    0 0 0 2px rgba(0, 200, 255, 0.14);
+}
+
+
+/* ── E. EXTRUDED BADGES ────────────────────────────────────────
+   <span class="sy-badge-3d sy-badge-3d-cyan">
+     <span class="sy-badge-3d-dot"></span>Live
+   </span>
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-badge-3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  font-family: var(--sy-font-body);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  cursor: default;
+  user-select: none;
+}
+.sy-badge-3d:hover {
+  transform: translateY(-1px);
+}
+
+.sy-badge-3d-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Cyan — live / active */
+.sy-badge-3d-cyan {
+  background: linear-gradient(180deg, #0d8fad 0%, #006b88 55%, #005878 100%);
+  color: #ccf6ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 4px 0 #002a38,
+    0 5px 0 #001820,
+    0 7px 16px rgba(0, 200, 255, 0.22),
+    0 12px 22px rgba(0, 0, 0, 0.42);
+}
+.sy-badge-3d-cyan .sy-badge-3d-dot {
+  background: #44f0ff;
+  box-shadow: 0 0 6px rgba(0, 200, 255, 0.80);
+}
+
+/* Gold — founding / bill of rights */
+.sy-badge-3d-gold {
+  background: linear-gradient(180deg, #c9a84c 0%, #a88828 55%, #947820 100%);
+  color: #fff8e0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 4px 0 #3e2c00,
+    0 5px 0 #281c00,
+    0 7px 16px rgba(232, 201, 122, 0.22),
+    0 12px 22px rgba(0, 0, 0, 0.42);
+}
+.sy-badge-3d-gold .sy-badge-3d-dot {
+  background: var(--sy-gold);
+  box-shadow: 0 0 6px rgba(232, 201, 122, 0.70);
+}
+
+/* Green — FY active */
+.sy-badge-3d-green {
+  background: linear-gradient(180deg, #1eaa50 0%, #108238 55%, #0a6a2c 100%);
+  color: #ccffe0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 4px 0 #042e14,
+    0 5px 0 #021c0c,
+    0 7px 16px rgba(76, 255, 145, 0.18),
+    0 12px 22px rgba(0, 0, 0, 0.42);
+}
+.sy-badge-3d-green .sy-badge-3d-dot {
+  background: var(--sy-green);
+  box-shadow: 0 0 6px rgba(76, 255, 145, 0.80);
+}
+
+/* Red — error / offline */
+.sy-badge-3d-red {
+  background: linear-gradient(180deg, #c84040 0%, #a42828 55%, #8a1a1a 100%);
+  color: #ffd0d0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 0 #3a0000,
+    0 5px 0 #240000,
+    0 7px 16px rgba(255, 107, 107, 0.20),
+    0 12px 22px rgba(0, 0, 0, 0.42);
+}
+.sy-badge-3d-red .sy-badge-3d-dot {
+  background: var(--sy-red);
+  box-shadow: 0 0 6px rgba(255, 107, 107, 0.80);
+}
+
+
+/* ── F. PHYSICAL TOGGLE ────────────────────────────────────────
+   <label class="sy-toggle-3d">
+     <div class="sy-toggle-3d-track">
+       <div class="sy-toggle-3d-thumb"></div>
+     </div>
+     <span class="sy-toggle-3d-label">Label</span>
+   </label>
+
+   sy-3d.js adds .is-on on click. Or add .is-on yourself in markup
+   for server-rendered ON state.
+   ─────────────────────────────────────────────────────────────── */
+
+.sy-toggle-3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sy-toggle-3d-track {
+  width: 52px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #010305 0%, #050810 100%);
+  border: 1px solid rgba(0, 200, 255, 0.10);
+  border-radius: var(--sy-radius-pill);
+  box-shadow:
+    inset 0 3px 7px rgba(0, 0, 0, 0.85),
+    inset 0 1px 2px rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(255, 255, 255, 0.02);
+  transition:
+    background 260ms var(--sy-ease),
+    border-color 260ms var(--sy-ease),
+    box-shadow 260ms var(--sy-ease);
+}
+
+.sy-toggle-3d-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: linear-gradient(180deg, #242c50 0%, #161e38 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.32);
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 260ms,
+    box-shadow 260ms;
+}
+
+.sy-toggle-3d-label {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--sy-fg-2);
+  font-weight: 300;
+  font-family: var(--sy-font-body);
+}
+
+/* ON state */
+.sy-toggle-3d.is-on .sy-toggle-3d-track {
+  background: linear-gradient(180deg, #003850 0%, #005070 50%, #004060 100%);
+  border-color: rgba(0, 200, 255, 0.38);
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.50),
+    inset 0 0 14px rgba(0, 200, 255, 0.10),
+    0 0 22px rgba(0, 200, 255, 0.14);
+}
+.sy-toggle-3d.is-on .sy-toggle-3d-thumb {
+  transform: translateX(24px);
+  background: linear-gradient(180deg, #44ecff 0%, #00c8ff 50%, #009ac0 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    0 0 14px rgba(0, 200, 255, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.40);
+}

@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudioYou — 3D System Reference</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="sy-3d.css">
+<style>
+/* ── PAGE CHROME ────────────────────────────────────── */
+html, body { margin: 0; background: var(--sy-black); color: var(--sy-fg-1); font-family: var(--sy-font-body); }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 72px 56px 160px; }
+
+/* ── PAGE HEADER ────────────────────────────────────── */
+.page-head { padding-bottom: 40px; border-bottom: 1px solid var(--sy-fg-4); margin-bottom: 80px; }
+.page-head .ey { font-size: 9px; letter-spacing: 0.34em; text-transform: uppercase; color: var(--sy-cyan); opacity: 0.6; margin-bottom: 14px; }
+.page-head h1 { font-family: var(--sy-font-display); font-size: clamp(64px, 9vw, 112px); line-height: 0.88; letter-spacing: 0.02em; margin: 0 0 24px; }
+.page-head h1 em { background: var(--sy-grad-t); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-style: normal; }
+.page-head p { font-weight: 300; font-size: 14px; line-height: 1.9; color: var(--sy-fg-2); max-width: 54ch; margin: 0; }
+
+/* ── SECTION ────────────────────────────────────────── */
+.section { margin-bottom: 80px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 28px; }
+.sec-head .n { font-family: var(--sy-font-mono); font-size: 10px; color: var(--sy-fg-3); }
+.sec-head .t { font-family: var(--sy-font-display); font-size: 17px; letter-spacing: 0.18em; }
+.sec-head .s { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sy-fg-3); font-weight: 300; }
+.sec-head .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--sy-border-h), transparent); }
+
+/* ── STAGE ──────────────────────────────────────────── */
+.stage { background: var(--sy-navy); border: 1px solid var(--sy-fg-4); padding: 40px 36px; position: relative; margin-bottom: 2px; }
+.stage::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--sy-grad); }
+.stage.dark { background: var(--sy-black); }
+.stg-lbl { font-family: var(--sy-font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sy-fg-3); margin-bottom: 32px; }
+.row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.row + .row { margin-top: 20px; }
+.stg-note { font-weight: 300; font-size: 12px; color: var(--sy-fg-3); margin-top: 24px; line-height: 1.8; max-width: 72ch; }
+
+/* ── TYPE DEMO ──────────────────────────────────────── */
+.type-block { display: flex; flex-direction: column; gap: 10px; }
+.type-row { display: grid; grid-template-columns: 130px 1fr 180px; gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--sy-fg-4); }
+.type-row:last-child { border-bottom: none; }
+.type-token { font-family: var(--sy-font-mono); font-size: 10px; color: var(--sy-fg-3); letter-spacing: 0.08em; }
+.type-hex { font-family: var(--sy-font-mono); font-size: 10px; color: rgba(0,200,255,0.55); letter-spacing: 0.08em; display: flex; align-items: center; gap: 7px; }
+.type-hex .sw { width: 20px; height: 10px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+
+/* ── CARD DEMO ──────────────────────────────────────── */
+.sy-card-3d {
+  background: var(--sy-navy-2);
+  border: 1px solid var(--sy-fg-4);
+  padding: 28px;
+  width: 272px;
+  position: relative;
+}
+.sy-card-3d::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--sy-grad); }
+.card-ey { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sy-cyan); opacity: 0.65; font-family: var(--sy-font-body); margin-bottom: 10px; }
+.card-ttl { font-family: var(--sy-font-display); font-size: 34px; line-height: 0.9; letter-spacing: 0.03em; color: var(--sy-white); margin-bottom: 14px; }
+.card-txt { font-weight: 300; font-size: 12px; color: var(--sy-fg-2); line-height: 1.8; margin-bottom: 20px; }
+.card-stat { display: flex; align-items: baseline; gap: 5px; margin-bottom: 20px; }
+.card-num { font-family: var(--sy-font-mono); font-size: 32px; color: var(--sy-cyan); letter-spacing: -0.02em; line-height: 1; }
+.card-unit { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sy-fg-3); }
+
+/* ── INPUT DEMO ─────────────────────────────────────── */
+.inp-group { display: flex; flex-direction: column; gap: 8px; }
+.inp-lbl { font-family: var(--sy-font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sy-fg-3); }
+.inp-wrap { position: relative; }
+.inp-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--sy-fg-3); display: flex; pointer-events: none; }
+.inp-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.inp-padded { padding: 12px 14px 12px 40px; }
+.sel-arrow { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: var(--sy-fg-3); display: flex; pointer-events: none; }
+.sel-arrow svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.sel-padded { padding: 12px 38px 12px 14px; width: 100%; box-sizing: border-box; }
+.inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+
+/* ── IMPLEMENTATION BOX ─────────────────────────────── */
+.impl-box { background: var(--sy-navy-3); border: 1px solid var(--sy-fg-4); padding: 28px 32px; position: relative; margin-top: 2px; }
+.impl-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--sy-cyan), transparent 60%); opacity: 0.5; }
+.impl-box h3 { font-family: var(--sy-font-display); font-size: 14px; letter-spacing: 0.18em; color: var(--sy-fg-3); margin: 0 0 20px; }
+.code-block { background: rgba(0,0,0,0.5); border: 1px solid var(--sy-fg-4); padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; }
+.code-block pre { margin: 0; font-family: var(--sy-font-mono); font-size: 12px; line-height: 1.8; color: var(--sy-fg-2); white-space: pre; }
+.code-block .cm { color: var(--sy-fg-3); }           /* comment */
+.code-block .ck { color: var(--sy-cyan); }             /* keyword / tag */
+.code-block .cv { color: #e8c97a; }                    /* value */
+.code-block .ca { color: rgba(240,242,255,0.55); }     /* attribute */
+.impl-note { font-weight: 300; font-size: 12px; color: var(--sy-fg-3); line-height: 1.8; margin: 0; }
+</style>
+</head>
+
+<body class="sy-grain sy-3d">
+<div class="wrap">
+
+  <!-- PAGE HEADER ─────────────────────────────────── -->
+  <header class="page-head">
+    <div class="ey">StudioYou — 3D System Reference · v1.1</div>
+    <h1><em>SY-3D</em><br>DROP-IN<br>GUIDE</h1>
+    <p>Two files. One class on <code style="font-family:var(--sy-font-mono);font-size:12px;color:var(--sy-cyan);opacity:0.8">&lt;body&gt;</code>. The full system below shows every component in its live state — all interactions are real.</p>
+  </header>
+
+  <!-- 01 IMPLEMENTATION ───────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">01</span>
+      <span class="t">IMPLEMENTATION</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="impl-box">
+      <h3>STEP 1 — ADD THE STYLESHEETS</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- existing --&gt;</span>
+<span class="ck">&lt;link</span> <span class="ca">rel</span>=<span class="cv">"stylesheet"</span> <span class="ca">href</span>=<span class="cv">"colors_and_type.css"</span><span class="ck">&gt;</span>
+
+<span class="cm">&lt;!-- add immediately after --&gt;</span>
+<span class="ck">&lt;link</span> <span class="ca">rel</span>=<span class="cv">"stylesheet"</span> <span class="ca">href</span>=<span class="cv">"sy-3d.css"</span><span class="ck">&gt;</span></pre></div>
+
+      <h3>STEP 2 — ACTIVATE BUTTON OVERRIDES</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- add sy-3d to body — keeps the 2D system on pages without it --&gt;</span>
+<span class="ck">&lt;body</span> <span class="ca">class</span>=<span class="cv">"sy-grain sy-3d"</span><span class="ck">&gt;</span></pre></div>
+
+      <h3>STEP 3 — ADD INTERACTIVE EFFECTS</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- bottom of body, after all content --&gt;</span>
+<span class="ck">&lt;script</span> <span class="ca">src</span>=<span class="cv">"sy-3d.js"</span> <span class="ca">defer</span><span class="ck">&gt;&lt;/script&gt;</span>
+
+<span class="cm">&lt;!-- re-init after dynamic content insertion --&gt;</span>
+<span class="ck">&lt;script&gt;</span><span class="cv">SY3D.init()</span><span class="ck">&lt;/script&gt;</span></pre></div>
+
+      <p class="impl-note">The type token fixes in <code style="font-family:var(--sy-font-mono);font-size:11px">sy-3d.css</code> apply globally as soon as the file loads — no class needed. Button overrides only fire inside <code style="font-family:var(--sy-font-mono);font-size:11px">.sy-3d</code>. Cards, inputs, badges, and toggles are opt-in by class name on individual elements.</p>
+    </div>
+  </section>
+
+  <!-- 02 TYPE TOKENS ───────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">02</span>
+      <span class="t">TYPE TOKENS — FIXED HEX</span>
+      <span class="s">— active globally</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">These two tokens change. Everything else in colors_and_type.css is untouched.</div>
+      <div class="type-block">
+        <div class="type-row">
+          <span class="type-token">--sy-fg-1</span>
+          <span style="font-size:14px;font-weight:300;color:#f0f2ff">Primary text — headlines, active labels. Unchanged.</span>
+          <span class="type-hex"><span class="sw" style="background:#f0f2ff"></span>#f0f2ff &nbsp;(unchanged)</span>
+        </div>
+        <div class="type-row">
+          <span class="type-token">--sy-fg-2</span>
+          <span style="font-size:14px;font-weight:300;color:#c8cadc">Body paragraphs, descriptions, secondary content. Was rgba(240,242,255,0.65).</span>
+          <span class="type-hex"><span class="sw" style="background:#c8cadc"></span>#c8cadc &nbsp;↑ lifted</span>
+        </div>
+        <div class="type-row">
+          <span class="type-token">--sy-fg-3</span>
+          <span style="font-size:14px;font-weight:300;color:#7a7c94">Section labels, metadata, timestamps, captions. Was rgba(240,242,255,0.32).</span>
+          <span class="type-hex"><span class="sw" style="background:#7a7c94"></span>#7a7c94 &nbsp;↑ lifted</span>
+        </div>
+        <div class="type-row">
+          <span class="type-token">--sy-fg-4</span>
+          <span style="font-size:14px;font-weight:300;color:var(--sy-fg-3)">Dividers, ghost borders. Unchanged — this is structural, not text.</span>
+          <span class="type-hex"><span class="sw" style="background:rgba(240,242,255,0.06)"></span>rgba(…, 0.06) &nbsp;(unchanged)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 BUTTONS ───────────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">03</span>
+      <span class="t">BUTTONS</span>
+      <span class="s">— same markup, new style</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">No markup changes — existing .syb classes automatically upgrade inside body.sy-3d</div>
+      <div class="row">
+        <button class="syb syb-grad syb-lg">
+          Enter Studio Lot
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="syb syb-primary">Save Scene</button>
+        <button class="syb syb-ghost">Cancel</button>
+        <button class="syb syb-gold syb-sm">Founding Member</button>
+        <button class="syb syb-danger syb-sm">End Production</button>
+      </div>
+      <p class="stg-note">The gradient button becomes Neon Extrude — reserved for the one marquee action per screen. All others get Chrome Bevel. The existing class names are unchanged; add <code style="font-family:var(--sy-font-mono);font-size:11px">sy-3d</code> to body and they upgrade automatically.</p>
+    </div>
+
+    <div class="impl-box">
+      <h3>MARKUP — UNCHANGED</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- Neon Extrude: one per screen, most important action --&gt;</span>
+<span class="ck">&lt;button</span> <span class="ca">class</span>=<span class="cv">"syb syb-grad"</span><span class="ck">&gt;</span>Enter Studio Lot<span class="ck">&lt;/button&gt;</span>
+
+<span class="cm">&lt;!-- Chrome Bevel: standard in-product actions --&gt;</span>
+<span class="ck">&lt;button</span> <span class="ca">class</span>=<span class="cv">"syb syb-primary"</span><span class="ck">&gt;</span>Save Scene<span class="ck">&lt;/button&gt;</span>
+<span class="ck">&lt;button</span> <span class="ca">class</span>=<span class="cv">"syb syb-ghost"</span><span class="ck">&gt;</span>Cancel<span class="ck">&lt;/button&gt;</span>
+<span class="ck">&lt;button</span> <span class="ca">class</span>=<span class="cv">"syb syb-gold"</span><span class="ck">&gt;</span>Founding Member<span class="ck">&lt;/button&gt;</span>
+<span class="ck">&lt;button</span> <span class="ca">class</span>=<span class="cv">"syb syb-danger"</span><span class="ck">&gt;</span>End Production<span class="ck">&lt;/button&gt;</span></pre></div>
+    </div>
+  </section>
+
+  <!-- 04 CARDS ─────────────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">04</span>
+      <span class="t">PERSPECTIVE CARDS</span>
+      <span class="s">— move cursor over</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Wrap any existing card in .sy-card-3d-wrap. Add .sy-card-3d-shine as first child.</div>
+      <div class="row" style="gap:28px;align-items:flex-start">
+
+        <div class="sy-card-3d-wrap">
+          <div class="sy-card-3d sy-rule-top">
+            <div class="sy-card-3d-shine"></div>
+            <div class="sy-layer-1"><div class="card-ey">Process Management</div></div>
+            <div class="sy-layer-2">
+              <div class="card-ttl">SCENE 04<br>REVISION</div>
+              <div class="card-txt">Interior Day — Studio B<br>Director: A. Vasquez</div>
+            </div>
+            <div class="sy-layer-3">
+              <div class="card-stat"><span class="card-num">87</span><span class="card-unit">takes logged</span></div>
+              <button class="syb syb-primary syb-sm">Open Scene</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sy-card-3d-wrap">
+          <div class="sy-card-3d" style="border-color:var(--sy-border-gold)">
+            <div class="sy-card-3d-shine"></div>
+            <div class="sy-layer-1"><div class="card-ey" style="color:var(--sy-gold)">Bill of Rights · Founding</div></div>
+            <div class="sy-layer-2">
+              <div class="card-ttl" style="background:var(--sy-grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">CHARTER<br>MEMBER</div>
+              <div class="card-txt">FY 2024 Class &nbsp;·&nbsp; ID: SY-F-0001</div>
+            </div>
+            <div class="sy-layer-3">
+              <div class="card-stat"><span class="card-num" style="color:var(--sy-gold)">01</span><span class="card-unit">founding tier</span></div>
+              <button class="syb syb-gold syb-sm">View Rights</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <p class="stg-note">Card must have a solid (non-transparent) background — see note in sy-3d.css. Use a solid navy shell when placing cards over photo backgrounds. Tilt is automatically disabled on touch devices.</p>
+    </div>
+
+    <div class="impl-box">
+      <h3>MARKUP PATTERN</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- Wrap your existing card --&gt;</span>
+<span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-card-3d-wrap"</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-card-3d"</span><span class="ck">&gt;</span>
+
+    <span class="cm">&lt;!-- shine overlay — required, must be first child --&gt;</span>
+    <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-card-3d-shine"</span><span class="ck">&gt;&lt;/div&gt;</span>
+
+    <span class="cm">&lt;!-- optional depth layers — add to child elements --&gt;</span>
+    <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-layer-1"</span><span class="ck">&gt;</span>eyebrow<span class="ck">&lt;/div&gt;</span>        <span class="cm">&lt;!-- 4px Z  --&gt;</span>
+    <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-layer-2"</span><span class="ck">&gt;</span>headline + body<span class="ck">&lt;/div&gt;</span> <span class="cm">&lt;!-- 12px Z --&gt;</span>
+    <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-layer-3"</span><span class="ck">&gt;</span>CTA<span class="ck">&lt;/div&gt;</span>             <span class="cm">&lt;!-- 20px Z --&gt;</span>
+
+  <span class="ck">&lt;/div&gt;</span>
+<span class="ck">&lt;/div&gt;</span></pre></div>
+
+      <h3>GRID CONTEXT — DISPLAY OVERRIDE</h3>
+      <div class="code-block"><pre><span class="cm">/* .sy-card-3d-wrap defaults to display:inline-block.
+   Inside CSS grid containers, override to block so the
+   wrap fills the grid cell rather than shrinking to content. */</span>
+<span class="ck">.your-grid</span> <span class="ck">.sy-card-3d-wrap</span> { <span class="ca">display</span>: <span class="cv">block</span>; }
+
+<span class="cm">/* Applied in dashboard.html: */</span>
+<span class="ck">.buildings-grid</span> <span class="ck">.sy-card-3d-wrap</span> { <span class="ca">display</span>: <span class="cv">block</span>; }</pre></div>
+      <p class="impl-note">Card must have a solid (non-transparent) background — perspective tilt exposes the area behind the card. Use a solid navy shell when placing cards over photo backgrounds. Tilt is automatically disabled on touch devices.</p>
+    </div>
+  </section>
+
+  <!-- 05 INPUTS ────────────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">05</span>
+      <span class="t">DEPTH INPUTS</span>
+      <span class="s">— add class, keep everything else</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Add .sy-input-3d or .sy-select-3d to existing elements. No wrapper needed.</div>
+      <div class="inputs-grid">
+        <div class="inp-group">
+          <div class="inp-lbl">Scene Title</div>
+          <div class="inp-wrap">
+            <div class="inp-icon"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+            <input class="sy-input-3d inp-padded" type="text" placeholder="Interior Day — Studio B" style="font-family:var(--sy-font-body);font-size:14px;width:100%;box-sizing:border-box;">
+          </div>
+        </div>
+        <div class="inp-group">
+          <div class="inp-lbl">Search</div>
+          <div class="inp-wrap">
+            <div class="inp-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+            <input class="sy-input-3d inp-padded" type="search" placeholder="Search 847 scenes…" style="font-family:var(--sy-font-body);font-size:14px;width:100%;box-sizing:border-box;">
+          </div>
+        </div>
+        <div class="inp-group">
+          <div class="inp-lbl">Production Phase</div>
+          <div class="inp-wrap">
+            <div class="sel-arrow"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            <select class="sy-select-3d sel-padded" style="font-family:var(--sy-font-body);font-size:14px;">
+              <option>Pre-production</option>
+              <option>Principal Photography</option>
+              <option>Post-production</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="impl-box">
+      <h3>MARKUP PATTERN</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- input: add sy-input-3d alongside existing classes --&gt;</span>
+<span class="ck">&lt;input</span> <span class="ca">class</span>=<span class="cv">"sy-input-3d"</span> <span class="ca">type</span>=<span class="cv">"text"</span> <span class="ca">placeholder</span>=<span class="cv">"…"</span><span class="ck">&gt;</span>
+
+<span class="cm">&lt;!-- select: same pattern --&gt;</span>
+<span class="ck">&lt;select</span> <span class="ca">class</span>=<span class="cv">"sy-select-3d"</span><span class="ck">&gt;</span>…<span class="ck">&lt;/select&gt;</span>
+
+<span class="cm">&lt;!-- icon prefix: position absolute inside a relative wrapper --&gt;</span>
+<span class="ck">&lt;div</span> <span class="ca">style</span>=<span class="cv">"position:relative"</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;svg</span> <span class="ca">style</span>=<span class="cv">"position:absolute;left:13px;top:50%;transform:translateY(-50%)"</span><span class="ck">&gt;</span>…<span class="ck">&lt;/svg&gt;</span>
+  <span class="ck">&lt;input</span> <span class="ca">class</span>=<span class="cv">"sy-input-3d"</span> <span class="ca">style</span>=<span class="cv">"padding-left:40px"</span><span class="ck">&gt;</span>
+<span class="ck">&lt;/div&gt;</span></pre></div>
+    </div>
+  </section>
+
+  <!-- 06 BADGES + TOGGLES ─────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">06</span>
+      <span class="t">BADGES &amp; TOGGLES</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Extruded status chips · Physical toggle switch</div>
+      <div class="row" style="margin-bottom:32px">
+        <span class="sy-badge-3d sy-badge-3d-cyan"><span class="sy-badge-3d-dot"></span>Live</span>
+        <span class="sy-badge-3d sy-badge-3d-green"><span class="sy-badge-3d-dot"></span>FY Active</span>
+        <span class="sy-badge-3d sy-badge-3d-gold"><span class="sy-badge-3d-dot"></span>Founding</span>
+        <span class="sy-badge-3d sy-badge-3d-red"><span class="sy-badge-3d-dot"></span>Error</span>
+      </div>
+      <div class="row" style="gap:36px;flex-wrap:wrap">
+        <label class="sy-toggle-3d">
+          <div class="sy-toggle-3d-track"><div class="sy-toggle-3d-thumb"></div></div>
+          <span class="sy-toggle-3d-label">Scene Active</span>
+        </label>
+        <label class="sy-toggle-3d is-on">
+          <div class="sy-toggle-3d-track"><div class="sy-toggle-3d-thumb"></div></div>
+          <span class="sy-toggle-3d-label">Production Live</span>
+        </label>
+        <label class="sy-toggle-3d">
+          <div class="sy-toggle-3d-track"><div class="sy-toggle-3d-thumb"></div></div>
+          <span class="sy-toggle-3d-label">Auto-Save</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="impl-box">
+      <h3>MARKUP PATTERNS</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- Badge --&gt;</span>
+<span class="ck">&lt;span</span> <span class="ca">class</span>=<span class="cv">"sy-badge-3d sy-badge-3d-cyan"</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;span</span> <span class="ca">class</span>=<span class="cv">"sy-badge-3d-dot"</span><span class="ck">&gt;&lt;/span&gt;</span>
+  Live
+<span class="ck">&lt;/span&gt;</span>
+<span class="cm">&lt;!-- variants: sy-badge-3d-cyan / -gold / -green / -red --&gt;</span>
+
+<span class="cm">&lt;!-- Toggle (sy-3d.js handles .is-on on click) --&gt;</span>
+<span class="ck">&lt;label</span> <span class="ca">class</span>=<span class="cv">"sy-toggle-3d"</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-toggle-3d-track"</span><span class="ck">&gt;</span>
+    <span class="ck">&lt;div</span> <span class="ca">class</span>=<span class="cv">"sy-toggle-3d-thumb"</span><span class="ck">&gt;&lt;/div&gt;</span>
+  <span class="ck">&lt;/div&gt;</span>
+  <span class="ck">&lt;span</span> <span class="ca">class</span>=<span class="cv">"sy-toggle-3d-label"</span><span class="ck">&gt;</span>Production Live<span class="ck">&lt;/span&gt;</span>
+<span class="ck">&lt;/label&gt;</span>
+<span class="cm">&lt;!-- add .is-on to label for server-rendered ON state --&gt;</span></pre></div>
+    </div>
+  </section>
+
+  <!-- 07 GIF SYSTEM ───────────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">07</span>
+      <span class="t">ANIMATED GIF SYSTEM</span>
+      <span class="s">— earned moments only</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage">
+      <div class="stg-lbl">Five GIFs. Each owns a specific emotional moment. Never show more than one at a time — rarity is their power.</div>
+      <div class="row" style="gap:32px;align-items:flex-start;flex-wrap:wrap">
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:136px;text-align:center">
+          <img src="assets/SY_SHUTTER_FAVICON.gif" style="width:48px;height:48px;object-fit:contain" alt="">
+          <div style="font-family:var(--sy-font-display);font-size:13px;letter-spacing:0.12em">SHUTTER</div>
+          <div style="font-size:11px;color:var(--sy-fg-3);line-height:1.6">FY thinking · loading · favicon · chat send</div>
+          <span style="font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:2px 8px;border:1px solid rgba(76,255,145,0.3);color:#4cff91">IN USE</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:136px;text-align:center">
+          <img src="assets/award-ceremony.gif" style="width:48px;height:48px;object-fit:contain" alt="">
+          <div style="font-family:var(--sy-font-display);font-size:13px;letter-spacing:0.12em">VELVET ROPE</div>
+          <div style="font-size:11px;color:var(--sy-fg-3);line-height:1.6">Subscribe success · verify success · First Words · name lock-in</div>
+          <span style="font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:2px 8px;border:1px solid rgba(232,201,122,0.3);color:#e8c97a">ACCESS · ARRIVAL</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:136px;text-align:center">
+          <img src="assets/trophy.gif" style="width:48px;height:48px;object-fit:contain" alt="">
+          <div style="font-family:var(--sy-font-display);font-size:13px;letter-spacing:0.12em">TROPHY</div>
+          <div style="font-size:11px;color:var(--sy-fg-3);line-height:1.6">Tier confirmed · phase complete · avatar built</div>
+          <span style="font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:2px 8px;border:1px solid rgba(232,201,122,0.3);color:#e8c97a">MILESTONE · WIN</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:136px;text-align:center">
+          <img src="assets/id-card-key.gif" style="width:48px;height:48px;object-fit:contain" alt="">
+          <div style="font-family:var(--sy-font-display);font-size:13px;letter-spacing:0.12em">ID CARD</div>
+          <div style="font-size:11px;color:var(--sy-fg-3);line-height:1.6">Email signup · verify loading · photo capture · archetype concluded</div>
+          <span style="font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:2px 8px;border:1px solid rgba(0,200,255,0.3);color:#00c8ff">IDENTITY</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:136px;text-align:center">
+          <img src="assets/SY_SHUTTER_FAVICON.gif" style="width:48px;height:48px;object-fit:contain;filter:grayscale(1);opacity:0.28" alt="">
+          <div style="font-family:var(--sy-font-display);font-size:13px;letter-spacing:0.12em;color:var(--sy-fg-3)">PROCESS</div>
+          <div style="font-size:11px;color:var(--sy-fg-3);line-height:1.6;opacity:0.6">Building pipeline states. Reserved.</div>
+          <span style="font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:2px 8px;border:1px solid rgba(240,242,255,0.08);color:var(--sy-fg-3)">RESERVED</span>
+        </div>
+
+      </div>
+      <p class="stg-note">Never display more than one GIF simultaneously. Each marks a singular moment — stacking collapses their meaning. Size: 48–96px depending on context; larger for full-screen success states, 28–36px for inline eyebrow use. Always use <code style="font-family:var(--sy-font-mono);font-size:11px">alt=""</code> — these are decorative, not content.</p>
+    </div>
+
+    <div class="impl-box">
+      <h3>USAGE PATTERNS</h3>
+      <div class="code-block"><pre><span class="cm">&lt;!-- Full-screen success state: centered, 72–96px --&gt;</span>
+<span class="ck">&lt;img</span> <span class="ca">src</span>=<span class="cv">"assets/award-ceremony.gif"</span>
+     <span class="ca">style</span>=<span class="cv">"width:88px;height:88px;object-fit:contain;display:block;margin:0 auto 16px"</span>
+     <span class="ca">alt</span>=<span class="cv">""</span><span class="ck">&gt;</span>
+
+<span class="cm">&lt;!-- Inline eyebrow: 28–36px --&gt;</span>
+<span class="ck">&lt;div</span> <span class="ca">style</span>=<span class="cv">"display:flex;align-items:center;gap:8px"</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;img</span> <span class="ca">src</span>=<span class="cv">"assets/id-card-key.gif"</span>
+       <span class="ca">style</span>=<span class="cv">"width:28px;height:28px;object-fit:contain"</span>
+       <span class="ca">alt</span>=<span class="cv">""</span><span class="ck">&gt;</span>
+  <span class="ck">&lt;span&gt;</span>AVATAR INITIALIZATION<span class="ck">&lt;/span&gt;</span>
+<span class="ck">&lt;/div&gt;</span></pre></div>
+    </div>
+  </section>
+
+  <!-- 08 SEMANTIC PLACEMENT ────────────────────────── -->
+  <section class="section">
+    <div class="sec-head">
+      <span class="n">08</span>
+      <span class="t">SEMANTIC PLACEMENT RULES</span>
+      <span class="s">— when to use what</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="stage dark">
+      <div class="stg-lbl">Each component type maps to a specific semantic role. These are not style choices — they are meaning choices.</div>
+      <div style="display:flex;flex-direction:column;gap:0">
+
+        <div style="display:grid;grid-template-columns:190px 1fr;border-bottom:1px solid var(--sy-fg-4)">
+          <div style="padding:18px 20px;border-right:1px solid var(--sy-fg-4)">
+            <div style="font-family:var(--sy-font-display);font-size:14px;letter-spacing:0.1em;color:#a06be8;margin-bottom:4px">PERSPECTIVE CARDS</div>
+            <div style="font-size:10px;color:var(--sy-fg-3);letter-spacing:0.1em;text-transform:uppercase">Enter · Choose · Connect</div>
+          </div>
+          <div style="padding:18px 24px;font-size:12px;color:var(--sy-fg-2);line-height:1.8">
+            Only on surfaces that have something on the other side — buildings you enter, tiers you choose, connectors you activate, archetypes you become. The tilt says: <em style="color:var(--sy-fg-1);font-style:normal">depth exists here</em>. Never on static info displays or sidebar nav items.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:190px 1fr;border-bottom:1px solid var(--sy-fg-4)">
+          <div style="padding:18px 20px;border-right:1px solid var(--sy-fg-4)">
+            <div style="font-family:var(--sy-font-display);font-size:14px;letter-spacing:0.1em;color:#e8c97a;margin-bottom:4px">EXTRUDED BADGES</div>
+            <div style="font-size:10px;color:var(--sy-fg-3);letter-spacing:0.1em;text-transform:uppercase">Status · Identity · State</div>
+          </div>
+          <div style="padding:18px 24px;font-size:12px;color:var(--sy-fg-2);line-height:1.8">
+            Color is semantic — not decorative: <span style="color:#4cff91">green</span> = active/live/go, <span style="color:#00c8ff">cyan</span> = informational/advisory, <span style="color:#e8c97a">gold</span> = premium/earned/founding, <span style="color:#ff6b6b">red</span> = warning/danger. Never use flat text where a badge belongs, and never use a badge where flat text is sufficient.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:190px 1fr;border-bottom:1px solid var(--sy-fg-4)">
+          <div style="padding:18px 20px;border-right:1px solid var(--sy-fg-4)">
+            <div style="font-family:var(--sy-font-display);font-size:14px;letter-spacing:0.1em;color:#4cff91;margin-bottom:4px">PHYSICAL TOGGLES</div>
+            <div style="font-size:10px;color:var(--sy-fg-3);letter-spacing:0.1em;text-transform:uppercase">Binary Mode Switches Only</div>
+          </div>
+          <div style="padding:18px 24px;font-size:12px;color:var(--sy-fg-2);line-height:1.8">
+            Reserved for choices where the two states represent genuinely different modes — billing cycle, avatar/text mode, audio on/off, sync active/paused. The sliding thumb is a physical commitment. Not for filters, preferences, or anything with more than two states.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:190px 1fr;border-bottom:1px solid var(--sy-fg-4)">
+          <div style="padding:18px 20px;border-right:1px solid var(--sy-fg-4)">
+            <div style="font-family:var(--sy-font-display);font-size:14px;letter-spacing:0.1em;color:#00c8ff;margin-bottom:4px">DEPTH INPUTS</div>
+            <div style="font-size:10px;color:var(--sy-fg-3);letter-spacing:0.1em;text-transform:uppercase">Conversation · Identity</div>
+          </div>
+          <div style="padding:18px 24px;font-size:12px;color:var(--sy-fg-2);line-height:1.8">
+            The sunken well says: <em style="color:var(--sy-fg-1);font-style:normal">what you put here matters</em>. Reserved for FY conversation inputs, studio naming, email capture, subscribe commitment. Not for search, filters, or utility inputs. The FY chat input is the primary instance — all others inherit their meaning from it.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:190px 1fr">
+          <div style="padding:18px 20px;border-right:1px solid var(--sy-fg-4)">
+            <div style="font-family:var(--sy-font-display);font-size:14px;letter-spacing:0.1em;color:#e8c97a;margin-bottom:4px">ANIMATED GIFS</div>
+            <div style="font-size:10px;color:var(--sy-fg-3);letter-spacing:0.1em;text-transform:uppercase">Singular Earned Moments</div>
+          </div>
+          <div style="padding:18px 24px;font-size:12px;color:var(--sy-fg-2);line-height:1.8">
+            Each GIF fires once at a specific moment — never on a loop, never as decoration, never stacked. Velvet rope = access granted. Trophy = achievement unlocked. ID card = identity being established. Shutter = system thinking. Their rarity is the design.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="sy-3d.js" defer></script>
+</body>
+</html>

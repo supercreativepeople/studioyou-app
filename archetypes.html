@@ -1,420 +1,722 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator Studio Archetypes | StudioYou</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #root { width: 100%; max-width: 1200px; }
-        .container { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 40px 20px; text-align: center;
-        }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .header p { font-size: 1.1em; opacity: 0.9; }
-        .status-line { font-size: 0.9em; margin-top: 10px; opacity: 0.9; font-family: monospace; }
-        .video-container {
-            width: 100%; aspect-ratio: 16/9; background: #000;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden; min-height: 300px;
-        }
-        .loading-spinner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        .loading-spinner img { width: 60px; height: 60px; margin-bottom: 15px; }
-        .loading-spinner p { color: white; font-size: 1.1em; }
-        .placeholder-message { color: #ccc; text-align: center; padding: 40px; font-size: 1.1em; }
-        .error-box { background: #fee; color: #c33; padding: 20px; text-align: center; border-radius: 8px; margin: 20px; font-family: monospace; font-size: 0.85em; line-height: 1.5; }
-        .success-box { background: #efe; color: #3c3; padding: 20px; border-radius: 8px; margin: 20px; font-family: monospace; font-size: 0.85em; }
-        .archetypes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px; padding: 40px;
-        }
-        .archetype-card {
-            background: #f9f9f9; border: 2px solid #ddd; border-radius: 8px;
-            padding: 20px; cursor: pointer; transition: all 0.3s ease;
-        }
-        .archetype-card:hover {
-            border-color: #667eea; box-shadow: 0 8px 20px rgba(102,126,234,0.2);
-            transform: translateY(-4px);
-        }
-        .archetype-card.selected { border-color: #667eea; background: #f0f4ff; }
-        .archetype-card h3 { color: #667eea; margin-bottom: 10px; font-size: 1.3em; }
-        .archetype-card p { color: #555; line-height: 1.6; font-size: 0.95em; }
-        .cta-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 40px; text-align: center;
-        }
-        .cta-section h2 { font-size: 1.8em; margin-bottom: 15px; }
-        .cta-section p { font-size: 1.1em; margin-bottom: 25px; opacity: 0.95; }
-        .debug-panel {
-            background: #1e1e1e; color: #0f0; padding: 15px;
-            font-family: 'Monaco', monospace; font-size: 0.75em;
-            max-height: 400px; overflow-y: auto; border-top: 1px solid #333;
-            line-height: 1.3;
-        }
-        .debug-log-item { padding: 3px 0; border-bottom: 1px solid #333; }
-        .debug-log-item.info { color: #0f0; }
-        .debug-log-item.warn { color: #ff0; }
-        .debug-log-item.error { color: #f33; }
-        .debug-log-item.success { color: #0ff; }
-        .debug-toggle {
-            position: fixed; bottom: 20px; right: 20px; background: #667eea;
-            color: white; border: none; padding: 10px 15px; border-radius: 4px;
-            cursor: pointer; font-size: 0.85em; z-index: 1000;
-        }
-        .debug-toggle:hover { background: #764ba2; }
-        .reactor-response {
-            background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
-            padding: 15px; margin: 15px 0; font-family: monospace; font-size: 0.8em;
-            max-height: 300px; overflow-y: auto; word-break: break-word; white-space: pre-wrap;
-        }
-        .info-banner {
-            background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px;
-            border-radius: 4px; font-size: 0.9em; color: #1565c0;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Archetypes | StudioYou</title>
+<link rel="icon" type="image/png" href="assets/SY_OFFICIAL_SHUTTER_KEY.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+/* ── RESET & TOKENS ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --black:    #06091a;
+  --navy:     #0b0d1a;
+  --navy-2:   #0f1228;
+  --white:    #f0f2ff;
+  --cyan:     #00c8ff;
+  --purple:   #7b35d4;
+  --gold:     #e8c97a;
+  --green:    #4cff91;
+  --red:      #ff6b6b;
+  --grad:     linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);
+  --gradT:    linear-gradient(135deg,#00c8ff 0%,#a06be8 100%);
+  --border:   rgba(0,200,255,0.08);
+  --border-m: rgba(0,200,255,0.14);
+  --border-h: rgba(0,200,255,0.22);
+  --ghost:    rgba(240,242,255,0.06);
+}
+html, body, #root { height: 100%; }
+body {
+  background: var(--black); color: var(--white);
+  font-family: 'Outfit', sans-serif; font-weight: 300;
+  overflow: hidden; -webkit-font-smoothing: antialiased;
+}
+/* film grain */
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  background-size: 256px; pointer-events: none; z-index: 9999;
+}
+.amb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+.amb-1 { top:-20vh; left:-10vw; width:70vw; height:70vh; background: radial-gradient(ellipse,rgba(0,200,255,0.04) 0%,transparent 70%); }
+.amb-2 { bottom:-10vh; right:-15vw; width:60vw; height:60vh; background: radial-gradient(ellipse,rgba(123,53,212,0.05) 0%,transparent 70%); }
+
+/* ── PAGE SHELL ───────────────────────────────────────────────────────── */
+.page { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 10; }
+
+/* ── TOPBAR ───────────────────────────────────────────────────────────── */
+.topbar {
+  height: 52px; flex-shrink: 0;
+  background: rgba(11,13,26,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-left  { display: flex; align-items: center; gap: 14px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.tb-logo img  { height: 22px; width: auto; display: block; }
+.tb-sep       { width: 1px; height: 14px; background: var(--border-m); flex-shrink: 0; }
+.tb-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 0.26em;
+  background: var(--gradT); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.status-pill  { display: flex; align-items: center; gap: 7px; }
+.status-dot   { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.status-text  { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: color 0.4s; }
+.reactor-btn {
+  display: inline-flex; align-items: center; padding: 4px 10px; cursor: pointer;
+  background: linear-gradient(160deg,#faf8f4 0%,#f5f2ec 50%,#ede9e1 100%);
+  border: 1px solid rgba(245,242,236,0.9);
+  border-bottom: 1px solid rgba(180,175,165,0.8); border-right: 1px solid rgba(180,175,165,0.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9),inset 1px 0 0 rgba(255,255,255,0.6),
+              inset 0 -1px 0 rgba(0,0,0,0.15),inset -1px 0 0 rgba(0,0,0,0.08),
+              0 3px 10px rgba(0,0,0,0.55),0 1px 3px rgba(0,0,0,0.4);
+  transition: all 0.15s;
+}
+.reactor-btn img { height: 9px; width: auto; filter: brightness(0); opacity: 0.85; display: block; }
+
+/* ── BODY ─────────────────────────────────────────────────────────────── */
+.body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ── LEFT RAIL ────────────────────────────────────────────────────────── */
+.left-rail {
+  width: 288px; flex-shrink: 0;
+  background: rgba(11,13,26,0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.rail-head {
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.rail-eyebrow {
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; color: #7a7c94; margin-bottom: 5px;
+}
+.rail-sub { font-size: 11px; color: rgba(240,242,255,0.45); line-height: 1.55; }
+
+.rail-list {
+  flex: 1; overflow-y: auto; min-height: 0;
+  padding: 10px 10px 48px;
+  display: flex; flex-direction: column; gap: 5px;
+  scrollbar-width: thin; scrollbar-color: rgba(0,200,255,0.1) transparent;
+}
+.rail-list::-webkit-scrollbar { width: 2px; }
+.rail-list::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.12); }
+
+/* archetype card */
+.arch-card {
+  background: rgba(14,16,32,0.72); border: 1px solid var(--border);
+  padding: 13px 15px; cursor: pointer; transition: all 0.18s;
+  position: relative; overflow: hidden;
+}
+.arch-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: var(--grad); opacity: 0; transition: opacity 0.18s;
+}
+.arch-card:hover { border-color: var(--border-m); background: rgba(11,13,26,0.9); }
+.arch-card:hover::before { opacity: 1; }
+.arch-card.active { border-color: rgba(0,200,255,0.28); background: rgba(0,200,255,0.04); }
+.arch-card.active::before { opacity: 1; }
+
+.arch-card-row   { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 5px; }
+.arch-card-name  { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.08em; line-height: 1.1; color: var(--white); }
+.arch-card-badge {
+  font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 2px 7px; border: 1px solid; flex-shrink: 0; align-self: flex-start; white-space: nowrap;
+}
+.badge-live       { color: var(--green);  border-color: rgba(76,255,145,0.4);  background: rgba(76,255,145,0.07);  }
+.badge-generating { color: var(--gold);   border-color: rgba(232,201,122,0.4); background: rgba(232,201,122,0.07); }
+.badge-connecting { color: var(--cyan);   border-color: rgba(0,200,255,0.4);   background: rgba(0,200,255,0.07);   }
+.arch-card-mood  { font-size: 9px; color: #7a7c94; letter-spacing: 0.06em; }
+
+/* ── VIDEO AREA ───────────────────────────────────────────────────────── */
+.video-area {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0; position: relative;
+}
+
+/* static background */
+.video-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-image: url('assets/STUDIO_WS_BASE.jpg');
+  background-size: cover; background-position: center;
+  animation: kbZoom 40s ease-out forwards;
+}
+@keyframes kbZoom { from { transform: scale(1.0); } to { transform: scale(1.07); } }
+.video-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom,rgba(6,9,26,0.78) 0%,rgba(6,9,26,0.52) 38%,rgba(6,9,26,0.72) 82%,rgba(6,9,26,0.97) 100%);
+}
+.video-bg::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to right,rgba(6,9,26,0.65) 0%,transparent 55%);
+}
+
+/* helios stream */
+.helios-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: 1; pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+/* content overlay */
+.video-content {
+  position: relative; z-index: 2; flex: 1;
+  display: flex; flex-direction: column; min-height: 0;
+  padding: 34px 36px 0;
+}
+.video-eyebrow {
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--green); opacity: 0.8;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.video-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--green); opacity: 0.5; }
+.video-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 5vw, 72px); letter-spacing: 0.04em; line-height: 1;
+  color: var(--white); margin-bottom: 10px;
+}
+.video-mood {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 13px; line-height: 1.75; color: rgba(240,242,255,0.5); max-width: 400px;
+}
+.video-spacer { flex: 1; }
+
+/* status bar at bottom of video content */
+.video-statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 20px;
+  border-top: 1px solid rgba(0,200,255,0.1);
+  margin-top: 16px;
+}
+.vsb-left { display: flex; align-items: center; gap: 8px; }
+.vsb-state { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 500; transition: color 0.4s; }
+.vsb-right { text-align: right; }
+.vsb-name  { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.06em; color: var(--white); }
+.vsb-mood  { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a7c94; margin-top: 2px; }
+
+/* idle / error states */
+.idle-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 40px;
+}
+.idle-label { font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; color: #7a7c94; margin-bottom: 16px; }
+.idle-text {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 15px; line-height: 1.8; color: rgba(240,242,255,0.4); max-width: 340px;
+}
+.error-strip {
+  margin-top: 14px; padding: 10px 14px;
+  border: 1px solid rgba(255,107,107,0.3); background: rgba(255,107,107,0.05);
+  font-size: 11px; color: rgba(255,107,107,0.75); max-width: 420px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+
+/* ── ANIMATIONS ───────────────────────────────────────────────────────── */
+@keyframes pg     { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,255,145,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(76,255,145,0)} }
+@keyframes pgCyan { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,200,255,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 5px rgba(0,200,255,0)} }
+@keyframes pgGold { 0%,100%{opacity:1} 50%{opacity:0.35} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp 0.4s ease both; }
+
+/* ── SHUTTER ──────────────────────────────────────────────────────────── */
+.shutter-indicator { position: fixed; bottom: 16px; right: 16px; width: 36px; height: 36px; z-index: 9999; display: none; }
+.shutter-indicator.visible { display: block; }
+.shutter-indicator img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Reactor brand overlay */
+.reactor-overlay {
+  position: absolute; bottom: 20px; right: 20px; z-index: 3;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 10px;
+  background: rgba(6,9,26,0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: opacity 0.8s ease;
+}
+.reactor-overlay img { height: 14px; width: auto; display: block; }
+.reactor-overlay-label {
+  font-size: 7px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: rgba(240,242,255,0.4); white-space: nowrap; font-family: 'Outfit', sans-serif;
+}
+</style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
-        const debugLogs = [];
-        const maxLogs = 100;
+<div class="amb amb-1"></div>
+<div class="amb amb-2"></div>
+<div id="root"></div>
 
-        const log = (level, message, data) => {
-            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-            const logEntry = { level, timestamp, message, data: data ? JSON.stringify(data) : '' };
-            debugLogs.unshift(logEntry);
-            if (debugLogs.length > maxLogs) debugLogs.pop();
-            const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
-            console.log(prefix + ' ' + message, data || '');
-        };
+<!-- Load Reactor SDK as ES module — polled by Babel code below -->
+<script type="module">
+  import { Reactor } from 'https://esm.sh/@reactor-team/js-sdk@2.9.3?bundle&target=es2022';
+  window._Reactor = Reactor;
+</script>
 
-        // Build cinematic prompt from archetype
-        const buildCinematicPrompt = (archetypeId) => {
-            const archetypeContexts = {
-                'documentary': {
-                    vibe: 'investigative and cinematic',
-                    setting: 'archive studio with film reels and production equipment',
-                    camera: 'documentary-style tracking shots'
-                },
-                'social-creator': {
-                    vibe: 'dynamic and energetic',
-                    setting: 'social media creation studio with dashboards',
-                    camera: 'quick cuts and transitions'
-                },
-                'youtube-creator': {
-                    vibe: 'cinematic and narrative-driven',
-                    setting: 'professional production studio',
-                    camera: 'cinematic storytelling through studio space'
-                },
-                'podcast-host': {
-                    vibe: 'intimate and conversational',
-                    setting: 'soundproof studio with microphone',
-                    camera: 'close-up audio booth scenes'
-                },
-                'multi-format': {
-                    vibe: 'versatile and expansive',
-                    setting: 'full production complex',
-                    camera: 'wide establishing shots'
-                }
-            };
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
 
-            const context = archetypeContexts[archetypeId] || archetypeContexts['documentary'];
+const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
+const SESSION_LIMIT_MS = 60 * 1000; // 60 seconds
 
-            return `You are Helios, the StudioYou cinematic world-building engine.
+// All 11 archetypes. IDs match backend taxonomy (main.py identify_archetype).
+// 5 acts per archetype. Grounded and real — but if the world can do something
+// impossible that serves the story, allow it. Faces welcome. Real people.
+// Generative AI Filmmaker lives in the Reactor studio — logo present throughout.
+const ARCHETYPES = [
+  {
+    id: 'musician',
+    label: 'MUSICIAN',
+    mood: 'Sonic · Atmospheric · Recording',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_musician.jpg',
+    act1: 'A vast professional film scoring stage, fifty musicians in curved tiered rows — strings at the front, brass and woodwinds behind, grand piano stage left, full percussion at the rear. A conductor at the podium holds the downbeat one beat longer than expected. The room is coiled, every musician watching. The conductor drops the baton — the full orchestra erupts simultaneously. As they play, the sound becomes faintly visible: colored light moving in the air above the musicians, shifting with the dynamics, dense and bright at fortissimo. Grammy Award statues on a shelf above the booth window. Wide shot, the orchestra fills the frame. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The recording studio control room. A producer at the large-format mixing console shapes the session — faders moving, listening with eyes closed. Above the console, a large screen displays the session waveforms as a real-time light sculpture: each instrument track a glowing colored line pulsing with the performance in the live room beyond. The producer reaches up — not to the console but to the light sculpture itself — and adjusts one of the glowing lines with a hand. The corresponding instrument in the live room responds. Through the rear glass the orchestra is still playing. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The live recording room, playback mode. The producer walks in from the control room and sits beside the pianist at the grand piano bench. They listen together to what was just recorded, the monitor speakers filling the room. The pianist plays a single chord quietly alongside the playback, testing something. The producer turns toward them, nods. The sound is still faintly visible in the air above the piano — a soft residue of the performance. Through the glass, an engineer marks the take. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The control room, final mix session. The producer works alone at the console, headphones on, deep in the mix. Every fader live. The light sculpture above the console is fully active — the completed track visible as a moving landscape of color above the board. The producer makes a precise adjustment, pulls off the headphones, listens through the room speakers to a critical passage. The light above shifts and settles. They put the headphones back on and make another cut. The room is dark except for the console and the light above it. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The recording campus exterior at night. A group of musicians spills out of the stage door — laughing, guitar cases, someone with headphones still around their neck. The scoring stage and studio complex glow amber and violet from within. A cylindrical water tower above the roofline. Platinum plaques on the exterior wall. Deep violet sky. One of them turns back and looks up at the building — taking it in — then the group moves on into the night. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'live_action_filmmaker',
+    label: 'LIVE ACTION FILMMAKER',
+    mood: 'Cinematic · Narrative · Production',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_filmmaker.jpg',
+    act1: 'A massive working soundstage interior, fully dressed and active. A period city street set fills the stage floor — cobblestone surface, practical storefronts with lit windows, fog machines laying low ground haze across the cobblestones. Two actors in full period costume and makeup stand at their marks. A cinema camera on a long dolly track runs parallel to the set, the camera operator crouched behind the lens. An Arri HMI on a 40-foot stand throws key light from above left, a grip on a ladder adjusting the scrim. The director stands at the monitor village, two screens showing the live camera feed. Forty people working simultaneously in a space the size of an aircraft hangar. Wide shot, the full stage visible. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The same soundstage, between setups. The director walks from the monitor village onto the set floor, stepping over cables on the cobblestones, crew parting around them. They stop beside the dolly track, crouch down, look along the track line. The camera operator follows close. The director stands, gestures with both hands showing the new framing. The DP nods, calls to the grip. Two crew members begin repositioning the dolly track on the cobblestone surface. The actors in period costume wait at the edge of the dressed storefronts. The fog machines still running, haze at knee level. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The same soundstage, a night scene now. The HMI on the 40-foot stand has been exchanged for a moonlight blue gel unit, casting cold silver light across the cobblestones. The storefronts are still lit but with warm amber practicals. The fog is denser. The two actors perform in the scene — the camera on the dolly moving slowly alongside them, the operator tracking their movement. A boom operator on a platform above follows the sound. The director watches the monitor, hand raised, about to call cut. The entire dressed stage in blue-silver night light. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The same soundstage at the monitor village. The director leans over the playback monitor watching the last take — the cobblestone street and storefronts visible on screen, the actors mid-scene. The DP beside them points at a specific moment. The script supervisor makes a note. A second monitor shows a different camera angle on the same take. The director taps the screen. Calls something back to the set. Crew on the cobblestone set in the background begin resetting — actors returning to first position, the fog machines cycling back up. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The same soundstage at the end of the shooting day. The set is being wrapped — the cobblestone street still dressed, the storefronts still standing, but the crew is breaking down equipment around them. The dolly track is being lifted off the cobblestones in sections. The big HMI on its 40-foot stand is being lowered by two grips. The director sits in a director chair at the edge of the set reviewing the day footage on a tablet, the dressed period street and practical storefront windows behind them. The stage that contained the whole world is beginning to disassemble. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'generative_filmmaker',
+    label: 'GENERATIVE AI FILMMAKER',
+    mood: 'Generative · World-Building · Synthetic',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_generative.jpg',
+    act1: 'The Reactor studio — a generative AI production facility. The Reactor logo is clean and prominent on the dark wall panel above the primary workstation. A filmmaker sits at the workstation, the Reactor platform interface open on the monitor: a prompt field, a generation queue, the Reactor wordmark on the monitor frame. The studio floor in front of the workstation is empty. The filmmaker types a prompt and hits generate. On the monitor, a figure assembles from noise — and then that same figure steps out of the screen into the physical studio floor, fully formed, photorealistic, standing three feet in front of the workstation. The filmmaker leans forward, studying it. The Reactor logo on the wall behind both of them. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The Reactor studio, the virtual set now partially populated. Three generated humans stand on the studio floor — different people, different postures, photorealistic and present. The filmmaker types another prompt through the Reactor interface — a fourth figure materializes. Then switches to object generation: a car assembles itself on the floor surface, complete from nothing. A plane appears in the upper space of the studio and drifts slowly across. Lights generate and activate, casting real light on the generated figures. The filmmaker leans back, surveys the world they have built, then begins placing the figures in relation to each other using the layout interface. Reactor logo visible on the wall behind the expanding world. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The Reactor studio, the generated world now fully alive. The figures move, given behaviors through the platform. The car is parked. The lights are on. Additional objects generated and placed — furniture, signage, environmental details. A collaborator has pulled a chair up beside the workstation, watching the world build in real time through the Reactor platform. The filmmaker is generating continuously — typing prompts, watching objects materialize, the Reactor interface the only tool between idea and existence. The generated world fills the studio around the two of them. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The filmmaker walks from the workstation into the generated world itself, moving between the generated figures. They reach out and adjust the position of a generated person with a gesture — the figure moves. The collaborator at the workstation types a new prompt through the Reactor interface — another object materializes near the filmmaker, who looks at it, then back at the collaborator, and nods. The Reactor logo on the wall of the studio is visible through the generated world, anchoring the physical space. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The Reactor studio late at night. The generated world still running on the monitors — figures moving, lights cycling, the world alive on every screen. The filmmaker sits at the workstation alone, the Reactor logo on the wall behind them in the dim room. A single lamp the only physical light. They look at the generated world for a long moment, then open a new prompt field in the Reactor interface and start typing the next scene. The collaborator has gone. The filmmaker is alone with the world the platform built. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'documentarian',
+    label: 'DOCUMENTARIAN',
+    mood: 'Investigative · Archival · Truth',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_documentarian.jpg',
+    act1: 'A documentary production investigation room. A filmmaker in a worn field jacket stands before a large evidence board — photographs, documents, and news clippings connected by red string across its full width. They pin a new photograph into a gap, step back, study the connection. A researcher at a table behind them types without looking up. Archival film reels in metal canisters on shelving. Warm incandescent desk lamp and cool overhead fluorescent. Wide shot, the board fills the far wall. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The filmmaker stands at a large digital panel mounted beside the physical evidence board — a touchscreen version of the investigation, photographs arranged in a network diagram. They tap a still photograph — it opens and plays: the frozen image becomes video, the people in it moving, the moment alive. They tap another still — it becomes a news broadcast clip from decades ago. The researcher comes over. The physical board and the living digital board side by side, the investigation running in both dimensions. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'A documentary screening room. A large projection screen shows archival footage — historical events, grainy and real. The filmmaker sits in the front row with two colleagues. The filmmaker reaches forward and taps a controller — the footage pauses on a frame. They stand, walk to the screen, point at a detail. As they point, the still image slowly pans — a camera move that was never shot, an angle that never existed — revealing information hidden at the edge of the original frame. The impossible angle showing what the footage could not. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'A field interview in progress. An open industrial archive space with high ceilings. The subject sits in the interview chair, hands moving, describing something. The filmmaker sits opposite, listening closely. A sound recordist to the side holds a boom overhead. The subject pauses — looks directly at the documentary camera — then continues. The room concentrates around the conversation. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The investigation room late at night. The filmmaker stands at the center — evidence board on one wall, digital panel on another, multiple workstations with monitors showing archive footage, a whiteboard with a handwritten timeline. They look at the camera directly — certain, tired, certain — then turn back to the board. A researcher calls something out from across the room. The physical red string on the board glows faintly where the connections are strongest — the investigation itself revealing which threads matter. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'youtube_creator',
+    label: 'YOUTUBE CREATOR',
+    mood: 'Polished · Narrative · Accessible',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_youtube.jpg',
+    act1: 'A professional personal YouTube studio. A creator in a clean branded crewneck sits in the shooting chair facing camera, talking, gesturing, present. Beside the primary camera a monitor shows the live recording feed. On a second monitor the YouTube live dashboard: view count climbing in real time, comments appearing in a stream. But the comments are also appearing in the room itself — floating text visible in the air around the creator at the edges of frame, the audience physically present as their words. A YouTube Diamond Play Button large on the wall behind. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The same studio. The creator pauses the recording, turns toward the comment monitor — reads something, laughs out loud, turns back to camera and addresses it directly, pointing at the floating comment text visible in the air beside them. The comment becomes part of the video. The view count keeps climbing. An editor at a desk in the background watches the live feed. The creator leans back to the lens and continues. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'Between recordings. The creator and editor at the edit desk reviewing the just-recorded segment. The editor plays a section back, the creator watches, points at a moment. The editor marks it. On the dashboard monitor the view count is still climbing from a video uploaded twenty minutes ago. Comments still coming in. The floating text from the audience still faintly visible in the air near the monitor. The audience does not stop. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The full studio from a wider angle — second camera setup at a different angle, green screen backdrop rolled out, branded merchandise shelving, the editing desk at the rear. The creator stands in the middle, on the phone, shot list in the other hand, the next video already planned. Diamond and Gold Play Buttons on the wall. The floating comment text from the live audience drifting faintly around the space. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'Late in the studio. The creator sits alone at the edit desk. The view count on the dashboard is a number that still feels unreal. Floating comment text fills the air around the monitor — the audience fully present. The creator reads through comments, replies to some. Looks at the Diamond Play Button on the wall. Looks back at the number. Opens a new document and starts writing the next video. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'short_form_creator',
+    label: 'SHORT-FORM CREATOR',
+    mood: 'Dynamic · Electric · Velocity',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_shortform.jpg',
+    act1: 'An urban rooftop at golden hour. A creator in streetwear walks to a low concrete parapet wall, plants both hands on the concrete edge, leans out over the city below. A friend holds the gimbal rig steady behind them, capturing the creator against the skyline. Above the city — seven drones in a tight V formation holding position over the skyline, their lights transitioning slowly from white to gold. Precisely seven, their formation clean and still. The creator looks up at the formation, then back at camera. The city spread below, the seven drones against the amber sky above. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'A crowded urban street at night. The creator moves through pedestrian traffic, phone on the gimbal sweeping wide. Around them a street muralist is painting a massive wall — bold colors, a figure emerging in real time from blank concrete. Pedestrians stop to watch. The creator captures the mural being made, the crowd forming around it, themselves inside the moment. A large LED display on the building across shows a TikTok view counter in the hundreds of millions. Cold neon, warm street light. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'An open urban plaza at dusk. The creator stands at the center, gimbal raised overhead, doing a slow sweep of the surrounding city. Other people move through the plaza naturally. The creator glances toward camera — direct, a quick look — then back to the shot. The drone light show visible in the distance now fully formed — the shape unmistakable against the blue-gold sky. Electric blue dusk above. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'An urban creative studio at night — exposed brick, large open windows showing the city beyond. The creator sits cross-legged on a workbench reviewing footage on a laptop, the gimbal beside them. A collaborator on a couch watches the playback. On the monitor: TikTok analytics — views and followers at numbers that still feel new. The creator taps through footage, selects a clip, starts trimming. Outside the window the city glows. The drone formation faintly visible in the far distance through the open window. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The rooftop at blue hour. The creator sits on the low parapet wall facing inward, back to the city, looking directly at camera. The gimbal is set down beside them. The city glows blue and gold behind them. The drone light show has dissolved — just city lights now. The creator looks at the lens like they are talking to everyone watching. No caption needed. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'podcaster',
+    label: 'PODCASTER',
+    mood: 'Broadcast · Conversational · Depth',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_podcaster.jpg',
+    act1: 'A broadcast-quality podcast studio with high ceilings. A host and two guests are seated at a circular recording table — three boom-arm condenser microphones in position, three studio headsets on. A Spotify logo and an Apple Podcasts logo hang as large framed prints on the acoustic foam wall behind the table, clearly visible. An episode counter on the shelf reads EP. 347. A producer is visible through the glass of the adjacent booth. The ON AIR light above the door clicks red. Above each of the three microphones a faint colored waveform appears in the air — three distinct voices made softly visible as colored light. Wide shot, the full studio visible. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The same studio, the recording in full swing. The host and two guests are deep in conversation at the circular table — one guest mid-story, hands moving, the host and second guest listening closely. The three colored voice-waveforms above the table are dense and active, shifting as the conversation moves between the three microphones. The Spotify and Apple Podcasts logos visible on the acoustic foam wall behind them. The producer in the glass booth watches the clock. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The same table, a charged moment. The host leans forward, elbows on the table, asking a direct question to the guest across from them. The guest pauses — a long beat — then begins to answer slowly. The second guest watches the exchange. All three voice-waveforms in the air above the table are still, then the answering guest’s waveform activates and expands. The Spotify and Apple Podcasts logos on the wall behind the scene. The ON AIR light still red. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The producer booth, looking through the glass into the studio. The mixing interface in the foreground — three waveforms on the monitor, one per voice, all responding. Through the glass the host and two guests at the circular table, engaged, the Spotify and Apple Podcasts logos on the acoustic foam wall clearly visible behind them. The producer adjusts a fader, leans back. Watches them. Lets it run. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'After the recording. The ON AIR light dark. The host and two guests still at the table — headsets off, coffee cups out, the conversation continuing. The three voice-waveforms above the table faintly present still, the conversation not quite willing to end. Someone laughs. The producer opens the booth door and leans in. On the wall monitor beside the Spotify and Apple Podcasts logos, episode analytics from the last upload — download numbers climbing, a world map dense with listener location dots. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'streamer',
+    label: 'STREAMER',
+    mood: 'Live · Electric · Community',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_streamer.jpg',
+    act1: 'A live streaming studio at night. A streamer in a gaming hoodie sits at the multi-monitor command center and goes live — the LIVE indicator blazes red. The viewer count climbs immediately. And the game world on the primary monitor begins bleeding beyond the screen boundary — game characters from inside the game step out of the monitor and into the physical studio, standing in the room with the streamer, fully present and photorealistic. The streamer reacts to one of them directly, then turns back to the camera. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The same studio, deep in the session. Multiple game characters now present in the physical room — standing, moving through the space. The game world atmospheric light bathes the entire studio, shifting as the game world shifts: warm orange in a desert biome, electric blue in a city at night. The streamer navigates both worlds simultaneously, talking to the camera while a game character stands just behind them. Chat is moving almost too fast to read. The physical and the game world fully merged. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The milestone moment. A banner fires across the top of the Twitch monitor — 1 MILLION SUBSCRIBERS. The streamer throws both hands up, spins the chair. The game characters in the room react simultaneously — an impossible celebration between a real person and generated ones. The streamer looks directly at camera — at the community — for a long beat. Chat is a wall of celebration. The friend on the couch is on their feet. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The full streaming setup from a wider angle — command center desk, camera on a streaming arm, ring light, green screen panel, Twitch logo on an illuminated wall sign. The game characters from earlier still present in the room, now standing near the edges of the space like they live there. The streamer has stepped away from the desk, reading chat from across the room. Still talking. Still live. Two worlds at home in the same space. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'End of session. The streamer waves at the camera — one last look — and hits end stream. The LIVE indicator goes dark. The game world atmospheric light fades from the studio walls. The game characters dissolve, one by one, until the room is just a room again. The streamer and their friend sit in the quiet for a moment. The friend points at the now-dark space where one of the game characters was standing. The streamer nods. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'content_creator',
+    label: 'CONTENT CREATOR',
+    mood: 'Dynamic · Velocity · Audience-First',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_content.jpg',
+    act1: 'A multi-format open-plan content production studio. A creator moves across the space touching each setup as they pass — podcast boom arm, video camera monitor, phone off the gimbal. The analytics wall in the background shows Instagram, TikTok, and YouTube simultaneously — numbers updating in real time. Content that was just posted is already climbing. The studio is running content while the creator is already making the next thing. An editor at a workstation keeps pace. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The analytics wall. The creator stops in front of it, watching the numbers move. The TikTok counter is accelerating — something is going viral right now. A published video clip lifts off the TikTok monitor and drifts slowly through the studio air as a floating rectangle of light before dissolving near the ceiling. The creator watches it go, then pulls out their phone and starts typing to capitalize on the moment. The editor rolls their chair over. Both of them watching the number climb. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The video shooting position. The creator sits before the camera fully in it — facing the lens, talking, gesturing. Content rectangles drift faintly through the studio behind them as published pieces go live — each one lifting off the monitor wall and moving through the space before dissolving. The editor monitors the feed from the workstation. The ring light blazing. This is what the audience sees: a person talking to them like they know them. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The studio at maximum operation. Podcast mic live at one desk, phone filming vertical content at a second position, editor cutting footage at a third. Three formats running simultaneously. The creator moves between them. The analytics wall keeps updating. Content rectangles drifting through the air above the stations like the work leaving as fast as it is made. Content calendar covered in crossed-off items. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'Late in the studio. The TikTok that spiked is now at numbers they have never seen. The creator at the edit desk, the editor beside them. The content rectangles have slowed to one every few minutes — the posting pace settling. The creator reads a comment, shows it to the editor. They both look at the number on the monitor. Opens a new document and starts planning the follow-up while the original is still climbing. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'influencer',
+    label: 'INFLUENCER',
+    mood: 'Personal Brand · Authority · Reach',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_influencer.jpg',
+    act1: 'A luxury brand premiere. A red carpet with a step-and-repeat backdrop covered in repeating brand logos. An influencer in a precisely styled editorial outfit walks the carpet toward the press line — confident, unhurried. Photographers line both sides, cameras raised, flashes erupting. Other attendees in elevated fashion visible on both sides. The influencer pauses, turns toward the press line — then glances directly at our camera for a beat, a private acknowledgment — then back to the photographers. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'A brand activation space — a large immersive branded environment, LED walls, products on elevated platforms, brand color on every surface. The influencer moves through the activation with a brand director. They pause at a display. The influencer holds a product toward their phone — and the AR activates: the product story appears in the air around it as a full miniature scene, animated, photorealistic, a world assembled around a single object. Both of them look at the phone. The impossible made casual. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'A fashion shoot in progress. A photographer with a medium format camera, a lighting team with three heads and a large softbox. The influencer is in position being shot. To the side a creative director has a laptop open showing an AI styling interface — generating alternative outfit colorways in real time. Between frames, without anyone touching them, the outfit on the influencer shifts to the next generated colorway — the photographer shoots again. The crew watches this happen and keeps working. The impossible is just the process now. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The premiere after-party. Chandeliers above, a well-dressed crowd throughout, branded installations and florals filling the space. The influencer moves through the party — an embrace with someone they know, a laugh, moving deeper into the room. Photographers circling at the edges. Other high-profile people throughout the crowd. The influencer belongs completely to this world. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The curated lifestyle studio, the next morning. The influencer sits at a styling desk reviewing content from the evening — photos from the premiere, the brand activation, the party. They select an image, open it full screen. A collaborator beside them leans in. Together they decide what goes up first. Follower count on the monitor. The styled shelving behind them, the studio ready for the next shoot. The work of turning a real night into a curated story. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+  {
+    id: 'multi_format',
+    label: 'I DO IT ALL',
+    mood: 'Expansive · Versatile · Full Spectrum',
+    refImage: 'assets/ARCHETYPE_REF_STILLS/helios_ref_multiform.jpg',
+    act1: 'A podcast recording studio. A creator in practical kit — cargo pants, t-shirt, headphones around their neck — sits at a circular recording desk with two boom-arm microphones, headset on, recording. Acoustic panels on the walls. ON AIR light red. A guest across the table. The creator is fully present in this format, engaged in the conversation. Midway through a sentence they glance toward a door at the side of the room — their mind already on the next thing. A monitor on the desk shows a video editing timeline. A guitar case visible leaning against the wall. Every format is always present. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act2: 'The same creator, now in a video production setup in an adjacent room. They sit in a shooting chair facing a cinema camera on a tripod, ring light blazing, talking directly to the lens — recording a video essay or tutorial. The headphones from the podcast are now around their neck. A mic on a boom arm is live. On a shelf behind the shooting position: the guitar case is open now, the guitar out. A podcast monitor visible through an open doorway. This person moves between formats the way most people move between rooms. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act3: 'The same creator, now in a music production corner of the same complex. They sit at a desk with a guitar across their lap, plugged into an audio interface, a DAW session open on the monitor — recording a track. The camera strap from before is still over one shoulder. A second monitor to the right shows the video editing timeline from the previous session, still open. The podcast ON AIR light visible through a glass panel behind them, now dark. They play a phrase on the guitar, reach forward and mark a take in the DAW, play it again. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act4: 'The same creator at an editing workstation in the same complex. Three monitors: a video timeline on the left, the music DAW session in the center, a podcast waveform file on the right. All three formats open simultaneously, all in various states of completion. The creator moves between them — trimming a video cut, adjusting a music level, marking a podcast edit point. The guitar leans against the desk. The camera strap still on their shoulder. The assistant beside them with a notebook, keeping track of what is being finished. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+    act5: 'The central hub of the same production complex, everything visible at once. The podcast desk through one doorway, the video shooting position through another, the music corner through a third. The creator stands at the central hub workstation where all the formats converge — every monitor active, every project open. YouTube Studio, Spotify for Podcasters, a music release dashboard, a video publish queue. All of it running. The creator moves between the monitors, checking each one, the assistant tracking beside them. They look up at the camera — direct, a beat — then back to the screens. One person, every format, one complex. Wide shot. The camera does not move. Photorealistic 4K cinematic.',
+  },
+];
 
-CREATE A 45-SECOND CINEMATIC SHORT FILM in 3 acts:
+// Status display config
+const STATUS = {
+  idle:       { text: 'SELECT A CREATOR TYPE', color: '#7a7c94',       dot: 'rgba(0,200,255,0.35)', anim: 'none' },
+  connecting: { text: 'CONNECTING TO HELIOS',  color: 'var(--cyan)',   dot: 'var(--cyan)',          anim: 'pgCyan 2s infinite' },
+  waiting:    { text: 'GPU WARMING UP',         color: 'var(--gold)',   dot: 'var(--gold)',          anim: 'pgGold 1.4s ease-in-out infinite' },
+  live:       { text: 'HELIOS LIVE',            color: 'var(--green)',  dot: 'var(--green)',         anim: 'pg 2s infinite' },
+  error:      { text: 'CONNECTION ERROR',       color: 'rgba(255,107,107,0.8)', dot: 'rgba(255,107,107,0.8)', anim: 'none' },
+};
 
-Act 1 - REVEAL (0-15s):
-Camera pans through a ${context.setting}. The space bears the creator's unique identity.
-Vibe: ${context.vibe}
-Opening shot: Wide establishing reveal of the studio world.
+function ArchetypesPage() {
+  const [selected, setSelected]       = useState(null);   // archetype id
+  const [heliosState, setHeliosState] = useState('idle');
+  const [errorMsg, setErrorMsg]       = useState(null);
 
-Act 2 - JOURNEY (15-30s):
-Show the creator's workflow and creative process. Display tools, inspirations, and past successes.
-Key focus: Their unique creative voice in action.
+  const videoRef      = useRef(null);
+  const reactorRef    = useRef(null);
+  const sessionTimer  = useRef(null);
+  const mountedRef    = useRef(true);
 
-Act 3 - FUTURE (30-45s):
-Full reveal of studio potential. Show all available tools and creative possibilities.
-Closing: Inspiring vision of unlimited creative potential.
+  // Cleanup helper — disconnect reactor + clear timers
+  function cleanup() {
+    if (sessionTimer.current) { clearTimeout(sessionTimer.current); sessionTimer.current = null; }
+    if (reactorRef.current) {
+      try { reactorRef.current.disconnect(); } catch(_) {}
+      reactorRef.current = null;
+    }
+    window._heliosReactor = null;
+  }
 
-TECHNICAL SPECS:
-- Camera movement: ${context.camera}
-- Visual style: Cinematic 4K, professional color grading, dynamic lighting
-- Audio: Inspiring, contemporary instrumental music
-- Tone: Personalized, empowering, professional
-- Format: Cinematic short film`;
-        };
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
+  }, []);
 
-        // Step 1: Fetch token from backend
-        const fetchReactorTokenFromBackend = async (email) => {
-            try {
-                log('info', 'Step 1: Fetching Reactor token from StudioYou backend', { endpoint: 'https://studioyou-api-198959034459.us-east1.run.app/api/reactor/token' });
-                
-                const response = await fetch('https://studioyou-api-198959034459.us-east1.run.app/api/reactor/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
+  // Pause/resume on tab visibility
+  useEffect(() => {
+    const onVis = () => {
+      if (!reactorRef.current) return;
+      const cmd = document.hidden ? 'pause' : 'resume';
+      reactorRef.current.sendCommand(cmd, {}).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
-                if (!response.ok) {
-                    throw new Error(`Backend returned ${response.status}: ${response.statusText}`);
-                }
+  async function selectArchetype(archetype) {
+    // Tear down previous session first
+    cleanup();
+    if (videoRef.current) { videoRef.current.srcObject = null; }
 
-                const data = await response.json();
-                log('success', 'Step 1 COMPLETE: Token received from backend', { token: data.token ? '***' : 'empty' });
-                return data.token;
-            } catch (err) {
-                log('error', 'Step 1 FAILED: Backend unavailable', { error: err.message });
-                throw new Error(`Backend error: ${err.message}`);
-            }
-        };
+    setSelected(archetype.id);
+    setHeliosState('connecting');
+    setErrorMsg(null);
 
-        // Step 2: Initialize Reactor SDK
-        const initializeReactorSDK = async (token) => {
-            try {
-                log('info', 'Step 2: Loading Reactor SDK from CDN', { url: 'https://reactor.unstable.run/sdk/v0.0.111/reactor.umd.js' });
-                
-                if (window.Reactor) {
-                    log('success', 'Step 2a: Reactor already loaded in window');
-                    return window.Reactor;
-                }
+    try {
+      // 1 — Token from backend
+      const tokenRes = await fetch(`${API_URL}/api/reactor/token`);
+      if (!tokenRes.ok) throw new Error(`Token request failed (${tokenRes.status})`);
+      const { token } = await tokenRes.json();
+      if (!token) throw new Error('No token returned from backend');
 
-                await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://reactor.unstable.run/sdk/v0.0.111/reactor.umd.js';
-                    script.onerror = () => reject(new Error('SDK load failed'));
-                    script.onload = () => {
-                        if (window.Reactor) {
-                            log('success', 'Step 2b: Reactor SDK loaded successfully');
-                            resolve();
-                        } else {
-                            reject(new Error('SDK loaded but Reactor not on window'));
-                        }
-                    };
-                    document.head.appendChild(script);
-                });
+      // 2 — Wait for SDK module (polled; module runs async parallel to Babel)
+      let attempts = 0;
+      while (!window._Reactor && attempts < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      if (!window._Reactor) throw new Error('Reactor SDK did not load');
 
-                return window.Reactor;
-            } catch (err) {
-                log('error', 'Step 2 FAILED: SDK load error', { error: err.message });
-                throw new Error(`SDK load failed: ${err.message}`);
-            }
-        };
+      // 3 — Create reactor instance
+      const reactor = new window._Reactor({ modelName: 'helios' });
+      reactorRef.current = reactor;
+      window._heliosReactor = reactor;
 
-        // Step 3: Create Reactor instance and connect
-        const connectToReactor = async (token) => {
-            try {
-                log('info', 'Step 3: Creating Reactor instance and connecting', { tokenLength: token ? token.length : 0 });
-                
-                const reactor = new window.Reactor({
-                    apiKey: token,
-                    onConnect: () => log('info', 'Step 3b: Reactor SDK onConnect fired'),
-                    onDisconnect: () => log('warn', 'Step 3c: Reactor SDK onDisconnect fired'),
-                    onError: (err) => log('error', 'Step 3d: Reactor SDK error', { message: err.message })
-                });
+      // Track stream ref — may arrive before or after start()
+      let reactorStream = null;
+      const attachStream = (stream) => {
+        reactorStream = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      };
 
-                // Try both connection methods
-                if (reactor.connect && typeof reactor.connect === 'function') {
-                    await reactor.connect(token);
-                    log('success', 'Step 3e: Connected using reactor.connect()');
-                } else if (reactor.authenticate && typeof reactor.authenticate === 'function') {
-                    await reactor.authenticate(token);
-                    log('success', 'Step 3e: Connected using reactor.authenticate()');
-                } else {
-                    log('warn', 'Step 3e: No connect/auth method found, proceeding anyway');
-                }
+      reactor.on('trackReceived', (_name, _track, stream) => {
+        attachStream(stream);
+      });
 
-                log('success', 'Step 3 COMPLETE: Reactor instance ready');
-                return reactor;
-            } catch (err) {
-                log('error', 'Step 3 FAILED: Connection error', { error: err.message });
-                throw new Error(`Reactor connection failed: ${err.message}`);
-            }
-        };
+      reactor.on('statusChanged', (status) => {
+        if (status === 'waiting' && mountedRef.current) setHeliosState('waiting');
+      });
 
-        // Step 4: Send prompt to Reactor and generate video
-        const generateVideoWithReactor = async (reactor, prompt, archetypeId) => {
-            try {
-                log('info', 'Step 4: Sending cinematic prompt to Reactor', { archetypeId, promptLength: prompt.length });
-                
-                const result = await reactor.sendCommand({
-                    type: 'world_build',
-                    archetype: archetypeId,
-                    prompt: prompt,
-                    visual_style: 'cinematic 4K, professional color grading',
-                    duration: 45,
-                    music_style: 'inspiring, contemporary instrumental'
-                });
-
-                log('success', 'Step 4 COMPLETE: Video generated by Reactor', { hasVideoUrl: !!result.videoUrl });
-                return result;
-            } catch (err) {
-                log('error', 'Step 4 FAILED: Video generation error', { error: err.message });
-                throw new Error(`Video generation failed: ${err.message}`);
-            }
-        };
-
-        function ArchetypesExplorer() {
-            const [selectedArchetype, setSelectedArchetype] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const [debugVisible, setDebugVisible] = useState(true);
-            const [reactorStatus, setReactorStatus] = useState('Ready');
-            const [error, setError] = useState(null);
-            const [reactorResponse, setReactorResponse] = useState(null);
-
-            const archetypes = [
-                { id: 'documentary', name: 'Documentary', description: 'In-depth, investigative storytelling with cinematic production quality.' },
-                { id: 'social-creator', name: 'Social Creator', description: 'Short, engaging content optimized for Instagram, TikTok, and social platforms.' },
-                { id: 'youtube-creator', name: 'YouTube Creator', description: 'Long-form video content with strong narratives and audience engagement.' },
-                { id: 'podcast-host', name: 'Podcast Host', description: 'Audio-first storytelling with conversational depth and personality.' },
-                { id: 'multi-format', name: 'Multi-Format Studio', description: 'Flexible production workflow for all formats: web, mobile, broadcast.' }
-            ];
-
-            useEffect(() => {
-                log('info', '=== REACTOR/HELIOS INTEGRATION TEST ===');
-                log('info', 'Archetypes Explorer initialized');
-                log('info', 'Architecture: Frontend → Backend Token → Reactor SDK → Video Generation');
-            }, []);
-
-            const handleArchetypeSelect = useCallback(async (archetypeId) => {
-                log('info', `\n>>> USER SELECTED: ${archetypeId.toUpperCase()} <<<\n`);
-                setSelectedArchetype(archetypeId);
-                setLoading(true);
-                setError(null);
-                setReactorResponse(null);
-                setReactorStatus('Starting 4-step pipeline...');
-
-                try {
-                    // Step 1: Get token from backend
-                    setReactorStatus('Step 1/4: Fetching backend token...');
-                    const token = await fetchReactorTokenFromBackend('test@studioyou.app');
-
-                    // Step 2: Load SDK
-                    setReactorStatus('Step 2/4: Loading Reactor SDK...');
-                    await initializeReactorSDK(token);
-
-                    // Step 3: Connect to Reactor
-                    setReactorStatus('Step 3/4: Connecting to Reactor...');
-                    const reactor = await connectToReactor(token);
-
-                    // Build prompt
-                    const prompt = buildCinematicPrompt(archetypeId);
-                    log('info', 'Cinematic prompt ready', { promptLength: prompt.length });
-
-                    // Step 4: Generate video
-                    setReactorStatus('Step 4/4: Generating video with Helios...');
-                    const result = await generateVideoWithReactor(reactor, prompt, archetypeId);
-
-                    setReactorResponse(result);
-                    setReactorStatus('✓ PIPELINE COMPLETE: Video ready');
-                    log('success', '\n=== FULL INTEGRATION SUCCESSFUL ===\n');
-                } catch (err) {
-                    log('error', `PIPELINE FAILED: ${err.message}`);
-                    setError(err.message);
-                    setReactorStatus('Error — see logs');
-                } finally {
-                    setLoading(false);
-                }
-            }, []);
-
-            return (
-                <div className="container">
-                    <div className="header">
-                        <h1>Creator Studio Archetypes</h1>
-                        <p>Choose your creative path</p>
-                        <p className="status-line">Status: {reactorStatus}</p>
-                    </div>
-
-                    <div className="video-container">
-                        {loading && (
-                            <div className="loading-spinner">
-                                <img src="https://media.giphy.com/media/3o7TKU2TransJOJqRK0/giphy.gif" alt="Loading" />
-                                <p>{reactorStatus}</p>
-                            </div>
-                        )}
-                        {error && !loading && (
-                            <div className="error-box">
-                                <p><strong>⚠️ Pipeline Error</strong></p>
-                                <p>{error}</p>
-                                <p style={{marginTop: '10px', fontSize: '0.85em'}}>Check debug logs below for detailed step-by-step error trace</p>
-                            </div>
-                        )}
-                        {reactorResponse && reactorResponse.videoUrl && (
-                            <video src={reactorResponse.videoUrl} controls autoPlay muted style={{width: '100%', height: '100%'}} />
-                        )}
-                        {!loading && !selectedArchetype && !error && (
-                            <div className="placeholder-message">
-                                <p>Select an archetype to start the Reactor/Helios pipeline</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {!error && (
-                        <div className="info-banner">
-                            <strong>Pipeline Flow:</strong> Frontend → Backend token endpoint → Reactor SDK → Helios video generation. Check debug logs to see each step.
-                        </div>
-                    )}
-
-                    <div className="archetypes-grid">
-                        {archetypes.map((archetype) => (
-                            <div
-                                key={archetype.id}
-                                className={`archetype-card ${selectedArchetype === archetype.id ? 'selected' : ''}`}
-                                onClick={() => handleArchetypeSelect(archetype.id)}
-                                role="button"
-                                tabIndex="0"
-                            >
-                                <h3>{archetype.name}</h3>
-                                <p>{archetype.description}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="cta-section">
-                        <h2>Ready to Create?</h2>
-                        <p>Select an archetype to generate your studio world</p>
-                    </div>
-
-                    {debugVisible && (
-                        <div className="debug-panel">
-                            {debugLogs.length === 0 ? (
-                                <div className="debug-log-item info">Waiting for pipeline initialization...</div>
-                            ) : (
-                                debugLogs.map((log, idx) => (
-                                    <div key={idx} className={`debug-log-item ${log.level}`}>
-                                        {log.timestamp} {log.message} {log.data && `→ ${log.data}`}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
-
-                    <button className="debug-toggle" onClick={() => setDebugVisible(!debugVisible)}>
-                        {debugVisible ? 'Hide' : 'Show'} Debug
-                    </button>
-                </div>
-            );
+      reactor.on('error', (error) => {
+        console.warn('[Helios] error:', error.code, error.message);
+        if (error.recoverable) {
+          setTimeout(() => {
+            if (reactorRef.current) reactorRef.current.reconnect().catch(() => {});
+          }, (error.retryAfter || 3) * 1000);
         }
+      });
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ArchetypesExplorer />);
-    </script>
+      // 4 — Connect
+      await reactor.connect(token);
+
+      // 5 — Wait for ready
+      await new Promise((resolve, reject) => {
+        if (reactor.getStatus() === 'ready') { resolve(); return; }
+        const onStatus = (status) => {
+          if (status === 'ready') { reactor.off('statusChanged', onStatus); resolve(); }
+        };
+        reactor.on('statusChanged', onStatus);
+        setTimeout(() => {
+          reactor.off('statusChanged', onStatus);
+          reject(new Error('Timed out waiting for GPU'));
+        }, 30000);
+      });
+
+      if (!mountedRef.current) return;
+
+      // 6 — Reference image (per-archetype, best-effort — skip silently on failure)
+      if (archetype.refImage) {
+        try {
+          const imgRes  = await fetch('https://studioyou.app/' + archetype.refImage);
+          const imgBlob = await imgRes.blob();
+          const imgFile = new File([imgBlob], archetype.refImage.split('/').pop(), { type: 'image/jpeg' });
+          const ref     = await reactor.uploadFile(imgFile);
+          await reactor.sendCommand('set_image', { image: ref });
+        } catch(imgErr) {
+          console.warn('[Helios] Ref image skipped:', imgErr.message);
+        }
+      }
+
+      // 7 — Schedule prompts + start
+      // Schedule all 5 acts upfront, 6 chunks apart (~6s each = 30s of explicit direction)
+      const acts = [archetype.act1, archetype.act2, archetype.act3, archetype.act4, archetype.act5];
+      for (let i = 0; i < acts.length; i++) {
+        await reactor.sendCommand('schedule_prompt', { prompt: acts[i], chunk: i * 6 });
+      }
+      await reactor.sendCommand('start', {});
+
+      // 8 — Play video
+      if (mountedRef.current && videoRef.current) {
+        if (reactorStream) videoRef.current.srcObject = reactorStream;
+        try { await videoRef.current.play(); } catch(_) {}
+      }
+
+      if (mountedRef.current) setHeliosState('live');
+
+      // 9 — Prompt cycling on chunk boundary — cycles from the full 5-act pool
+      let actIndex = 0;
+      reactor.on('message', (msg) => {
+        if (msg.type === 'event' && msg.data?.event === 'prompt_switched') {
+          actIndex = (actIndex + 1) % acts.length;
+          const nextChunk = msg.data.chunk + 6;
+          reactor.sendCommand('schedule_prompt', { prompt: acts[actIndex], chunk: nextChunk }).catch(() => {});
+        }
+      });
+
+      // 10 — 3-minute session limit
+      sessionTimer.current = setTimeout(() => {
+        try { reactor.sendCommand('pause', {}); } catch(_) {}
+        if (mountedRef.current) setHeliosState('idle');
+      }, SESSION_LIMIT_MS);
+
+    } catch(err) {
+      console.error('[Helios] init failed:', err);
+      if (mountedRef.current) {
+        setHeliosState('error');
+        setErrorMsg(err.message);
+      }
+    }
+  }
+
+  const sc           = STATUS[heliosState] || STATUS.idle;
+  const activeArch   = ARCHETYPES.find(a => a.id === selected);
+
+  // badge on active card
+  const badgeState = heliosState === 'live' ? 'live'
+                   : (heliosState === 'waiting') ? 'generating'
+                   : (heliosState === 'connecting') ? 'connecting'
+                   : null;
+  const badgeText  = heliosState === 'live' ? 'LIVE'
+                   : heliosState === 'waiting' ? 'BUILDING'
+                   : heliosState === 'connecting' ? 'LINKING'
+                   : null;
+
+  return (
+    <div className="page">
+
+      {/* TOPBAR */}
+      <div className="topbar">
+        <div className="topbar-left">
+          <div className="tb-logo">
+            <img src="assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" />
+          </div>
+          <div className="tb-sep" />
+          <div className="tb-title">Creator Archetypes</div>
+        </div>
+        <div className="topbar-right">
+          <div className="status-pill">
+            <div className="status-dot" style={{background:sc.dot, animation:sc.anim}} />
+            <span className="status-text" style={{color:sc.color}}>{sc.text}</span>
+          </div>
+          <div className="tb-sep" />
+          <div className="reactor-btn" onClick={()=>window.open('https://www.reactor.inc','_blank')}>
+            <img src="assets/reactor-logo-dark.svg" alt="Reactor" />
+          </div>
+        </div>
+      </div>
+
+      {/* BODY */}
+      <div className="body">
+
+        {/* LEFT RAIL */}
+        <div className="left-rail">
+          <div className="rail-head">
+            <div className="rail-eyebrow">Creator Type</div>
+            <div className="rail-sub">Select to generate your studio world with Helios.</div>
+          </div>
+          <div className="rail-list">
+            {ARCHETYPES.map(a => {
+              const isActive = selected === a.id;
+              const showBadge = isActive && !!badgeState;
+              return (
+                <div
+                  key={a.id}
+                  className={"arch-card" + (isActive ? " active" : "")}
+                  onClick={() => selectArchetype(a)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter') selectArchetype(a); }}
+                >
+                  <div className="arch-card-row">
+                    <div className="arch-card-name">{a.label}</div>
+                    {showBadge && (
+                      <div className={"arch-card-badge badge-" + badgeState}>{badgeText}</div>
+                    )}
+                  </div>
+                  <div className="arch-card-mood">{a.mood}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* VIDEO AREA */}
+        <div className="video-area">
+          <div className="video-bg" />
+
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="helios-video"
+            style={{opacity: heliosState === 'live' ? 1 : 0.01}}
+          />
+
+          {/* Reactor brand overlay — generative filmmaker only, live only */}
+          {selected === 'generative_filmmaker' && heliosState === 'live' && (
+            <div className="reactor-overlay">
+              <img src="assets/reactor-logo-dark.svg" alt="Reactor" />
+              <span className="reactor-overlay-label">Powered by Reactor</span>
+            </div>
+          )}
+
+          <div className="video-content">
+            {!selected ? (
+              /* Initial idle — nothing selected */
+              <div className="idle-wrap">
+                <div className="idle-label">Helios · Real-Time World Generation</div>
+                <div className="idle-text">
+                  Select a creator type to generate your studio world. Each archetype renders a unique cinematic environment — built live, shaped by your creative identity.
+                </div>
+              </div>
+            ) : (
+              /* Archetype selected — show info + status */
+              <>
+                <div className="video-eyebrow fade-up">Helios World Engine</div>
+                <div className="video-title fade-up">{activeArch ? activeArch.label : ''}</div>
+                <div className="video-mood fade-up">{activeArch ? activeArch.mood : ''}</div>
+                {heliosState === 'error' && (
+                  <div className="error-strip fade-up">
+                    <span style={{flexShrink:0}}>⚠</span>
+                    <span>{errorMsg || "Connection failed. Select the archetype again to retry."}</span>
+                  </div>
+                )}
+                <div className="video-spacer" />
+                <div className="video-statusbar">
+                  <div className="vsb-left">
+                    <div className="status-dot" style={{background:sc.dot, animation:sc.anim}} />
+                    <div className="vsb-state" style={{color:sc.color}}>{sc.text}</div>
+                  </div>
+                  {activeArch && (
+                    <div className="vsb-right">
+                      <div className="vsb-name">{activeArch.label}</div>
+                      <div className="vsb-mood">{activeArch.mood}</div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+      </div>{/* end body */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ArchetypesPage />);
+</script>
+
+<!-- CLAUDE FOOTER -->
+<div id="claude-footer" style="
+  position:fixed; bottom:12px; left:50%; transform:translateX(-50%);
+  height:28px; display:inline-flex; align-items:center; gap:6px; padding:0 14px;
+  background:rgba(6,9,26,0.92); backdrop-filter:blur(10px);
+  border:1px solid rgba(217,119,87,0.12);
+  z-index:9000; pointer-events:none; white-space:nowrap;
+">
+  <img src="assets/CLAUDE_LOGO.png" width="14" height="14" alt="Claude" style="opacity:0.85;flex-shrink:0;object-fit:contain;">
+  <span style="font-family:'Outfit',sans-serif;font-size:9px;letter-spacing:0.26em;text-transform:uppercase;color:rgba(240,242,255,0.35);white-space:nowrap;">Built with <span style="color:#d97757;">Claude</span>. Powered by <span style="color:#d97757;">Claude</span>.</span>
+</div>
+
+<div class="shutter-indicator" id="shutterInd">
+  <img src="assets/shutter1.gif" alt="" />
+</div>
 </body>
 </html>

@@ -1830,9 +1830,8 @@ function _fyVideoSet(val) {
 }
 
 // Avatar setup state persisted to localStorage
-// sy_avatar_replica_id  — Tavus replica_id once created
-// sy_avatar_status      — 'training' | 'ready' | 'skipped'
-// sy_avatar_conv_url    — Tavus conversation_url once ready
+// sy_avatar_status      — 'skipped' (anything else falls back to idle)
+// sy_lk_token/url/room/ts — active LiveKit session, set by startStock()
 
 // ── FYLiveKitRoom — connects to a LiveKit room and renders the avatar video ──
 // Uses livekit-client UMD (loaded via CDN above). The avatar worker (currently
@@ -2018,7 +2017,7 @@ const FY_AVATAR_STILLS = [
 function FYAvatarSlot() {
   const email = localStorage.getItem('sy_email') || '';
 
-  // 'idle' | 'upload' | 'uploading' | 'training' | 'ready' | 'live' | 'skipped'
+  // 'idle' | 'uploading' | 'live' | 'skipped'
   const [mode, setMode] = React.useState(() => {
     const status = localStorage.getItem('sy_avatar_status');
     const lkToken = localStorage.getItem('sy_lk_token');
@@ -2039,18 +2038,14 @@ function FYAvatarSlot() {
       return 'idle';
     }
     if (lkToken) return 'live';
-    if (status === 'ready') return 'ready';
-    if (status === 'training') return 'training';
     if (status === 'skipped') return 'skipped';
     return 'idle';
   });
 
-  const [replicaId, setReplicaId] = React.useState(localStorage.getItem('sy_avatar_replica_id') || '');
   const [lkToken, setLkToken] = React.useState(localStorage.getItem('sy_lk_token') || '');
   const [lkUrl, setLkUrl] = React.useState(localStorage.getItem('sy_lk_url') || '');
   const [dragOver, setDragOver] = React.useState(false);
   const [error, setError] = React.useState('');
-  const pollRef = React.useRef(null);
   const [videoOn, setVideoOn] = React.useState(_fyVideoState.on);
   React.useEffect(() => _fyVideoSubscribe(setVideoOn), []);
 
@@ -2078,27 +2073,6 @@ function FYAvatarSlot() {
     window.addEventListener('sy_avatar_start', onStart);
     return () => window.removeEventListener('sy_avatar_start', onStart);
   }, [mode, email]);
-
-  // Poll training status
-  React.useEffect(() => {
-    if (mode !== 'training' || !replicaId) return;
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/avatar/status/${replicaId}`);
-        const d = await res.json();
-        if (d.status === 'ready') {
-          clearInterval(pollRef.current);
-          localStorage.setItem('sy_avatar_status', 'ready');
-          setMode('ready');
-        } else if (d.status === 'error') {
-          clearInterval(pollRef.current);
-          setError('Replica training failed. Try again.');
-          setMode('idle');
-        }
-      } catch(e) { /* keep polling */ }
-    }, 8000);
-    return () => clearInterval(pollRef.current);
-  }, [mode, replicaId]);
 
   async function startStock() {
     console.log('[FYAvatar] startStock called — mode:', mode, 'email:', email);
@@ -2136,26 +2110,6 @@ function FYAvatarSlot() {
     }
   }
 
-  async function startConversation() {
-    setMode('uploading'); // reuse loading state
-    setError('');
-    try {
-      const resp = await fetch(`${API_URL}/api/avatar/conversation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, replica_id: replicaId })
-      });
-      const data = await resp.json();
-      if (!resp.ok || !data.conversation_url) throw new Error(data.error || 'Conversation failed');
-      localStorage.setItem('sy_avatar_conv_url', data.conversation_url);
-      setConvUrl(data.conversation_url);
-      setMode('live');
-    } catch(e) {
-      setError(e.message);
-      setMode('ready');
-    }
-  }
-
   function skip() {
     localStorage.setItem('sy_avatar_status', 'skipped');
     setMode('skipped');
@@ -2179,10 +2133,10 @@ function FYAvatarSlot() {
       }).catch(function(){});
     }
     ['sy_avatar_replica_id','sy_avatar_status','sy_lk_token','sy_lk_url','sy_lk_room','sy_lk_ts'].forEach(k => localStorage.removeItem(k));
-    setReplicaId(''); setLkToken(''); setLkUrl(''); setError(''); setMode('idle');
+    setLkToken(''); setLkUrl(''); setError(''); setMode('idle');
   }
 
-  // ── LIVE: LiveKit room (Claude agent + Tavus video rendering) ──
+  // ── LIVE: LiveKit room (Claude agent, Runway video rendering) ──
   if (mode === 'live' && lkToken && lkUrl && videoOn) {
     return (
       <div className="fy-avatar-slot" style={{position:'relative'}}>
@@ -2221,29 +2175,6 @@ function FYAvatarSlot() {
             <div className="av-spawning-flash">Spawning FutureYou…</div>
           </div>
         )}
-      </div>
-    );
-  }
-
-  // ── TRAINING ──
-  if (mode === 'training') {
-    return (
-      <div className="fy-avatar-slot" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,padding:'12px'}}>
-        <div style={{display:'flex',gap:4}}>{[0,1,2].map(i=><span key={i} style={{width:4,height:4,borderRadius:'50%',background:'var(--sy-green)',animation:`dp 1.4s ${i*0.2}s infinite`}}/>)}</div>
-        <div style={{fontSize:9,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(76,255,145,0.6)',textAlign:'center'}}>Building FutureYou</div>
-        <div style={{fontSize:9,color:'rgba(240,242,255,0.25)',textAlign:'center',lineHeight:1.5}}>Tavus Phoenix is aging<br/>your photo. ~2–5 min.</div>
-      </div>
-    );
-  }
-
-  // ── READY: replica trained, start conversation ──
-  if (mode === 'ready') {
-    return (
-      <div className="fy-avatar-slot" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,padding:'12px'}}>
-        <div style={{width:48,height:48,borderRadius:'50%',border:'1px solid rgba(76,255,145,0.4)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>✓</div>
-        <div style={{fontSize:9,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--sy-green)',textAlign:'center'}}>FutureYou Ready</div>
-        {error && <div style={{fontSize:9,color:'var(--red)',textAlign:'center'}}>{error}</div>}
-        <div style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--cyan)',cursor:'pointer',border:'1px solid rgba(0,200,255,0.3)',padding:'5px 12px'}} onClick={startConversation}>Go Live →</div>
       </div>
     );
   }

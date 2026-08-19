@@ -2322,7 +2322,10 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       const res = await fetch(API_URL + '/api/chat', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          system: buildSystemPrompt(),
+          context: 'fy_chat',
+          email: email,
+          building_id: bldg.id,
+          mode: isIndependent ? 'independent' : 'peer',
           messages: newMsgs.map(m => ({ role: m.role==='user' ? 'user' : 'assistant', content: m.text }))
         })
       });
@@ -2430,7 +2433,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     try {
       const res = await fetch(API_URL + '/api/chat', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ system: buildSystemPrompt(), messages:[{ role:'user', content: openingPrompt }] })
+        body: JSON.stringify({ context: 'fy_chat', email: email, building_id: bldg.id, mode: isIndependent ? 'independent' : 'peer', messages:[{ role:'user', content: openingPrompt }] })
       });
       const data = await res.json();
       const reply = data.message || (data.content&&data.content[0]&&data.content[0].text) || `You are in ${bldg.title}. Let's build.`;
@@ -2502,7 +2505,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       const res = await fetch(API_URL + '/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You convert creative conversations into generation prompts for image/video models. Output ONLY the prompt text — no preamble, no quotes, no commentary.',
+          context: 'prompt_synth',
           messages: [{ role: 'user', content: 'Conversation:\n' + conv + '\n\nWrite ONE generation prompt, under 80 words, for the asset "' + taskTitle + '". Describe exactly the visual the creator stated — subject, setting, mood, lighting, style. Use only what the creator actually said; do not invent a different scene. Return only the prompt.' }]
         })
       });

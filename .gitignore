@@ -1,6 +1,6 @@
 .DS_Store
 .claude/
-.netlify/state.json
+.netlify/
 .env
 .env.local
 node_modules/

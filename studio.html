@@ -1265,11 +1265,18 @@ const { useState, useEffect, useRef, useCallback } = React;
 
 const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
+function syHeaders(extra) {
+  return Object.assign({
+    'Content-Type': 'application/json',
+    'X-Session-Token': localStorage.getItem('sy_session_token') || '',
+  }, extra || {});
+}
+
 /* ── Model Invocation ── */
 async function invokeModel({ task, building, tier, params, email }) {
   const res = await fetch(API_URL + '/api/model/invoke', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: syHeaders(),
     body: JSON.stringify({ task, building, tier, params, email })
   });
   return await res.json();
@@ -1568,7 +1575,7 @@ async function vaultLoadFromServer(projectId) {
   // on refresh even though it's sitting in fy_vault_entries the whole time.
   if (!projectId) return;
   try {
-    const res = await fetch(`${API_URL}/api/vault/list?project_id=${encodeURIComponent(projectId)}`);
+    const res = await fetch(`${API_URL}/api/vault/list?project_id=${encodeURIComponent(projectId)}`, { headers: syHeaders() });
     const d = await res.json();
     if (d.success && Array.isArray(d.entries)) {
       const mapped = d.entries.map(row => ({
@@ -2097,7 +2104,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       } else {
         const convHistory = JSON.parse(localStorage.getItem('sy_fy_conversation') || '[]');
         const res = await fetch(API_URL + '/api/avatar/livekit-session', {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
+          method: 'POST', headers: syHeaders(),
           body: JSON.stringify({ email, conversation_thread: convHistory.slice(-10), surface: 'studio' })
         });
         const data = await res.json();
@@ -2148,7 +2155,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
             if (projectId) {
               fetch(`${API_URL}/api/vault/capture`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: syHeaders(),
                 body: JSON.stringify({
                   project_id: projectId,
                   building_slug: msg.building_slug,
@@ -2345,7 +2352,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
   async function sendViaRest(newMsgs, hidden) {
     try {
       const res = await fetch(API_URL + '/api/chat', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({
           context: 'fy_chat',
           email: email,
@@ -2477,7 +2484,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
   async function restInit(openingPrompt) {
     try {
       const res = await fetch(API_URL + '/api/chat', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ context: 'fy_chat', email: email, building_id: bldg.id, mode: isIndependent ? 'independent' : 'peer', messages:[{ role:'user', content: openingPrompt }] })
       });
       const data = await res.json();
@@ -2549,7 +2556,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     if (!conv) return null;
     try {
       const res = await fetch(API_URL + '/api/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: syHeaders(),
         body: JSON.stringify({
           context: 'prompt_synth',
           messages: [{ role: 'user', content: 'Conversation:\n' + conv + '\n\nWrite ONE generation prompt, under 80 words, for the asset "' + taskTitle + '". Describe exactly the visual the creator stated — subject, setting, mood, lighting, style. Use only what the creator actually said; do not invent a different scene. Return only the prompt.' }]
@@ -2920,7 +2927,7 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
     if (projectId) {
       fetch(`${API_URL}/api/vault/capture`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: syHeaders(),
         body: JSON.stringify({
           project_id: projectId,
           building_slug: bldg.id,
@@ -3210,7 +3217,7 @@ function Studio() {
   async function loadProjects() {
     if (!email) return;
     try {
-      const res = await fetch(`${API_URL}/api/projects/list?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`${API_URL}/api/projects/list`, { headers: syHeaders() });
       const d = await res.json();
       if (d.success && d.projects && d.projects.length) {
         setProjects(d.projects);
@@ -3229,7 +3236,7 @@ function Studio() {
     localStorage.setItem('sy_active_project_id', project.id);
     localStorage.setItem('sy_active_project_name', project.name || '');
     fetch(API_URL+'/api/projects/set-active', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: syHeaders(),
       body: JSON.stringify({ project_id: project.id, email })
     }).catch(()=>{});
   }
@@ -3237,7 +3244,7 @@ function Studio() {
   async function handleProjectCreate() {
     try {
       const res = await fetch(API_URL+'/api/projects/create', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ email, tier })
       });
       const d = await res.json();
@@ -3248,7 +3255,7 @@ function Studio() {
   async function handleProjectDelete(project) {
     try {
       const res = await fetch(API_URL+'/api/projects/delete', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ project_id: project.id, email })
       });
       const d = await res.json();

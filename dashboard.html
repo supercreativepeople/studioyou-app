@@ -725,6 +725,13 @@
 const { useState, useEffect, useRef } = React;
 const API_URL = 'https://studioyou-api-198959034459.us-east1.run.app';
 
+function syHeaders(extra) {
+  return Object.assign({
+    'Content-Type': 'application/json',
+    'X-Session-Token': localStorage.getItem('sy_session_token') || '',
+  }, extra || {});
+}
+
 // ── BUILDING DATA ──────────────────────────────────────────────────────────
 const BUILDINGS = [
   { id:'ideate',    icon:'💡', title:'IDEATE',    desc:'Content strategy, concept development, next-project decisions.',                        cta:'Start a Brief'      },
@@ -954,7 +961,7 @@ function ProjectStatusPanel({ project, projects, onSwitch, onCreate, onDelete, e
     setEditing(false);
     if (!val || val === name || !project) return;
     fetch(API_URL+'/api/projects/update', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: syHeaders(),
       body: JSON.stringify({ project_id: project.id, name: val, email })
     }).then(r=>r.json()).then(d=>{ if(d.success && onSwitch) onSwitch({...project, name:val}); }).catch(()=>{});
   }
@@ -1464,7 +1471,7 @@ Formation Q&A:\n${ctx}
 This building handles: ${bldg.desc}
 FY insight for this building: "${cfg.fyq}"
 Rules: Specific, direct, peer register. Reference their formation answers. Under 80 words unless asked for depth. No filler.`;
-      const res = await fetch(API_URL+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[...msgs,userMsg],system,email:localStorage.getItem('sy_email')||''})});
+      const res = await fetch(API_URL+'/api/chat',{method:'POST',headers: syHeaders(),body:JSON.stringify({messages:[...msgs,userMsg],system,email:localStorage.getItem('sy_email')||''})});
       const d = await res.json();
       const finalMsgs = [...msgs, userMsg, {role:'assistant',content:d.message||d.content||'Connection issue.'}];
       setMsgs(finalMsgs);
@@ -2030,7 +2037,7 @@ function FYAvatarSlot() {
       if (staleRoom) {
         fetch(API_URL + '/api/avatar/end-session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: syHeaders(),
           body: JSON.stringify({ room_name: staleRoom })
         }).catch(function(){});
       }
@@ -2085,7 +2092,7 @@ function FYAvatarSlot() {
       console.log('[FYAvatar] calling livekit-session, thread length:', thread.length);
       const resp = await fetch(API_URL + '/api/avatar/livekit-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: syHeaders(),
         body: JSON.stringify({ email, conversation_thread: thread })
       });
       console.log('[FYAvatar] response status:', resp.status, resp.ok);
@@ -2128,7 +2135,7 @@ function FYAvatarSlot() {
     if (roomName) {
       fetch(API_URL + '/api/avatar/end-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: syHeaders(),
         body: JSON.stringify({ room_name: roomName })
       }).catch(function(){});
     }
@@ -2445,7 +2452,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
     try {
       const b=briefing||{};
       const payload={first_name:firstName||'',last_name:localStorage.getItem('sy_last_name')||'',studio_name:studioName||'',email:localStorage.getItem('sy_email')||'',arsenal:normalizePill(b.arsenal),roadblock:normalizePill(b.roadblock),horizon:normalizePill(b.horizon),briefing_answers:buildQ(formation||[])};
-      const res=await fetch(`${API_URL}/api/formation/initialize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const res=await fetch(`${API_URL}/api/formation/initialize`,{method:'POST',headers: syHeaders(),body:JSON.stringify(payload)});
       const data=await res.json();
       if(data.success&&data.first_words){
         localStorage.setItem('sy_first_words',data.first_words);
@@ -2466,7 +2473,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
       const arch=localStorage.getItem('sy_archetype')||'';
       const ctx=(Array.isArray(formation)?formation:[]).map((a,i)=>`Q${i+1}: ${a||'(no answer)'}`).join('\n');
       const returnPrompt=["You are FutureYou — this creator's future self, back to guide the build.","The creator completed their formation briefing and saw your first words. They have now returned to their studio.",`Studio: ${studioName||'(unnamed)'} | Archetype: ${arch}`,`Arsenal: ${normalizePill(b.arsenal)} | Roadblock: ${normalizePill(b.roadblock)} | Horizon: ${normalizePill(b.horizon)}`,`Your previous recommendation: ${recBuilding||'not set'}`,`Formation Q&A:\n${ctx}`,"","Write a 2-3 sentence return greeting. Acknowledge they are back. Reference the specific building you recommended by name. Ask if they want to pick up there or go a different direction.","Peer register. No filler. No exclamation marks. No hedging. Under 60 words."].join("\n");
-      const res=await fetch(API_URL+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:'I am back.'}],system:returnPrompt,email:localStorage.getItem('sy_email')||''})});
+      const res=await fetch(API_URL+'/api/chat',{method:'POST',headers: syHeaders(),body:JSON.stringify({messages:[{role:'user',content:'I am back.'}],system:returnPrompt,email:localStorage.getItem('sy_email')||''})});
       const data=await res.json();
       const reply=(data.response||data.message||'').trim();
       if(reply){ setFw(reply); setStatus('typing'); typewrite(reply); }
@@ -2508,7 +2515,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
     try {
       const res = await fetch(`${API_URL}/api/session/start`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: syHeaders(),
         body: JSON.stringify({ email, session_type: 'text' })
       });
       const d = await res.json();
@@ -2529,7 +2536,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
     try {
       const res = await fetch(`${API_URL}/api/session/close`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: syHeaders(),
         body: JSON.stringify({
           email,
           session_id: sid,
@@ -2565,7 +2572,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
       awaitingBrandProbe.current=false;
       // Persist cross-device — write to Supabase via update-studio
       const em=localStorage.getItem('sy_email')||'';
-      if(em) fetch(API_URL+'/api/update-studio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,brand_story:msg})}).catch(()=>{});
+      if(em) fetch(API_URL+'/api/update-studio',{method:'POST',headers: syHeaders(),body:JSON.stringify({email:em,brand_story:msg})}).catch(()=>{});
     }
 
     // Start session on first exchange
@@ -2616,7 +2623,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
         // Fallback to /api/chat if agent didn't respond
         if (!reply) {
           var controller=new AbortController(); var timeout2=setTimeout(function(){controller.abort();},30000);
-          var res2=await fetch(API_URL+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:updatedMsgs,system:sysPrompt()+namingSuffix}),signal:controller.signal});
+          var res2=await fetch(API_URL+'/api/chat',{method:'POST',headers: syHeaders(),body:JSON.stringify({messages:updatedMsgs,system:sysPrompt()+namingSuffix}),signal:controller.signal});
           clearTimeout(timeout2);
           var d2=await res2.json();
           reply=d2.message||d2.content||'Connection issue.';
@@ -2624,7 +2631,7 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
       } else {
         // No room — use /api/chat directly
         var controller=new AbortController(); var timeout3=setTimeout(function(){controller.abort();},30000);
-        var res3=await fetch(API_URL+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:updatedMsgs,system:sysPrompt()+namingSuffix}),signal:controller.signal});
+        var res3=await fetch(API_URL+'/api/chat',{method:'POST',headers: syHeaders(),body:JSON.stringify({messages:updatedMsgs,system:sysPrompt()+namingSuffix}),signal:controller.signal});
         clearTimeout(timeout3);
         var d3=await res3.json();
         reply=d3.message||d3.content||'Connection issue.';
@@ -2974,7 +2981,7 @@ function Dashboard() {
   function updateStudioName(name){
     const n=name.trim(); if(!n) return;
     localStorage.setItem('sy_studio_name',n); setStudioNameState(n);
-    fetch(API_URL+'/api/update-studio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:localStorage.getItem('sy_email')||'',studio_name:n})}).catch(()=>{});
+    fetch(API_URL+'/api/update-studio',{method:'POST',headers: syHeaders(),body:JSON.stringify({email:localStorage.getItem('sy_email')||'',studio_name:n})}).catch(()=>{});
   }
   const formation=()=>{try{const v=JSON.parse(localStorage.getItem('sy_formation')||'[]');return Array.isArray(v)?v:[];}catch{return[];}};
   const briefing=()=>{try{return JSON.parse(localStorage.getItem('sy_briefing')||'{}');}catch{return{};}};
@@ -3015,7 +3022,7 @@ function Dashboard() {
     localStorage.setItem('sy_active_project_id', project.id);
     localStorage.setItem('sy_active_project_name', project.name || '');
     fetch(API_URL+'/api/projects/set-active', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: syHeaders(),
       body: JSON.stringify({ project_id: project.id, email })
     }).catch(()=>{});
   }
@@ -3024,7 +3031,7 @@ function Dashboard() {
     const tier = localStorage.getItem('sy_tier') || 'operator';
     try {
       const res = await fetch(API_URL+'/api/projects/delete', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ project_id: project.id, email })
       });
       const d = await res.json();
@@ -3043,7 +3050,7 @@ function Dashboard() {
     const tier = localStorage.getItem('sy_tier') || 'operator';
     try {
       const res = await fetch(API_URL+'/api/projects/create', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ email, tier })
       });
       const d = await res.json();
@@ -3101,7 +3108,7 @@ function Dashboard() {
   function handleActionClick(action) {
     if (action.id) {
       fetch(`${API_URL}/api/session/action/complete`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers: syHeaders(),
         body: JSON.stringify({ action_id: action.id, click: true })
       }).catch(()=>{});
     }
@@ -3123,7 +3130,7 @@ function Dashboard() {
           [b.id]: { ...current, state: 'active', last_visited: new Date().toISOString() }
         };
         fetch(API_URL + '/api/projects/update', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: syHeaders(),
           body: JSON.stringify({ project_id: activeProject.id, email, buildings: updatedBuildings })
         }).catch(() => {});
         setActiveProject(prev => ({ ...prev, buildings: updatedBuildings }));

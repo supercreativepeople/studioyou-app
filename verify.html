@@ -298,6 +298,7 @@
                 // Success — save user data and redirect
                 const user = data.user;
                 localStorage.setItem("sy_email", user.email || "");
+                if (data.session_token) { localStorage.setItem("sy_session_token", data.session_token); }
                 localStorage.setItem("sy_first_name", user.first_name || "");
                 localStorage.setItem("sy_last_name", user.last_name || "");
                 const sn = (user.studio_name || "").trim();

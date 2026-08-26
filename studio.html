@@ -1921,6 +1921,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
   const pendingTaskContextRef = useRef(null);
   const lastSendHiddenRef = useRef(false); // true when the last user msg sent was a hidden system prompt
   const anyReplyRef = useRef(false); // true once any fy_reply has arrived over the data channel
+  const loadingSafetyRef = useRef(null); // watchdog timeout — clears stuck spinner after 18s
   const initDoneRef = useRef(false);
   const msgsRef = useRef([]);
   const remoteAudioElsRef = useRef([]); // hidden <audio> els from LiveKit attach — muted in sync with avatar toggle
@@ -2193,6 +2194,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
             localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
             return updated;
           });
+          if (loadingSafetyRef.current) { clearTimeout(loadingSafetyRef.current); loadingSafetyRef.current = null; }
           setLoading(false);
           if (onDirective) onDirective(text);
           if (bodyRef.current) setTimeout(() => { if(bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, 50);
@@ -2383,6 +2385,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     } catch(e) {
       setMsgs(prev => [...prev, { role:'fy', text:'Something went sideways. Try again.' }]);
     }
+    if (loadingSafetyRef.current) { clearTimeout(loadingSafetyRef.current); loadingSafetyRef.current = null; }
     setLoading(false);
     if (bodyRef.current) setTimeout(() => { if(bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, 50);
   }
@@ -2395,6 +2398,12 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     setMsgs(newMsgs);
     if (!hidden) localStorage.setItem('sy_fy_conversation', JSON.stringify(newMsgs));
     setLoading(true);
+    if (loadingSafetyRef.current) clearTimeout(loadingSafetyRef.current);
+    loadingSafetyRef.current = setTimeout(() => {
+      loadingSafetyRef.current = null;
+      setLoading(false);
+      setMsgs(prev => [...prev, { role:'fy', text:'No reply in time. Send your message again.' }]);
+    }, 18000);
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
 
     if (roomRef.current && lkConnected) {
@@ -2478,6 +2487,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     } catch(e) {
       setMsgs(prev => [...prev, { role:'fy', text:`You are inside ${bldg.title}. ${bldg.fyq}` }]);
     }
+    if (loadingSafetyRef.current) { clearTimeout(loadingSafetyRef.current); loadingSafetyRef.current = null; }
     setLoading(false);
   }
 

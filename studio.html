@@ -848,6 +848,8 @@
   }
   .step-drawer-item:hover { background:rgba(0,200,255,0.05); }
   .step-drawer-item.recommended { animation:sectionPulse 2s ease-in-out infinite; }
+  .step-drawer-item.step-done { opacity:0.7; }
+  .step-drawer-item.step-done .step-drawer-num { color:var(--sy-green); font-size:11px; }
   .step-drawer-num {
     font-size:8px; letter-spacing:0.14em; color:var(--fg3); flex-shrink:0;
     padding:3px 6px; border:1px solid var(--border-mid); margin-top:2px;
@@ -1692,6 +1694,27 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 
   useEffect(() => cdSubscribe(setCdEvents), []);
   useEffect(() => vaultSubscribe(setVaultAssets), []);
+  const [completedSteps, setCompletedSteps] = React.useState(new Set());
+  const [stepFlash, setStepFlash] = React.useState(null);
+
+  useEffect(() => {
+    if (!activeProject) { setCompletedSteps(new Set()); return; }
+    const b = (activeProject.buildings || {})[bldg.id] || {};
+    const sc = b.steps_completed || {};
+    setCompletedSteps(new Set(Object.keys(sc).filter(k => sc[k]).map(Number)));
+  }, [activeProject && activeProject.id, bldg.id]);
+
+  useEffect(() => {
+    function onAdvance(e) {
+      const { building_id, prev_step, current_section, current_title, building_complete } = e.detail;
+      if (building_id !== bldg.id) return;
+      setCompletedSteps(prev => new Set([...prev, prev_step]));
+      setStepFlash({ section: current_section, title: current_title, building_complete });
+      setTimeout(() => setStepFlash(null), 3500);
+    }
+    window.addEventListener('sy:orchestratorAdvance', onAdvance);
+    return () => window.removeEventListener('sy:orchestratorAdvance', onAdvance);
+  }, [bldg.id]);
 
   const tasks = BUILDING_TASKS[bldg.id] || [];
   const totalTasks = tasks.reduce((acc, s) => acc + s.tasks.length, 0);
@@ -2326,11 +2349,24 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           email: email,
           building_id: bldg.id,
           mode: isIndependent ? 'independent' : 'peer',
+          project_id: localStorage.getItem('sy_active_project_id') || '',
           messages: newMsgs.map(m => ({ role: m.role==='user' ? 'user' : 'assistant', content: m.text }))
         })
       });
       const data = await res.json();
       const reply = data.message || (data.content&&data.content[0]&&data.content[0].text) || 'Something went wrong.';
+      // Orchestrator: fire step-advance event so CanvasCol updates step indicators
+      const orch = data.orchestrator || {};
+      if (orch.step_advanced) {
+        window.dispatchEvent(new CustomEvent('sy:orchestratorAdvance', { detail: {
+          building_id: bldg.id,
+          prev_step: orch.prev_step,
+          current_step: orch.current_step,
+          current_section: orch.current_section,
+          current_title: orch.current_title,
+          building_complete: orch.building_complete,
+        }}));
+      }
       setMsgs(prev => {
         const updated = [...prev, { role:'fy', text:reply }];
         localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
@@ -2714,8 +2750,20 @@ function OutputCard({ card, onVault }) {
   );
 }
 
+function siTiToFlatStep(buildingId, si, ti) {
+  const sections = BUILDING_TASKS[buildingId] || [];
+  let count = 0;
+  for (let s = 0; s < sections.length; s++) {
+    for (let t = 0; t < sections[s].tasks.length; t++) {
+      count++;
+      if (s === si && t === ti) return count;
+    }
+  }
+  return -1;
+}
+
 /* ── Canvas ── */
-function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionToggle, recommendedStep, onSectionChange, onBuildingSwitch, onStepActivate, onSectionVisit }) {
+function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionToggle, recommendedStep, onSectionChange, onBuildingSwitch, onStepActivate, onSectionVisit, activeProject }) {
   const [activeStep, setActiveStep] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [canvasCards, setCanvasCards] = useState([]);
@@ -2920,10 +2968,12 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
           <div className="step-drawer-list">
             {currentSection.tasks.map((task, ti) => (
               <div key={ti}
-                className={`step-drawer-item${isRecommendedStep(task) ? ' recommended' : ''}`}
+                className={`step-drawer-item${isRecommendedStep(task) ? ' recommended' : ''}${completedSteps.has(siTiToFlatStep(bldg.id, activeSection, ti)) ? ' step-done' : ''}`}
                 onClick={() => handleStepSelect(activeSection, ti, task)}
               >
-                <div className="step-drawer-num">STEP {ti + 1}</div>
+                <div className="step-drawer-num">
+                  {completedSteps.has(siTiToFlatStep(bldg.id, activeSection, ti)) ? '✓' : `STEP ${ti + 1}`}
+                </div>
                 <div>
                   <div className="step-drawer-title">{task.title}</div>
                   <div className="step-drawer-desc">{task.level1}</div>
@@ -3354,6 +3404,7 @@ function Studio() {
           onBuildingSwitch={switchBuilding}
           onStepActivate={setActiveStep}
           onSectionVisit={(si) => setVisitedSections(prev => prev.includes(si) ? prev : [...prev, si])}
+          activeProject={activeProject}
         />
         <FYRail
           ref={fyRailRef}

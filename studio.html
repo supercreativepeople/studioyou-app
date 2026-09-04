@@ -2105,7 +2105,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
         const convHistory = JSON.parse(localStorage.getItem('sy_fy_conversation') || '[]');
         const res = await fetch(API_URL + '/api/avatar/livekit-session', {
           method: 'POST', headers: syHeaders(),
-          body: JSON.stringify({ email, conversation_thread: convHistory.slice(-10), surface: 'studio' })
+          body: JSON.stringify({ email, conversation_thread: convHistory.slice(-10), surface: 'studio', test_mode: email === 'nyclaabq@gmail.com' })
         });
         const data = await res.json();
         if (!data.token || !data.livekit_url) throw new Error('no token');

@@ -1701,27 +1701,7 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 
   useEffect(() => cdSubscribe(setCdEvents), []);
   useEffect(() => vaultSubscribe(setVaultAssets), []);
-  const [completedSteps, setCompletedSteps] = React.useState(new Set());
-  const [stepFlash, setStepFlash] = React.useState(null);
 
-  useEffect(() => {
-    if (!activeProject) { setCompletedSteps(new Set()); return; }
-    const b = (activeProject.buildings || {})[bldg.id] || {};
-    const sc = b.steps_completed || {};
-    setCompletedSteps(new Set(Object.keys(sc).filter(k => sc[k]).map(Number)));
-  }, [activeProject && activeProject.id, bldg.id]);
-
-  useEffect(() => {
-    function onAdvance(e) {
-      const { building_id, prev_step, current_section, current_title, building_complete } = e.detail;
-      if (building_id !== bldg.id) return;
-      setCompletedSteps(prev => new Set([...prev, prev_step]));
-      setStepFlash({ section: current_section, title: current_title, building_complete });
-      setTimeout(() => setStepFlash(null), 3500);
-    }
-    window.addEventListener('sy:orchestratorAdvance', onAdvance);
-    return () => window.removeEventListener('sy:orchestratorAdvance', onAdvance);
-  }, [bldg.id]);
 
   const tasks = BUILDING_TASKS[bldg.id] || [];
   const totalTasks = tasks.reduce((acc, s) => acc + s.tasks.length, 0);
@@ -2788,6 +2768,29 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
   const [editingStepKey, setEditingStepKey] = useState(null);
   const [editText, setEditText] = useState('');
   useEffect(() => vaultSubscribe(setVaultAssets), []);
+
+  const [completedSteps, setCompletedSteps] = React.useState(new Set());
+  const [stepFlash, setStepFlash] = React.useState(null);
+
+  useEffect(() => {
+    if (!activeProject) { setCompletedSteps(new Set()); return; }
+    const b = (activeProject.buildings || {})[bldg.id] || {};
+    const sc = b.steps_completed || {};
+    setCompletedSteps(new Set(Object.keys(sc).filter(k => sc[k]).map(Number)));
+  }, [activeProject && activeProject.id, bldg.id]);
+
+  useEffect(() => {
+    function onAdvance(e) {
+      const { building_id, prev_step, current_section, current_title, building_complete } = e.detail;
+      if (building_id !== bldg.id) return;
+      setCompletedSteps(prev => new Set([...prev, prev_step]));
+      setStepFlash({ section: current_section, title: current_title, building_complete });
+      setTimeout(() => setStepFlash(null), 3500);
+    }
+    window.addEventListener('sy:orchestratorAdvance', onAdvance);
+    return () => window.removeEventListener('sy:orchestratorAdvance', onAdvance);
+  }, [bldg.id]);
+
   const tasks = BUILDING_TASKS[bldg.id] || [];
   const isIndependent = tier !== 'operator';
   const isFYRecommended = (localStorage.getItem('sy_recommended_building')||'') === bldg.id;

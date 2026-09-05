@@ -2385,7 +2385,8 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
   // Kick Q1 the moment first words finish and the conversation is empty.
   useEffect(function(){
     if(status==='ready'&&triageStage==='idle'&&messages.length===0){
-      var t=setTimeout(function(){
+      var timers={};
+      timers.outer=setTimeout(function(){
         setMessages([{role:'assistant',content:TRIAGE_Q1}]);
         speakLine(TRIAGE_Q1);
         setTriageStage('q1');
@@ -2396,10 +2397,9 @@ function FYPanel({ firstName, formation, briefing, studioName, panelRef, inputRe
         // actually live and speaking, shorter when it's text-only.
         var avatarLive=window._fyRoom&&window._fyRoom.state==='connected';
         var speechDelay=avatarLive?4000:1600;
-        var pt=setTimeout(function(){ setPillsVisible(true); },speechDelay);
-        t._pillTimer=pt;
+        timers.inner=setTimeout(function(){ setPillsVisible(true); },speechDelay);
       },700);
-      return function(){clearTimeout(t);if(t._pillTimer)clearTimeout(t._pillTimer);};
+      return function(){clearTimeout(timers.outer);if(timers.inner)clearTimeout(timers.inner);};
     }
   },[status,triageStage,messages.length]);
 

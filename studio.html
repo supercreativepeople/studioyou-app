@@ -1540,7 +1540,7 @@ const TOOL_REGISTRY = {
   'Capture & Execution':       { task:'video_generate',     cardType:'video', name:'fal.ai / seedance', desc:'Generating your production asset from the direction you set.',          tutorial:'https://fal.ai/docs' },
 };
 
-const _cdState = { events:{}, vaultAssets:[], listeners:[], vaultListeners:[] };
+const _cdState = { events:{}, vaultAssets:[], listeners:[], vaultListeners:[], fyLog:[], fyLogListeners:[] };
 function cdPushEvent(sectionIdx, event) {
   if (!_cdState.events[sectionIdx]) _cdState.events[sectionIdx] = [];
   const idx = _cdState.events[sectionIdx].findIndex(e => e.id === event.id);
@@ -1551,6 +1551,12 @@ function cdPushEvent(sectionIdx, event) {
 function cdSubscribe(fn) { _cdState.listeners.push(fn); return () => { _cdState.listeners = _cdState.listeners.filter(f=>f!==fn); }; }
 function vaultAdd(asset) { _cdState.vaultAssets.push(asset); _cdState.vaultListeners.forEach(fn => fn([..._cdState.vaultAssets])); }
 function vaultSubscribe(fn) { _cdState.vaultListeners.push(fn); return () => { _cdState.vaultListeners = _cdState.vaultListeners.filter(f=>f!==fn); }; }
+function fyLogPush(entry) {
+  _cdState.fyLog.push({ ...entry, ts: Date.now() });
+  if (_cdState.fyLog.length > 300) _cdState.fyLog.shift();
+  _cdState.fyLogListeners.forEach(fn => fn([..._cdState.fyLog]));
+}
+function fyLogSubscribe(fn) { _cdState.fyLogListeners.push(fn); return () => { _cdState.fyLogListeners = _cdState.fyLogListeners.filter(f=>f!==fn); }; }
 function vaultUpdate(match, patch) {
   let changed = false;
   _cdState.vaultAssets = _cdState.vaultAssets.map(a => {
@@ -2141,6 +2147,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
                   step: `${msg.section_name} · ${msg.step_title}`,
                   status: 'done',
                 });
+                fyLogPush({ kind:'tool', text:'Vault: '+msg.step_title+' · '+msg.section_name });
               }
             }
             if (projectId) {
@@ -2161,6 +2168,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           }
           if (msg.type === 'fy_section_recommendation' && msg.section_id) {
             if (onSectionRecommendation) onSectionRecommendation(msg.section_id);
+            fyLogPush({ kind:'route', text:'Routing → '+msg.section_id });
             return;
           }
           if (msg.type === 'fy_generate_visual' && msg.task_title) {
@@ -2187,6 +2195,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           if (msg.type !== 'fy_reply') return;
           anyReplyRef.current = true;
           const text = msg.text;
+          fyLogPush({ kind:'reply', text: text.slice(0, 160) });
           setMsgs(prev => {
             const updated = [...prev, { role:'fy', text }];
             localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
@@ -2395,6 +2404,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       : [...msgs, { role:'user', text:userText }];
     setMsgs(newMsgs);
     if (!hidden) localStorage.setItem('sy_fy_conversation', JSON.stringify(newMsgs));
+    fyLogPush({ kind: hidden ? 'context' : 'thinking', text: (hidden ? 'System: ' : 'You: ') + userText.slice(0, 120) });
     setLoading(true);
     if (loadingSafetyRef.current) clearTimeout(loadingSafetyRef.current);
     loadingSafetyRef.current = setTimeout(() => {
@@ -2792,7 +2802,9 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
   const [editText, setEditText] = useState('');
   const [canvasTab, setCanvasTab] = useState('work');
   const [cdEvents, setCdEvents] = useState({});
+  const [fyLog, setFyLog] = useState([]);
   useEffect(() => cdSubscribe(setCdEvents), []);
+  useEffect(() => fyLogSubscribe(setFyLog), []);
   useEffect(() => vaultSubscribe(setVaultAssets), []);
 
   const [completedSteps, setCompletedSteps] = React.useState(new Set());
@@ -3161,39 +3173,42 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
 
         {/* ── DETAILS tab ── */}
         {canvasTab === 'details' && (() => {
-          const allEvents = Object.entries(cdEvents)
-            .flatMap(([si, evts]) => evts.map(e => ({...e, _si: Number(si)})))
-            .reverse();
-          const bldgTasks = BUILDING_TASKS[bldg.id] || [];
-          function statusDot(s) {
-            const colors = {running:'var(--cyan)',done:'#4caf50',error:'#f44336',locked:'var(--fg3)'};
-            return <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:colors[s]||'var(--fg3)',marginRight:8,flexShrink:0}} />;
-          }
+          // Unified FY activity log — shows everything FY is doing:
+          // context pumped in (dim), messages sent (cyan), tool calls (amber),
+          // routing decisions (purple), and replies (green). Newest at top.
+          const kindMeta = {
+            context: { label:'Context', color:'rgba(120,180,200,0.45)', dot:'rgba(120,180,200,0.5)' },
+            thinking: { label:'Sending', color:'var(--cyan)', dot:'var(--cyan)' },
+            tool:     { label:'Tool',    color:'#f5a623', dot:'#f5a623' },
+            route:    { label:'Route',   color:'#a78bfa', dot:'#a78bfa' },
+            reply:    { label:'FY',      color:'#4caf50', dot:'#4caf50' },
+          };
+          const log = [...fyLog].reverse();
           return (
             <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
-              {/* Header meta row */}
-              <div style={{padding:'14px 20px 10px',borderBottom:'1px solid var(--border)',display:'flex',gap:20,flexShrink:0}}>
+              <div style={{padding:'14px 20px 10px',borderBottom:'1px solid var(--border)',display:'flex',gap:20,flexShrink:0,flexWrap:'wrap'}}>
                 <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{bldg.title}</span>
-                <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{tasks.length} sections</span>
                 <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{vaultAssets.filter(a=>a.buildingId===bldg.id).length} captured</span>
                 {activeStep && <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--cyan)',marginLeft:'auto'}}>STEP {activeStep.ti+1} · {activeStep.task.title}</span>}
               </div>
-              {/* Event log */}
-              <div style={{flex:1,overflowY:'auto',padding:'12px 20px'}}>
-                {allEvents.length === 0
-                  ? <div style={{color:'var(--fg3)',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:20}}>No events yet</div>
-                  : allEvents.map((e,i) => {
-                      const sectName = (bldgTasks[e._si]||{}).section || ('Section '+(e._si+1));
+              <div style={{flex:1,overflowY:'auto',padding:'10px 16px'}}>
+                {log.length === 0
+                  ? <div style={{color:'var(--fg3)',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:20,padding:'0 4px'}}>Waiting for Future You</div>
+                  : log.map((e,i) => {
+                      const m = kindMeta[e.kind] || kindMeta.reply;
+                      const age = Date.now() - e.ts;
+                      const timeStr = age < 60000
+                        ? Math.round(age/1000)+'s ago'
+                        : Math.round(age/60000)+'m ago';
                       return (
-                        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'7px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
-                          {statusDot(e.status)}
+                        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'6px 0',borderBottom:'1px solid rgba(240,242,255,0.04)',fontSize:12}}>
+                          <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:m.dot,flexShrink:0,marginTop:4}} />
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-                              <span style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)',flexShrink:0}}>{e.tool||'Event'}</span>
-                              <span style={{fontSize:9,color:'var(--fg3)',flexShrink:0}}>{sectName}</span>
+                            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                              <span style={{fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:m.color,flexShrink:0}}>{m.label}</span>
+                              <span style={{fontSize:9,color:'var(--fg3)',marginLeft:'auto',flexShrink:0}}>{timeStr}</span>
                             </div>
-                            <div style={{color:'var(--fg2)',lineHeight:1.4,wordBreak:'break-word'}}>{e.desc}</div>
-                            {e.step && <div style={{fontSize:10,color:'var(--fg3)',marginTop:2}}>{e.step}</div>}
+                            <div style={{color: e.kind==='context' ? 'var(--fg3)' : 'var(--fg2)',lineHeight:1.45,wordBreak:'break-word',fontSize: e.kind==='context' ? 11 : 12}}>{e.text}</div>
                           </div>
                         </div>
                       );

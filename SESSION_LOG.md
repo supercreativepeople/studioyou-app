@@ -36,3 +36,21 @@ Fix #4: Wire fy_section_recommendation to cdPushEvent so routing decisions surfa
 Fix #5: Canvas spatial improvements (competitive research reference: Luma, Higgelsfield)
 
 ---
+
+---
+
+# Session Log — 2026-09-06 (continuation)
+Session type: repo
+Repo: studioyou-app
+Tokens at open: 14,998,009
+Tasks in scope: Netlify push (5 commits from prior session)
+[CONTINUATION — resumed from compaction]
+
+## Prior session work (committed, not yet pushed)
+- 17be56b — recommend_section nav fix
+- 4435ee4 — vault stickies all buildings + auto-tab to VAULT on capture
+- 9dcbf06 — snap canvas back to WORK on section change
+- 04844ab — section completion scoping + partial progress indicator
+- 2015e26 — progress bar unique step count fix
+
+[CHECKPOINT] — tokens remaining: 14,992,474 — session open, awaiting push directive

@@ -2426,15 +2426,27 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     if (navSection) localStorage.removeItem('sy_nav_section');
     if (navStep) localStorage.removeItem('sy_nav_step');
 
+    // Project + vault context — lets FY open with awareness of prior work
+    const projectName = localStorage.getItem('sy_active_project_name') || '';
+    const buildingVaultAssets = _cdState.vaultAssets.filter(a => a.buildingId === bldg.id && a.type === 'answer');
+    const capturedSections = [...new Set(buildingVaultAssets.map(a => a.section))];
+    const totalSteps = (BUILDING_TASKS[bldg.id] || []).reduce((sum, s) => sum + (s.tasks || []).length, 0);
+    const isReturning = buildingVaultAssets.length > 0;
+
     const openingPrompt = [
       `You are FutureYou. Creator has arrived in ${bldg.title} (${bldg.tag}).`,
-      `This is the creator's FIRST time inside a studio building — they have never seen this layout. Sections live in the SECTIONS list on the left rail; clicking a section reveals its numbered steps.`,
+      projectName ? `Active project: "${projectName}".` : '',
+      isReturning
+        ? `They have been here before. Sections with captured answers: ${capturedSections.join(', ')} (${buildingVaultAssets.length} of ${totalSteps} steps answered). Pick up where they left off.`
+        : `First session in this building. Sections live in the SECTIONS list on the left rail; clicking a section reveals its numbered steps.`,
       navSection ? `They were routed here to section: "${navSection}"${navStep ? `, step: "${navStep}"` : ''} — that section is pulsing on the left rail right now.` : '',
       convSummary ? `Recent conversation:\n${convSummary}` : '',
       `Sections in ${bldg.title}: ${sectionList}.`,
       navSection
         ? `Open by walking them to the exact spot: tell them to select "${navSection}" on the left${navStep ? `, then choose the step "${navStep}"` : ''} — and that you'll work through it together. One sentence on why this is where their answer starts. Under 45 words. No preamble. End with the instruction to click it.`
-        : `Direct them to the right section by name and tell them to select it on the left rail. If the conversation didn't point anywhere specific, pick the logical first section. Under 40 words. No preamble. End with the instruction to click it.`
+        : isReturning
+          ? `Acknowledge briefly where they left off and direct them to the next uncaptured section or step. Under 45 words. No preamble.`
+          : `Direct them to the right section by name and tell them to select it on the left rail. If the conversation didn't point anywhere specific, pick the logical first section. Under 40 words. No preamble. End with the instruction to click it.`
     ].filter(Boolean).join('\n');
 
     if (roomRef.current) {

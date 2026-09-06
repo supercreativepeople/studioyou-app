@@ -1712,7 +1712,12 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 
   const tasks = BUILDING_TASKS[bldg.id] || [];
   const totalTasks = tasks.reduce((acc, s) => acc + s.tasks.length, 0);
-  const completedTasks = vaultAssets.filter(a => a.buildingId === bldg.id).length;
+  // Count unique step completions — one per task regardless of how many vault
+  // entries (answers + generated assets) exist for that step.
+  const completedTasks = tasks.reduce((count, sec) =>
+    count + sec.tasks.filter(t =>
+      vaultAssets.some(a => a.buildingId === bldg.id && a.section === sec.section && a.name === t.title)
+    ).length, 0);
   const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const [showProjModal, setShowProjModal] = React.useState(false);
   const activeSectionName = (activeSection >= 0 && tasks[activeSection]) ? tasks[activeSection].section : bldg.tag;

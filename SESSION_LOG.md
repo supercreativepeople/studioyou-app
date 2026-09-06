@@ -54,3 +54,5 @@ Tasks in scope: Netlify push (5 commits from prior session)
 - 2015e26 — progress bar unique step count fix
 
 [CHECKPOINT] — tokens remaining: 14,992,474 — session open, awaiting push directive
+
+[CHECKPOINT] — tokens remaining: 15,000,000 — handoff written + pushed (bb711af), session open for next task

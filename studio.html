@@ -1195,6 +1195,38 @@
   .canvas-answer-sticky-save { color:var(--sy-green); border-color:rgba(76,255,145,0.4); }
   .canvas-answer-sticky-save:hover { background:rgba(76,255,145,0.08); }
   .canvas-answer-sticky-cancel:hover { background:rgba(240,242,255,0.05); }
+
+  /* ── Building-wide node graph ── */
+  .canvas-node-graph {
+    width:100%; padding:20px 20px 8px; display:flex; flex-direction:column; gap:0; flex-shrink:0;
+  }
+  .canvas-node-section { position:relative; }
+  .canvas-node-section-label {
+    font-size:8px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--fg3); margin-bottom:10px; transition:color 0.2s; padding-left:1px;
+  }
+  .canvas-node-section.is-active .canvas-node-section-label { color:rgba(0,200,255,0.65); }
+  .canvas-node-track { display:flex; align-items:flex-start; flex-wrap:nowrap; }
+  .canvas-node {
+    display:flex; flex-direction:column; align-items:center; cursor:pointer; flex-shrink:0;
+    transition:opacity 0.15s;
+  }
+  .canvas-node:hover { opacity:0.75; }
+  .canvas-node-label {
+    font-size:8px; max-width:72px; text-align:center; line-height:1.3;
+    color:rgba(240,242,255,0.5); margin-top:5px; word-break:break-word;
+  }
+  .canvas-node-edge {
+    width:24px; height:2px; background:rgba(240,242,255,0.08);
+    flex-shrink:0; margin-top:16px; transition:background 0.25s;
+  }
+  .canvas-node-edge.done { background:rgba(76,255,145,0.4); }
+  .canvas-node-section-connector {
+    width:2px; height:14px; background:rgba(240,242,255,0.08);
+    margin-left:17px; margin-bottom:8px; margin-top:2px; transition:background 0.25s;
+  }
+  .canvas-node-section-connector.done { background:rgba(76,255,145,0.3); }
+
   .canvas-card-wrap {
     width:300px; flex-shrink:0; position:relative;
     display:flex; flex-direction:column; gap:0;
@@ -3085,10 +3117,107 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
           </div>
         )}
 
-        {/* Live step answers — one sticky per step in the active section.
-            Filled steps show the captured answer, click to edit in place.
-            Open steps show an empty slot so the whole section's shape is
-            visible at a glance, not just what's been answered so far. */}
+        {/* Building-wide node graph — always visible, shows all sections + step state */}
+        {tasks.length > 0 ? (
+          <div className="canvas-node-graph">
+            {tasks.map((sect, si) => {
+              const isActiveSect = si === activeSection;
+              const sectAllDone = sect.tasks.every(t =>
+                buildingVault.some(a => a.section === sect.section && a.name === t.title)
+              );
+              return (
+                <div key={si} className={`canvas-node-section${isActiveSect ? ' is-active' : ''}`}>
+                  <div className="canvas-node-section-label">{sect.section}</div>
+                  <div className="canvas-node-track">
+                    {sect.tasks.map((task, ti) => {
+                      const answered = buildingVault.some(
+                        a => a.section === sect.section && a.name === task.title
+                      );
+                      const isActive = !!(activeStep && activeStep.si === si && activeStep.ti === ti);
+                      const isRec = isRecommendedStep(task);
+                      const state = answered ? 'done'
+                        : isActive ? 'active'
+                        : isRec ? 'rec'
+                        : isActiveSect ? 'open'
+                        : 'pending';
+                      const ringColor = state === 'done' ? '#4cff91'
+                        : state === 'active' ? 'rgba(0,200,255,1)'
+                        : state === 'rec' ? 'rgba(255,180,0,0.85)'
+                        : state === 'open' ? 'rgba(240,242,255,0.4)'
+                        : 'rgba(240,242,255,0.12)';
+                      // global step number (1-indexed, sum of all prior sections + ti+1)
+                      let gn = ti + 1;
+                      for (let s2 = 0; s2 < si; s2++) gn += tasks[s2].tasks.length;
+                      const edgeDone = ti > 0 && buildingVault.some(
+                        a => a.section === sect.section && a.name === sect.tasks[ti - 1].title
+                      );
+                      return (
+                        <React.Fragment key={ti}>
+                          {ti > 0 && (
+                            <div className={`canvas-node-edge${edgeDone ? ' done' : ''}`} />
+                          )}
+                          <div
+                            className="canvas-node"
+                            onClick={() => {
+                              if (si !== activeSection) {
+                                handleSectionSelect(si);
+                              } else {
+                                handleStepSelect(si, ti, task);
+                              }
+                            }}
+                            title={task.title}
+                          >
+                            <svg width="32" height="32" viewBox="0 0 32 32">
+                              <circle cx="16" cy="16" r="12"
+                                fill="rgba(6,9,26,0.9)"
+                                stroke={ringColor}
+                                strokeWidth={state === 'active' ? 2 : 1.5}
+                              />
+                              {state === 'done' && <>
+                                <circle cx="16" cy="16" r="7" fill="rgba(76,255,145,0.18)" />
+                                <path d="M11,16.5 l3,3 l7,-7"
+                                  stroke="#4cff91" strokeWidth="1.5" fill="none"
+                                  strokeLinecap="round" strokeLinejoin="round" />
+                              </>}
+                              {state === 'active' && (
+                                <circle cx="16" cy="16" r="5" fill="rgba(0,200,255,0.75)"
+                                  style={{animation:'pg 1.6s ease-in-out infinite'}} />
+                              )}
+                              {state === 'rec' && (
+                                <circle cx="16" cy="16" r="4" fill="rgba(255,180,0,0.75)" />
+                              )}
+                              {(state === 'open' || state === 'pending') && (
+                                <text x="16" y="20.5" textAnchor="middle" fontSize="9"
+                                  fill={state === 'open' ? 'rgba(240,242,255,0.55)' : 'rgba(240,242,255,0.18)'}
+                                  fontFamily="inherit">
+                                  {gn}
+                                </text>
+                              )}
+                            </svg>
+                            {isActiveSect && (
+                              <div className="canvas-node-label">{task.title}</div>
+                            )}
+                          </div>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                  {si < tasks.length - 1 && (
+                    <div className={`canvas-node-section-connector${sectAllDone ? ' done' : ''}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="canvas-spatial-empty">
+            <div className="canvas-spatial-empty-icon">{bldg.icon}</div>
+            <div className="canvas-spatial-empty-label">{bldg.title}</div>
+            <div className="canvas-spatial-empty-sub">This building is being configured.</div>
+          </div>
+        )}
+
+        {/* Active section detail — sticky cards appear below graph */}
         {currentSection && (
           <div className="canvas-step-answers">
             {currentSection.tasks.map((task, ti) => {
@@ -3136,19 +3265,6 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* Empty state — only when no section selected and nothing generated yet */}
-        {!currentSection && canvasCards.length === 0 && (
-          <div className="canvas-spatial-empty">
-            <div className="canvas-spatial-empty-icon">{bldg.icon}</div>
-            <div className="canvas-spatial-empty-label">{bldg.title}</div>
-            <div className="canvas-spatial-empty-sub">
-              {tasks.length > 0
-                ? 'Select a section from the left. FutureYou will guide you from there.'
-                : 'This building is being configured.'}
-            </div>
           </div>
         )}
 

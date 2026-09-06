@@ -2791,6 +2791,8 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
   const [editingStepKey, setEditingStepKey] = useState(null);
   const [editText, setEditText] = useState('');
   const [canvasTab, setCanvasTab] = useState('work');
+  const [cdEvents, setCdEvents] = useState({});
+  useEffect(() => cdSubscribe(setCdEvents), []);
   useEffect(() => vaultSubscribe(setVaultAssets), []);
 
   const [completedSteps, setCompletedSteps] = React.useState(new Set());
@@ -3158,20 +3160,49 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
         })()}
 
         {/* ── DETAILS tab ── */}
-        {canvasTab === 'details' && (
-          <div style={{padding:'24px',fontSize:13,color:'var(--fg2)',lineHeight:2}}>
-            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Building</span>{bldg.title}</div>
-            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Tag</span>{bldg.tag}</div>
-            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Sections</span>{tasks.length}</div>
-            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Vault Entries</span>{vaultAssets.filter(a => a.buildingId === bldg.id).length}</div>
-            {activeStep && (
-              <div style={{marginTop:16,padding:'12px 0',borderTop:'1px solid var(--border)'}}>
-                <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Active Step</span>Step {activeStep.ti + 1}</div>
-                <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Title</span>{activeStep.task.title}</div>
+        {canvasTab === 'details' && (() => {
+          const allEvents = Object.entries(cdEvents)
+            .flatMap(([si, evts]) => evts.map(e => ({...e, _si: Number(si)})))
+            .reverse();
+          const bldgTasks = BUILDING_TASKS[bldg.id] || [];
+          function statusDot(s) {
+            const colors = {running:'var(--cyan)',done:'#4caf50',error:'#f44336',locked:'var(--fg3)'};
+            return <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:colors[s]||'var(--fg3)',marginRight:8,flexShrink:0}} />;
+          }
+          return (
+            <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+              {/* Header meta row */}
+              <div style={{padding:'14px 20px 10px',borderBottom:'1px solid var(--border)',display:'flex',gap:20,flexShrink:0}}>
+                <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{bldg.title}</span>
+                <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{tasks.length} sections</span>
+                <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)'}}>{vaultAssets.filter(a=>a.buildingId===bldg.id).length} captured</span>
+                {activeStep && <span style={{fontSize:10,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--cyan)',marginLeft:'auto'}}>STEP {activeStep.ti+1} · {activeStep.task.title}</span>}
               </div>
-            )}
-          </div>
-        )}
+              {/* Event log */}
+              <div style={{flex:1,overflowY:'auto',padding:'12px 20px'}}>
+                {allEvents.length === 0
+                  ? <div style={{color:'var(--fg3)',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:20}}>No events yet</div>
+                  : allEvents.map((e,i) => {
+                      const sectName = (bldgTasks[e._si]||{}).section || ('Section '+(e._si+1));
+                      return (
+                        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'7px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+                          {statusDot(e.status)}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
+                              <span style={{fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--fg3)',flexShrink:0}}>{e.tool||'Event'}</span>
+                              <span style={{fontSize:9,color:'var(--fg3)',flexShrink:0}}>{sectName}</span>
+                            </div>
+                            <div style={{color:'var(--fg2)',lineHeight:1.4,wordBreak:'break-word'}}>{e.desc}</div>
+                            {e.step && <div style={{fontSize:10,color:'var(--fg3)',marginTop:2}}>{e.step}</div>}
+                          </div>
+                        </div>
+                      );
+                    })
+                }
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </div>

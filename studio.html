@@ -2790,6 +2790,7 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
   const [vaultAssets, setVaultAssets] = useState([]);
   const [editingStepKey, setEditingStepKey] = useState(null);
   const [editText, setEditText] = useState('');
+  const [canvasTab, setCanvasTab] = useState('work');
   useEffect(() => vaultSubscribe(setVaultAssets), []);
 
   const [completedSteps, setCompletedSteps] = React.useState(new Set());
@@ -3000,6 +3001,17 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
         ))}
       </div>
 
+      {/* Canvas tab strip */}
+      <div className="canvas-task-tabs">
+        {['work','vault','details'].map(t => (
+          <div key={t}
+            className={`canvas-tab${canvasTab === t ? ' active' : ''}`}
+            onClick={() => setCanvasTab(t)}>
+            {t === 'work' ? 'WORK' : t === 'vault' ? 'VAULT' : 'DETAILS'}
+          </div>
+        ))}
+      </div>
+
       {/* Step drawer */}
       {drawerOpen && currentSection && (
         <div className="step-drawer">
@@ -3029,6 +3041,9 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
 
       {/* Spatial canvas — always visible */}
       <div className="canvas-spatial" ref={spatialRef}>
+
+{/* ── WORK tab ── */}
+        {canvasTab === 'work' && <>
 
         {/* Active step chip */}
         {activeStep && (
@@ -3111,6 +3126,52 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
         {canvasCards.map(card => (
           <OutputCard key={card.id} card={card} onVault={handleVaultCard} />
         ))}
+
+        </>}
+
+        {/* ── VAULT tab ── */}
+        {canvasTab === 'vault' && (() => {
+          const bldgAnswers = vaultAssets.filter(a => a.buildingId === bldg.id && a.type === 'answer');
+          if (!bldgAnswers.length) return (
+            <div className="canvas-spatial-empty">
+              <div className="canvas-spatial-empty-icon">🗄</div>
+              <div className="canvas-spatial-empty-label">Vault is empty</div>
+              <div className="canvas-spatial-empty-sub">Captured step answers will appear here.</div>
+            </div>
+          );
+          const bySect = {};
+          bldgAnswers.forEach(a => { (bySect[a.section] = bySect[a.section] || []).push(a); });
+          return Object.entries(bySect).map(([sect, entries]) => (
+            <div key={sect} style={{marginBottom:24}}>
+              <div style={{fontSize:9,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--fg3)',marginBottom:8}}>{sect}</div>
+              {entries.map((a, i) => (
+                <div key={i} className="canvas-answer-sticky filled" style={{marginBottom:10}}>
+                  <div className="canvas-answer-sticky-header">
+                    <span className="canvas-answer-sticky-section">{sect}</span>
+                    <span className="canvas-answer-sticky-title">{a.title}</span>
+                  </div>
+                  <div className="canvas-answer-sticky-text">{a.text}</div>
+                </div>
+              ))}
+            </div>
+          ));
+        })()}
+
+        {/* ── DETAILS tab ── */}
+        {canvasTab === 'details' && (
+          <div style={{padding:'24px',fontSize:13,color:'var(--fg2)',lineHeight:2}}>
+            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Building</span>{bldg.title}</div>
+            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Tag</span>{bldg.tag}</div>
+            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Sections</span>{tasks.length}</div>
+            <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Vault Entries</span>{vaultAssets.filter(a => a.buildingId === bldg.id).length}</div>
+            {activeStep && (
+              <div style={{marginTop:16,padding:'12px 0',borderTop:'1px solid var(--border)'}}>
+                <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Active Step</span>Step {activeStep.ti + 1}</div>
+                <div><span style={{color:'var(--fg3)',marginRight:12,fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase'}}>Title</span>{activeStep.task.title}</div>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

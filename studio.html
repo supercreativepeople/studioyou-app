@@ -2805,6 +2805,9 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
   useEffect(() => cdSubscribe(setCdEvents), []);
   useEffect(() => fyLogSubscribe(setFyLog), []);
   useEffect(() => vaultSubscribe(setVaultAssets), []);
+  // When the active section changes (user nav or FY routing), snap back to WORK
+  // so the creator sees tasks, not the vault from a previous capture.
+  useEffect(() => { if (activeSection >= 0) setCanvasTab('work'); }, [activeSection]);
 
   const [completedSteps, setCompletedSteps] = React.useState(new Set());
   const [stepFlash, setStepFlash] = React.useState(null);

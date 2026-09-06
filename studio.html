@@ -807,6 +807,7 @@
   .sections-nav-item.recommended .sections-nav-name { color:var(--sy-green); }
   .sections-nav-chevron { font-size:10px; color:var(--fg3); flex-shrink:0; }
   .sections-nav-complete { font-size:10px; color:var(--sy-green); flex-shrink:0; }
+  .sections-nav-progress { font-size:9px; color:var(--fg3); flex-shrink:0; letter-spacing:0.02em; }
 
   /* Step drawer — slides out from left rail into canvas */
   .step-drawer {
@@ -1785,12 +1786,15 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
               // entry — a captured answer (sticky) or a locked generated asset
               // (image/video), either satisfies the step. Derived automatically
               // from Vault state, no separate "mark complete" judgment needed.
-              const isSectionComplete = sec.tasks.every(t => buildingVault.some(a => a.name === t.title));
+              const secDone = sec.tasks.filter(t => buildingVault.some(a => a.name === t.title && a.section === sec.section)).length;
+              const isSectionComplete = secDone === sec.tasks.length;
+              const isPartial = secDone > 0 && !isSectionComplete;
               return (
                 <div key={si} className={cls} onClick={() => si === activeSection ? onSectionToggle() : onSectionSelect(si)}>
                   <div className="sections-nav-num">{si+1}</div>
                   <div className="sections-nav-name">{sec.section}</div>
                   {isSectionComplete && <div className="sections-nav-complete" title="Section complete">✓</div>}
+                  {isPartial && <div className="sections-nav-progress" title={`${secDone} of ${sec.tasks.length} steps`}>{secDone}/{sec.tasks.length}</div>}
                   <div className="sections-nav-chevron">{isActive ? '›' : ''}</div>
                 </div>
               );
@@ -1851,7 +1855,7 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
                       <div className="vault-stickies">
                         {stickies.map((asset, i) => {
                           const parentSection = tasks.find(s => s.section === asset.section);
-                          const sealed = parentSection && parentSection.tasks.every(t => buildingVault.some(a => a.name === t.title));
+                          const sealed = parentSection && parentSection.tasks.every(t => buildingVault.some(a => a.name === t.title && a.section === parentSection.section));
                           return (
                             <div key={i} className={`vault-sticky${sealed ? ' sealed' : ''}`} onClick={() => setExpandedVaultItem(asset)}>
                               {sealed && <div className="vault-sticky-stamp" title="Section complete">✓</div>}

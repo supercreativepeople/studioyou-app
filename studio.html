@@ -1893,7 +1893,7 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 }
 
 /* ── FY Rail ── */
-const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, activeStep, fyCollapsed, onToggleFYCollapse }, ref) {
+const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, activeStep, activeSection, fyCollapsed, onToggleFYCollapse }, ref) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1921,6 +1921,17 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
   useEffect(() => { pendingTaskContextRef.current = pendingTaskContext; }, [pendingTaskContext]);
   useEffect(() => { initDoneRef.current = initDone; }, [initDone]);
   useEffect(() => { msgsRef.current = msgs; }, [msgs]);
+
+  // Notify FY when user navigates to a different section
+  const prevActiveSectionRef = useRef(-1);
+  useEffect(() => {
+    if (!initDone || activeSection < 0) return;
+    if (activeSection === prevActiveSectionRef.current) return;
+    prevActiveSectionRef.current = activeSection;
+    const bldgTasks = BUILDING_TASKS[bldg.id] || [];
+    const sectionName = (bldgTasks[activeSection] || {}).section || ('Section ' + (activeSection + 1));
+    sendMsg('[SECTION CHANGE] Creator navigated to section: "' + sectionName + '"', true);
+  }, [activeSection, initDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Avatar toggle previously only hid the <video> element — remote audio kept
   // playing regardless, AND the agent kept running Cartesia TTS + Runway
@@ -3442,7 +3453,7 @@ function Studio() {
           ref={fyRailRef}
           bldg={bldg} tier={tier} firstName={firstName}
           studioName={studioName} formation={formation} briefing={briefing}
-          activeStep={activeStep}
+          activeStep={activeStep} activeSection={activeSection}
           fyCollapsed={fyCollapsed}
           onToggleFYCollapse={() => setFYCollapsed(c => !c)}
           onDirective={d => {

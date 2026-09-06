@@ -2386,6 +2386,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           building_complete: orch.building_complete,
         }}));
       }
+      fyLogPush({ kind: 'reply', text: reply.slice(0, 200) });
       setMsgs(prev => {
         const updated = [...prev, { role:'fy', text:reply }];
         localStorage.setItem('sy_fy_conversation', JSON.stringify(updated));
@@ -2480,6 +2481,8 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           : `Direct them to the right section by name and tell them to select it on the left rail. If the conversation didn't point anywhere specific, pick the logical first section. Under 40 words. No preamble. End with the instruction to click it.`
     ].filter(Boolean).join('\n');
 
+    fyLogPush({ kind: 'context', text: `Init: ${bldg.title}${projectName ? ' · '+projectName : ''}${isReturning ? ' (returning)' : ' (first visit)'}` });
+
     if (roomRef.current) {
       try {
         lastSendHiddenRef.current = true; // opening prompt is a system message, not a creator answer
@@ -2512,6 +2515,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       });
       const data = await res.json();
       const reply = data.message || (data.content&&data.content[0]&&data.content[0].text) || `You are in ${bldg.title}. Let's build.`;
+      fyLogPush({ kind: 'reply', text: reply.slice(0, 200) });
       setMsgs(prev => [...prev, { role:'fy', text:reply }]);
       if (onDirective) onDirective(reply);
     } catch(e) {

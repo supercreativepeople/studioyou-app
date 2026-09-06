@@ -1907,7 +1907,7 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 }
 
 /* ── FY Rail ── */
-const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, onVaultCapture, activeStep, activeSection, fyCollapsed, onToggleFYCollapse }, ref) {
+const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, onVaultCapture, activeStep, activeSection, fyCollapsed, onToggleFYCollapse, activeProject }, ref) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2056,6 +2056,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       '',
       `Studio: ${studioName||'(unnamed)'} | Archetype: ${arch} | Phase: ${ph}`,
       `Active building: ${bldg.title} (${bldg.tag}) — ${bldg.desc}`,
+      activeProject ? `Active project: ${activeProject.title || activeProject.name || activeProject.id}` : '',
       `Your insight on this building: "${bldg.fyq}"`,
       `Arsenal: ${normPill(b.arsenal)} | Roadblock: ${normPill(b.roadblock)} | Creator Type: ${normPill(b.creator_type)}`,
       brandStory ? `Brand story: ${brandStory}` : '',
@@ -3574,6 +3575,7 @@ function Studio() {
           bldg={bldg} tier={tier} firstName={firstName}
           studioName={studioName} formation={formation} briefing={briefing}
           activeStep={activeStep} activeSection={activeSection}
+          activeProject={activeProject}
           fyCollapsed={fyCollapsed}
           onToggleFYCollapse={() => setFYCollapsed(c => !c)}
           onVaultCapture={() => setCanvasTab('vault')}

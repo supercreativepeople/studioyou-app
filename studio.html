@@ -3587,6 +3587,8 @@ function Studio() {
             let si = bldgTasks.findIndex(s => norm(s.section) === target);
             if (si < 0) si = bldgTasks.findIndex(s => norm(s.section).includes(target) || target.includes(norm(s.section)));
             if (si >= 0) {
+              setActiveSection(si);
+              setVisitedSections(prev => prev.includes(si) ? prev : [...prev, si]);
               setRecommendedSection(si);
               cdPushEvent(si, {
                 id: 'route-' + bldg.id + '-' + sectionId + '-' + Date.now(),

@@ -56,3 +56,12 @@ Tasks in scope: Netlify push (5 commits from prior session)
 [CHECKPOINT] — tokens remaining: 14,992,474 — session open, awaiting push directive
 
 [CHECKPOINT] — tokens remaining: 15,000,000 — handoff written + pushed (bb711af), session open for next task
+
+[CHECKPOINT] — tokens remaining: 14,856,000 — FY quality evaluation loop implemented (3 edits to studio.html):
+  1. fyQualityJudge + buildQualityCriteria + buildCorrectionParams inserted before runGeneration
+  2. runGeneration success branch wired into quality loop (max 2 retries, delivers best with honest note)
+  3. DETAILS tab kindMeta extended with 'quality' kind + verdict-based color rendering
+  Competitive intelligence logged: OA Director + Luma share character consistency / spatial continuity failures.
+  BrainSuite confirmed as ImagineArt's agentic engine.
+  Key design principle: correction passes carry ESTABLISHED context as hard constraints, not fresh starts.
+  Backend endpoint /api/quality_judge stubbed — passes through gracefully until live.

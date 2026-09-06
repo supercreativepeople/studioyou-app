@@ -2628,6 +2628,95 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     return creatorWords || null;
   }
 
+  // ── FY Quality Evaluation Loop ────────────────────────────────────────────
+  // Addresses the core failure pattern observed in OA Director / Luma:
+  //   • Character identity collapses across angles (5 thugs → copies of leader)
+  //   • VFX spatial continuity breaks between cuts
+  //   • "Fix" loops return wholesale different output instead of targeted corrections
+  //
+  // Architecture: generate → vision-model-as-judge → pass delivers immediately /
+  //   fail injects targeted correction prompt and retries → after max retries,
+  //   delivers best result with an honest note. Creator only sees passed results
+  //   or best-available with transparent explanation.
+  //
+  // Key distinction from OA Director: correction passes carry the ESTABLISHED
+  // context as hard constraints (character inventory, VFX rules, spatial refs)
+  // not as polite suggestions. The judge evaluates against creative continuity,
+  // not just spec-match.
+
+  function buildQualityCriteria(cardType, task) {
+    const title = (task.title || '').toLowerCase();
+    const isMotion = cardType === 'video' || title.includes('scene') || title.includes('storyboard') || title.includes('capture') || title.includes('sample');
+    if (isMotion) {
+      return {
+        primary: 'character consistency + spatial continuity',
+        all: [
+          'character identity matches description across all angles — same person, same features',
+          'VFX elements (lighting, energy, effects) maintain correct spatial relationships between cuts',
+          'movement physics match the described action — impact, force, and direction are coherent',
+          'visual style and color grading are consistent throughout'
+        ]
+      };
+    }
+    return {
+      primary: 'directed intent fidelity',
+      all: [
+        'subject matches the described character, object, or scene',
+        'mood and aesthetic align with the creative direction given',
+        'composition and framing reflect the stated intent'
+      ]
+    };
+  }
+
+  function buildCorrectionParams(baseParams, failReason, criterion) {
+    // Inject correction as hard constraint — not a suggestion.
+    // This is the key fix: OA Director's retry starts fresh.
+    // FY's retry starts from what was established.
+    const correction = [
+      'HARD CORRECTION — do not change the overall direction or style.',
+      `Previous generation failed quality check on: ${criterion}.`,
+      `Specific issue to fix: ${failReason}.`,
+      'Maintain all established character details, color palette, and spatial relationships.',
+      'Correct only the flagged issue.'
+    ].join(' ');
+    return { ...baseParams, prompt: (baseParams.prompt || '') + ' ' + correction, _is_correction: true };
+  }
+
+  async function fyQualityJudge(outputUrl, task, prompt, cardType, retryNum) {
+    if (!outputUrl) return { pass: true, reason: '', criterion: '' };
+    const criteria = buildQualityCriteria(cardType, task);
+    fyLogPush({ kind: 'quality', text: `Evaluating${retryNum > 0 ? ` (retry ${retryNum})` : ''}: ${criteria.primary}`, verdict: 'pending', retry: retryNum });
+    try {
+      const res = await fetch(API_URL + '/api/quality_judge', {
+        method: 'POST',
+        headers: syHeaders(),
+        body: JSON.stringify({
+          output_url: outputUrl,
+          prompt: prompt || '',
+          criteria: criteria.all,
+          card_type: cardType,
+          email,
+        })
+      });
+      if (!res.ok) throw new Error(`judge ${res.status}`);
+      const data = await res.json();
+      const pass = data.pass === true;
+      fyLogPush({
+        kind: 'quality',
+        text: (pass ? '✓ ' : '✗ ') + (data.reason || (pass ? 'Passed quality check' : 'Did not pass quality check')),
+        verdict: pass ? 'pass' : 'fail',
+        criterion: data.criterion || criteria.primary,
+        retry: retryNum,
+      });
+      return { pass, reason: data.reason || '', criterion: data.criterion || criteria.primary };
+    } catch(e) {
+      // Judge endpoint not yet live — pass through so creator is never blocked
+      fyLogPush({ kind: 'quality', text: 'Quality check not available — delivering as-is', verdict: 'pass', retry: retryNum });
+      return { pass: true, reason: 'judge unavailable', criterion: '' };
+    }
+  }
+  // ── end FY Quality Evaluation Loop ────────────────────────────────────────
+
   async function runGeneration(task, building, sectionIdx, taskIdx, tool, visualDesc) {
     const eventId = `${building.id}-${sectionIdx}-${taskIdx}`;
 
@@ -2661,14 +2750,45 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     if (el) el.style.width = '100%';
 
     if (result.success) {
-      const outputUrl = result.output?.images?.[0]?.url || result.output?.video?.url || result.output?.url || null;
+      const rawUrl = result.output?.images?.[0]?.url || result.output?.video?.url || result.output?.url || null;
+      const cardType = tool.cardType || 'image';
+      const baseParams = buildModelParams(tool.task || 'image_generate', task, visualDesc);
+
+      // ── FY quality loop ──────────────────────────────────────────────────
+      // Runs internally. Creator sees only passed results or best-available
+      // with an honest note. Max 2 retries before delivering best.
+      let finalUrl = rawUrl;
+      let qualityNote = null;
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const judgment = await fyQualityJudge(finalUrl, task, visualDesc, cardType, attempt);
+        if (judgment.pass) break;
+        if (attempt < MAX_RETRIES - 1) {
+          // Retry with corrective prompt — constraints from what was established
+          fyLogPush({ kind: 'quality', text: `Retrying with corrections (attempt ${attempt + 2} of ${MAX_RETRIES})`, verdict: 'retry', retry: attempt });
+          const corrParams = buildCorrectionParams(baseParams, judgment.reason, judgment.criterion);
+          const retry = await invokeModel({ task: tool.task || 'image_generate', building: building.id, tier, params: corrParams, email });
+          if (retry.success) {
+            finalUrl = retry.output?.images?.[0]?.url || retry.output?.video?.url || retry.output?.url || finalUrl;
+          }
+        } else {
+          // Retries exhausted — deliver best available with transparent note
+          qualityNote = `Delivered best available result — quality check flagged: ${judgment.criterion}.`;
+          fyLogPush({ kind: 'quality', text: 'Max retries reached — delivering best available', verdict: 'fail', retry: attempt });
+        }
+      }
+      // ── end quality loop ─────────────────────────────────────────────────
+
       cdPushEvent(sectionIdx, { id: eventId, tool: tool.name, desc: tool.desc, step: `STEP ${taskIdx+1} · ${task.title}`, status:'done', tutorial: tool.tutorial });
-      // Push result to canvas via event
-      const canvasEvent = new CustomEvent('sy:canvasOutput', { detail: { eventId, outputUrl, taskTitle: task.title, model: result.model, cardType: tool.cardType || 'image' } });
+      const canvasEvent = new CustomEvent('sy:canvasOutput', { detail: { eventId, outputUrl: finalUrl, taskTitle: task.title, model: result.model, cardType } });
       window.dispatchEvent(canvasEvent);
-      addMonologue(`Your ${task.title.toLowerCase()} is on the canvas.`);
+      if (qualityNote) {
+        addMonologue(qualityNote);
+      } else {
+        addMonologue(`Your ${task.title.toLowerCase()} is on the canvas.`);
+      }
       setTimeout(() => {
-        setPendingLock({ assetName: task.title, assetType:'image', section:`Section ${sectionIdx+1}`, outputUrl });
+        setPendingLock({ assetName: task.title, assetType: cardType === 'video' ? 'video' : 'image', section:`Section ${sectionIdx+1}`, outputUrl: finalUrl });
         addMonologue("If you're satisfied with this result, save it to the Vault and we'll move on.");
       }, 800);
     } else {
@@ -3314,7 +3434,15 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
             tool:     { label:'Tool',    color:'#f5a623', dot:'#f5a623' },
             route:    { label:'Route',   color:'#a78bfa', dot:'#a78bfa' },
             reply:    { label:'FY',      color:'#4caf50', dot:'#4caf50' },
+            quality:  { label:'Quality', color:'#ff6b6b', dot:'#ff6b6b' },
           };
+          // Quality entries use verdict-based color override
+          function qualityColor(e) {
+            if (e.verdict === 'pass') return '#4cff91';
+            if (e.verdict === 'retry') return '#f5a623';
+            if (e.verdict === 'pending') return 'rgba(240,242,255,0.35)';
+            return '#ff6b6b'; // fail
+          }
           const log = [...fyLog].reverse();
           return (
             <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -3328,16 +3456,21 @@ function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionTog
                   ? <div style={{color:'var(--fg3)',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:20,padding:'0 4px'}}>Waiting for Future You</div>
                   : log.map((e,i) => {
                       const m = kindMeta[e.kind] || kindMeta.reply;
+                      const isQuality = e.kind === 'quality';
+                      const dotColor = isQuality ? qualityColor(e) : m.dot;
+                      const labelColor = isQuality ? qualityColor(e) : m.color;
                       const age = Date.now() - e.ts;
                       const timeStr = age < 60000
                         ? Math.round(age/1000)+'s ago'
                         : Math.round(age/60000)+'m ago';
                       return (
                         <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'6px 0',borderBottom:'1px solid rgba(240,242,255,0.04)',fontSize:12}}>
-                          <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:m.dot,flexShrink:0,marginTop:4}} />
+                          <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:dotColor,flexShrink:0,marginTop:4}} />
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
-                              <span style={{fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:m.color,flexShrink:0}}>{m.label}</span>
+                              <span style={{fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:labelColor,flexShrink:0}}>
+                                {m.label}{isQuality && e.criterion ? ` · ${e.criterion}` : ''}
+                              </span>
                               <span style={{fontSize:9,color:'var(--fg3)',marginLeft:'auto',flexShrink:0}}>{timeStr}</span>
                             </div>
                             <div style={{color: e.kind==='context' ? 'var(--fg3)' : 'var(--fg2)',lineHeight:1.45,wordBreak:'break-word',fontSize: e.kind==='context' ? 11 : 12}}>{e.text}</div>

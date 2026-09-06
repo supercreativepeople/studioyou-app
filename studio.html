@@ -1839,9 +1839,8 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
           {buildingVault.length === 0
             ? <div className="vault-empty">No locked assets yet.</div>
             : (() => {
-                const isIdeate = bldg.id === 'ideate';
-                const stickies = isIdeate ? buildingVault.filter(a => a.type === 'answer') : [];
-                const plain = isIdeate ? buildingVault.filter(a => a.type !== 'answer') : buildingVault;
+                const stickies = buildingVault.filter(a => a.type === 'answer');
+                const plain = buildingVault.filter(a => a.type !== 'answer');
                 const typeOrder = ['image', 'video', 'audio', 'script', 'answer'];
                 const typeLabels = {image:'Images', video:'Video', audio:'Audio', script:'Script', answer:'Answers'};
                 const grouped = plain.reduce((acc, a) => { (acc[a.type] = acc[a.type] || []).push(a); return acc; }, {});
@@ -1899,7 +1898,7 @@ function JourneyCol({ bldg, activeSection, recommendedSection, onSectionSelect, 
 }
 
 /* ── FY Rail ── */
-const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, activeStep, activeSection, fyCollapsed, onToggleFYCollapse }, ref) {
+const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioName, formation, briefing, onDirective, onSectionRecommendation, onVaultCapture, activeStep, activeSection, fyCollapsed, onToggleFYCollapse }, ref) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2131,6 +2130,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
               lockedAt: new Date().toLocaleDateString(),
               text: msg.captured_answer,
             });
+            if (onVaultCapture) onVaultCapture();
             // Surface this in Canvas Details so the creator can see FY's
             // activity, not just the chat reply — this event log was built
             // for image-gen tool calls only and never reflected capture or
@@ -2793,14 +2793,13 @@ function siTiToFlatStep(buildingId, si, ti) {
 }
 
 /* ── Canvas ── */
-function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionToggle, recommendedStep, onSectionChange, onBuildingSwitch, onStepActivate, onSectionVisit, activeProject }) {
+function CanvasCol({ bldg, tier, directive, fyRailRef, activeSection, sectionToggle, recommendedStep, onSectionChange, onBuildingSwitch, onStepActivate, onSectionVisit, activeProject, canvasTab, setCanvasTab }) {
   const [activeStep, setActiveStep] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [canvasCards, setCanvasCards] = useState([]);
   const [vaultAssets, setVaultAssets] = useState([]);
   const [editingStepKey, setEditingStepKey] = useState(null);
   const [editText, setEditText] = useState('');
-  const [canvasTab, setCanvasTab] = useState('work');
   const [cdEvents, setCdEvents] = useState({});
   const [fyLog, setFyLog] = useState([]);
   useEffect(() => cdSubscribe(setCdEvents), []);
@@ -3332,6 +3331,7 @@ function Studio() {
   const [sectionToggle, setSectionToggle] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
   const [fyCollapsed, setFYCollapsed] = useState(false);
+  const [canvasTab, setCanvasTab] = useState('work');
   const fyRailRef = useRef(null);
 
   const firstName  = localStorage.getItem('sy_first_name') || '';
@@ -3555,6 +3555,7 @@ function Studio() {
           onStepActivate={setActiveStep}
           onSectionVisit={(si) => setVisitedSections(prev => prev.includes(si) ? prev : [...prev, si])}
           activeProject={activeProject}
+          canvasTab={canvasTab} setCanvasTab={setCanvasTab}
         />
         <FYRail
           ref={fyRailRef}
@@ -3563,6 +3564,7 @@ function Studio() {
           activeStep={activeStep} activeSection={activeSection}
           fyCollapsed={fyCollapsed}
           onToggleFYCollapse={() => setFYCollapsed(c => !c)}
+          onVaultCapture={() => setCanvasTab('vault')}
           onDirective={d => {
             setDirective(d);
             // Parse FY directive for section recommendation — normalize & match

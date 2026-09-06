@@ -65,3 +65,15 @@ Tasks in scope: Netlify push (5 commits from prior session)
   BrainSuite confirmed as ImagineArt's agentic engine.
   Key design principle: correction passes carry ESTABLISHED context as hard constraints, not fresh starts.
   Backend endpoint /api/quality_judge stubbed — passes through gracefully until live.
+
+[COMPACTION] — second compaction fired mid-session during FY model routing spec write
+
+[CHECKPOINT] — tokens remaining: 14,889,448 — FY model routing spec written to project (claude/FY_ModelRouting_Spec_2026-09-06.md):
+  Locked architecture: Reference-Frame-First methodology
+  Phase 1: Firefly for reference frames (accuracy + character consistency)
+  Phase 2: LTX or Seedance for motion from established frames (shot-type routing)
+  Phase 3: Continuity bridge (outgoing frame of clip A feeds Phase 1 of clip B)
+  Prompt post-mortem loop formalized (Littlebird pattern → FY autonomous routing)
+  Training data plan: SCREENBot launch short logs — dedicated extraction session pending
+  Vault-as-creative-brief confirmed as structural pipeline advantage over OA Director / Luma / BrainSuite
+  Implementation status table included

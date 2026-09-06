@@ -2682,7 +2682,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
     return { ...baseParams, prompt: (baseParams.prompt || '') + ' ' + correction, _is_correction: true };
   }
 
-  async function fyQualityJudge(outputUrl, task, prompt, cardType, retryNum) {
+  async function fyQualityJudge(outputUrl, task, prompt, cardType, retryNum, creativeBrief) {
     if (!outputUrl) return { pass: true, reason: '', criterion: '' };
     const criteria = buildQualityCriteria(cardType, task);
     fyLogPush({ kind: 'quality', text: `Evaluating${retryNum > 0 ? ` (retry ${retryNum})` : ''}: ${criteria.primary}`, verdict: 'pending', retry: retryNum });
@@ -2696,6 +2696,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
           criteria: criteria.all,
           card_type: cardType,
           email,
+          creative_brief: creativeBrief || {},
         })
       });
       if (!res.ok) throw new Error(`judge ${res.status}`);
@@ -2754,6 +2755,15 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       const cardType = tool.cardType || 'image';
       const baseParams = buildModelParams(tool.task || 'image_generate', task, visualDesc);
 
+      // Build creative brief from vault answers for this building — passed to judge
+      // so evaluation is grounded in the full creative context, not just the generation prompt.
+      const creativeBrief = _cdState.vaultAssets
+        .filter(a => a.buildingId === building.id && a.type === 'answer')
+        .reduce((acc, a) => {
+          acc[a.name] = a.content || a.outputUrl || a.text || '';
+          return acc;
+        }, {});
+
       // ── FY quality loop ──────────────────────────────────────────────────
       // Runs internally. Creator sees only passed results or best-available
       // with an honest note. Max 2 retries before delivering best.
@@ -2761,7 +2771,7 @@ const FYRail = React.forwardRef(function FYRail({ bldg, tier, firstName, studioN
       let qualityNote = null;
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        const judgment = await fyQualityJudge(finalUrl, task, visualDesc, cardType, attempt);
+        const judgment = await fyQualityJudge(finalUrl, task, visualDesc, cardType, attempt, creativeBrief);
         if (judgment.pass) break;
         if (attempt < MAX_RETRIES - 1) {
           // Retry with corrective prompt — constraints from what was established
